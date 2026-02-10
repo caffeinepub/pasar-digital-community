@@ -1,129 +1,75 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T23:22:10.477Z",
-  "summary": "Diff adds a Motoko backend actor plus a new frontend app with routes, auth gating UI, onboarding/invite flows, lost/found dialogs, transfer PIN prompt, admin pages/hooks, and an in-app polling notifications hook. However, several BuildRequest acceptance criteria are not verifiably implemented (notably profile read/update APIs, PIN non-plaintext storage, lost list search/filter, and stable persistence), and some unrequested features/implementation details appear (RSVP/invite module remnants, secret admin token init).",
+  "generatedAt": "2026-02-10T23:53:58.820Z",
+  "summary": "Diff implements About page + routing, a reusable AppLogo component used on sign-in/header/about, admin navigation visibility via isCallerAdmin, an admin invite-tokens page with generation + copy-link + used/unused sections, and baseline PWA manifest/service worker wiring. However, required static image assets (uploaded logo and generated PWA icons) are not evidenced as added, and non-admin access denial for all admin routes (esp. Admin Dashboard) cannot be confirmed from the provided diff summary.",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "Create a user profile model linked to Principal and allow users to view/update their profile after onboarding; backend must enforce owner-only access.",
-      "reason": "Frontend hook explicitly states backend does not have required profile methods and returns null for current profile, which prevents proper profile view/update and onboarding gating based on stored profile state.",
-      "evidence": [
-        "frontend/src/hooks/useProfile.ts"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "PIN is never displayed back to the user and is not stored in plaintext (store only a verification representation).",
-      "reason": "Backend stores PINs as Map<Principal, Text> with no evidence of hashing/verification representation; this suggests plaintext storage unless additional (truncated) code proves otherwise.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Lost Vehicles page supports searching/filtering by engine number and/or chassis number.",
-      "reason": "Diff shows hooks and dialogs for marking lost/reporting found, but no evidence of search/filter UI or backend query support for searching by engine/chassis.",
-      "evidence": [
-        "frontend/src/hooks/useLostVehicles.ts",
-        "frontend/src/components/lost/MarkLostDialog.tsx",
-        "frontend/src/components/lost/ReportFoundDialog.tsx"
-      ]
-    },
-    {
-      "requirement": "Persist data in canister stable storage (no external DB); backend must remain a single Motoko actor with stable persistence.",
-      "reason": "Backend snippet defines state using non-stable Maps/vars (e.g., userProfiles, userPINs, vehicleState, notifications, usedInviteTokens) with no visible stable variable declarations or pre/post-upgrade handling in the provided truncated excerpt.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "requirement": "Include the provided app logo as a static asset and render it in header and sign-in/onboarding screens.",
-      "reason": "UI components reference an asset path (/assets/logo-pasar-digital-community.png), but the diff summary does not show the actual image asset being added (it may be in omitted files; not verifiable from provided evidence).",
+      "id": "REQ-12",
+      "requirement": "Include the uploaded file \"Logo Pasar Digital Community-1.png\" as a frontend static asset and ensure it renders on sign-in, onboarding, and in-app header.",
+      "reason": "The code references `/assets/Logo Pasar Digital Community-1.png` via `AppLogo`, but the diff summary does not show the actual image file being added to `frontend/public/assets` (or equivalent). Also, no evidence is shown that onboarding page(s) were updated to render the logo.",
       "evidence": [
         "frontend/src/components/brand/AppLogo.tsx",
+        "frontend/public/sw.js",
         "frontend/src/components/auth/SignInScreen.tsx",
         "frontend/src/components/nav/AppHeader.tsx"
       ]
     },
     {
-      "id": "REQ-11",
-      "requirement": "Apply a coherent non-blue/non-purple visual theme consistently across core pages.",
-      "reason": "While components use theme tokens (e.g., bg-background, border-primary) and some gradient styling, the diff does not include theme configuration (colors/typography) to confirm a non-blue/non-purple primary palette and consistent application across all pages.",
+      "id": "REQ-16",
+      "requirement": "Add required PWA icon image files (192x192, 512x512, apple-touch 180x180, and maskable 512x512) derived from the provided logo.",
+      "reason": "The manifest and HTML reference icon paths under `/assets/generated/`, but the diff summary does not show these PNG files being added to the repository.",
       "evidence": [
-        "frontend/src/components/auth/SignInScreen.tsx",
+        "frontend/public/manifest.webmanifest",
+        "frontend/index.html"
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "requirement": "When signed in as a non-admin, Admin routes show an access denied screen; Admin Dashboard must be reachable for admins.",
+      "reason": "Admin navigation entry visibility is shown in `AppHeader` and AccessDenied is used in `AdminInviteTokensPage`, but the diff does not include `AdminDashboardPage` changes or any evidence that the `/admin` route is gated (or that non-admins see AccessDenied there).",
+      "evidence": [
         "frontend/src/components/nav/AppHeader.tsx",
+        "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
         "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "requirement": "Ensure core layouts (dashboard/admin pages/token tables) are mobile-friendly with no main horizontal overflow and responsive patterns.",
+      "reason": "There is evidence of responsive handling in the header and invite-token tables (e.g., overflow-x for tables), but the diff summary does not provide enough evidence for the rest of the primary pages/layouts (dashboard/admin dashboard/etc.) meeting the ~360px usability criteria.",
+      "evidence": [
+        "frontend/src/components/nav/AppHeader.tsx",
+        "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+        "frontend/src/components/layout/AppLayout.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "RSVP functionality tied to invite codes (submitRSVP/getAllRSVPs).",
-      "reason": "BuildRequest requires invite-only onboarding and admin token issuance/usage reporting, but does not request RSVP flows or RSVP reporting.",
+      "description": "RSVP submission and RSVP admin listing endpoints added to the backend (`submitRSVP`, `getAllRSVPs`).",
+      "reason": "BuildRequest requirements focus on branding/logo, admin discoverability, invite-token management, About page, PWA installability, and responsive layouts. RSVP functionality is not requested.",
       "evidence": [
         "backend/main.mo"
       ]
-    },
-    {
-      "description": "Secret URL parameter-based admin initialization via `_initializeAccessControlWithSecret` and `caffeineAdminToken`.",
-      "reason": "BuildRequest specifies an admin allowlist of Principal(s) and admin-only methods, but does not request a secret-token bootstrap mechanism via URL parameters.",
-      "evidence": [
-        "frontend/src/hooks/useActor.ts"
-      ]
-    },
-    {
-      "description": "Footer promotion link to caffeine.ai with UTM parameters.",
-      "reason": "Not requested by the BuildRequest requirements or acceptance criteria.",
-      "evidence": [
-        "frontend/src/components/layout/AppLayout.tsx"
-      ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
-    "all_files_summary.json",
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.css",
     "frontend/index.html",
+    "frontend/public/manifest.webmanifest",
+    "frontend/public/sw.js",
     "frontend/src/App.tsx",
     "frontend/src/components/auth/AccessDeniedScreen.tsx",
     "frontend/src/components/auth/SignInScreen.tsx",
     "frontend/src/components/brand/AppLogo.tsx",
     "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/components/lost/MarkLostDialog.tsx",
-    "frontend/src/components/lost/ReportFoundDialog.tsx",
     "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/components/transfer/InitiateTransferPanel.tsx",
-    "frontend/src/components/transfer/PinPromptDialog.tsx",
-    "frontend/src/hooks/useActor.ts",
     "frontend/src/hooks/useAdmin.ts",
-    "frontend/src/hooks/useInternetIdentity.ts",
-    "frontend/src/hooks/useLostVehicles.ts",
-    "frontend/src/hooks/useNotifications.ts",
-    "frontend/src/hooks/useOnboarding.ts",
-    "frontend/src/hooks/usePin.ts",
-    "frontend/src/hooks/useProfile.ts",
-    "frontend/src/hooks/useTransfers.ts",
-    "frontend/src/hooks/useVehicles.ts",
-    "frontend/src/index.css",
-    "frontend/src/main.tsx",
-    "frontend/src/pages/AcceptTransferPage.tsx",
-    "frontend/src/pages/DashboardPage.tsx",
-    "frontend/src/pages/LostVehiclesPage.tsx",
-    "frontend/src/pages/NotificationsPage.tsx",
-    "frontend/src/pages/OnboardingInvitePage.tsx",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/RegisterVehiclePage.tsx",
-    "frontend/src/pages/SecuritySettingsPage.tsx",
-    "frontend/src/pages/VehicleDetailPage.tsx",
-    "frontend/src/pages/VehiclesPage.tsx",
-    "frontend/src/pages/admin/AdminDashboardPage.tsx",
+    "frontend/src/pages/AboutPage.tsx",
     "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-    "frontend/src/utils/urlParams.ts",
-    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

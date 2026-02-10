@@ -9,14 +9,21 @@ export function useIsCallerAdmin() {
     queryKey: ['isCallerAdmin'],
     queryFn: async () => {
       if (!actor) return false;
-      return actor.isCallerAdmin();
+      try {
+        return await actor.isCallerAdmin();
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
     },
     enabled: !!actor && !isFetching,
+    retry: false,
   });
 }
 
 export function useGetSystemStats() {
   const { actor, isFetching } = useActor();
+  const { data: isAdmin } = useIsCallerAdmin();
 
   return useQuery({
     queryKey: ['systemStats'],
@@ -24,20 +31,26 @@ export function useGetSystemStats() {
       if (!actor) throw new Error('Actor not available');
       return actor.getSystemStats();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!isAdmin,
   });
 }
 
 export function useGetInviteCodes() {
   const { actor, isFetching } = useActor();
+  const { data: isAdmin } = useIsCallerAdmin();
 
   return useQuery<InviteCode[]>({
     queryKey: ['inviteCodes'],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getInviteCodes();
+      try {
+        return await actor.getInviteCodes();
+      } catch (error) {
+        console.error('Error fetching invite codes:', error);
+        return [];
+      }
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!isAdmin,
   });
 }
 
@@ -58,6 +71,7 @@ export function useGenerateInviteCode() {
 
 export function useGetRegisteredVehicles() {
   const { actor, isFetching } = useActor();
+  const { data: isAdmin } = useIsCallerAdmin();
 
   return useQuery<Vehicle[]>({
     queryKey: ['registeredVehicles'],
@@ -65,6 +79,6 @@ export function useGetRegisteredVehicles() {
       if (!actor) return [];
       return actor.getRegisteredVehicles();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!isAdmin,
   });
 }

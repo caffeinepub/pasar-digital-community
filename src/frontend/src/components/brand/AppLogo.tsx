@@ -13,7 +13,7 @@ export default function AppLogo({ size = 'medium', className = '' }: AppLogoProp
   return (
     <div className={`flex items-center justify-center ${className}`}>
       <img
-        src="/assets/logo-pasar-digital-community.png"
+        src="/assets/Logo Pasar Digital Community-1.png"
         alt="Pasar Digital Community Logo"
         className={`${sizeClasses[size]} object-contain`}
       />

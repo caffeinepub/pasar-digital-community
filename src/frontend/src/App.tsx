@@ -13,6 +13,7 @@ import SecuritySettingsPage from './pages/SecuritySettingsPage';
 import AcceptTransferPage from './pages/AcceptTransferPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminInviteTokensPage from './pages/admin/AdminInviteTokensPage';
+import AboutPage from './pages/AboutPage';
 import AppLayout from './components/layout/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from 'next-themes';
@@ -100,6 +101,12 @@ const adminInviteTokensRoute = createRoute({
   component: AdminInviteTokensPage,
 });
 
+const aboutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/about',
+  component: AboutPage,
+});
+
 // Create route tree
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
@@ -114,6 +121,7 @@ const routeTree = rootRoute.addChildren([
   onboardingRoute,
   adminDashboardRoute,
   adminInviteTokensRoute,
+  aboutRoute,
 ]);
 
 // Create router
@@ -140,7 +148,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   // Check if user needs onboarding
-  // Since backend doesn't track profile separately, we check if they've completed onboarding
   const showOnboarding = isFetched && userProfile === null;
   const currentPath = window.location.hash.replace('#', '') || '/';
 

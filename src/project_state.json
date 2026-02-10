@@ -1,15 +1,18 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "Aplikasi “Pasar Digital Community” untuk pencegahan pencurian kendaraan berbasis Principal ID (tanpa server tradisional), dengan registrasi kendaraan, pelepasan/transfer kepemilikan memakai PIN, sistem undangan berbayar via token/link sekali pakai yang dibuat admin, serta modul laporan kendaraan hilang–ditemukan dan notifikasi.",
+  "projectStateVersion": 5,
+  "summary": "Aplikasi “Pasar Digital Community” untuk pencegahan pencurian kendaraan berbasis Principal ID (tanpa server tradisional), dengan registrasi kendaraan, pelepasan/transfer kepemilikan memakai PIN, sistem undangan berbayar via token/link sekali pakai yang dibuat admin (dengan tabel status pemakaian), modul laporan kendaraan hilang–ditemukan dan notifikasi, branding logo di splash/seluruh aplikasi, halaman “Tentang Aplikasi” berisi kontak admin, serta target responsif + PWA installable (Android/iOS).",
   "architectural_notes": [
     "Aplikasi ditargetkan berjalan tanpa server tradisional (mis. canister di Internet Computer); Principal ID digunakan sebagai identifier kriptografis pengguna.",
-    "Operasional jangka panjang bergantung pada ketersediaan cycles (biaya komputasi/penyimpanan)."
+    "Operasional jangka panjang bergantung pada ketersediaan cycles (biaya komputasi/penyimpanan).",
+    "Targetkan UI responsif lintas perangkat dan dukung PWA (installable) agar dapat digunakan di Android & iOS."
   ],
   "known_issues": [
-    "Percobaan build sebelumnya gagal dengan pesan: 'AI couldn't process your request successfully. Try simplifying or rewording it.'"
+    "Percobaan build sebelumnya gagal dengan pesan: 'AI couldn't process your request successfully. Try simplifying or rewording it.'",
+    "Build/deploy gagal karena 'System configuration error. Please report this issue to the Caffeine team.'"
   ],
   "isFixRequest": true,
+  "imageRequirements": "## Required Images\n- PWA app icon derived from the provided logo, square, centered, with transparent padding (pwa-icon.dim_192x192.png)\n- PWA app icon derived from the provided logo, square, centered, with transparent padding (pwa-icon.dim_512x512.png)\n- Apple touch icon derived from the provided logo, square, centered (apple-touch-icon.dim_180x180.png)\n- Maskable PWA icon derived from the provided logo with safe padding for masking (pwa-maskable.dim_512x512.png)",
   "existing_features": [
     {
       "id": "feature-implement-internet-identity-principal-based-authentication-and-gate-all-app-features-behind-sign-in",
@@ -98,6 +101,54 @@
         "REQ-11"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-add-the-uploaded-pasar-digital-community-logo-image-to-the-frontend-static-assets-and-ensure-it-renders-correctly-wherever-the-app-uses-the-logo-sign-in-screen-onboarding-and-the-in-app-header",
+      "title": "Add the uploaded Pasar Digital Community logo image to the frontend static assets and ensure it renders correctly wherever the app uses the logo (sign-in screen, onboarding, and the in-app header).",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-admin-features-are-discoverable-and-accessible-for-an-admin-user-the-admin-entry-point-must-appear-in-navigation-when-the-signed-in-principal-is-an-admin-and-the-admin-dashboard-must-be-reachable",
+      "title": "Ensure the Admin features are discoverable and accessible for an admin user: the Admin entry point must appear in navigation when the signed-in principal is an admin, and the Admin Dashboard must be reachable.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-the-admin-invite-token-management-fully-functional-end-to-end-admin-can-generate-an-invitation-token-and-see-a-table-split-into-unused-and-used-tokens-with-a-one-click-copy-of-an-onboarding-link-for-unused-tokens",
+      "title": "Make the Admin invite-token management fully functional end-to-end: admin can generate an invitation token and see a table split into unused and used tokens, with a one-click copy of an onboarding link for unused tokens.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-about-page-that-includes-a-brief-description-and-the-provided-admin-contact-details-whatsapp-089502436075-and-email-pasardigital-ina-gmail-com-link-to-it-from-within-the-app-ui-footer-and-or-user-menu",
+      "title": "Add an \"About\" page that includes a brief description and the provided admin contact details: WhatsApp 089502436075 and email pasardigital.ina@gmail.com; link to it from within the app UI (footer and/or user menu).",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-pwa-support-so-the-app-is-installable-on-android-and-ios-add-to-home-screen-including-a-web-app-manifest-and-required-icons-metadata",
+      "title": "Add PWA support so the app is installable on Android and iOS (Add to Home Screen), including a web app manifest and required icons/metadata.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-core-layouts-sign-in-dashboard-admin-pages-token-tables-are-mobile-friendly-and-usable-on-small-screens-no-horizontal-overflow-tables-remain-readable-via-responsive-patterns",
+      "title": "Ensure core layouts (sign-in, dashboard, admin pages, token tables) are mobile-friendly and usable on small screens (no horizontal overflow, tables remain readable via responsive patterns).",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -146,6 +197,30 @@
     {
       "id": "AR-8",
       "summary": "Menampilkan/memasukkan logo aplikasi ke dalam UI aplikasi",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Admin dapat generate Token Undangan dan melihat tabel daftar token (belum dipakai/sudah dipakai)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Tambahkan halaman “Tentang Aplikasi” berisi deskripsi dan kontak admin (WA 089502436075, Email: pasardigital.ina@gmail.com)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Buat aplikasi responsif untuk laptop/handphone dan dukung PWA installable di Android & iOS",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Tampilkan logo saat aplikasi pertama kali dibuka (splash/landing) dan di dalam aplikasi (header/area utama)",
       "reqIds": [],
       "status": "pending"
     }

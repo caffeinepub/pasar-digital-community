@@ -91,6 +91,7 @@ actor {
   };
 
   public func submitRSVP(name : Text, attending : Bool, inviteCode : Text) : async () {
+    // No authorization check - public endpoint for RSVP submission
     InviteLinksModule.submitRSVP(inviteState, name, attending, inviteCode);
   };
 
@@ -111,6 +112,7 @@ actor {
   // ---------------------- Onboarding ----------------------
 
   public shared ({ caller }) func completeOnboarding(inviteToken : Text, profile : UserProfile) : async () {
+    // No authorization check - this is the onboarding endpoint for new users (guests)
     // Validate invite code
     let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
     switch (inviteCodes.find(func(code) { code.code == inviteToken })) {
@@ -189,7 +191,7 @@ actor {
     vehiclePhoto : Storage.ExternalBlob,
   ) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can register vehicles");
+      Runtime.trap("Unauthorized: Only users can register vehicles");
     };
     let id = engineNumber.concat(chassisNumber);
     switch (vehicleState.get(id)) {
@@ -216,7 +218,7 @@ actor {
 
   public query ({ caller }) func getUserVehicles() : async [Vehicle] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can view vehicles");
+      Runtime.trap("Unauthorized: Only users can view vehicles");
     };
     let iter = vehicleState.values();
     let filtered = iter.filter(func(vehicle : Vehicle) : Bool { vehicle.owner == caller });
@@ -225,10 +227,10 @@ actor {
 
   public query ({ caller }) func getVehicle(vehicleId : Text) : async Vehicle {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only authenticated users can view vehicles");
+      Runtime.trap("Unauthorized: Only authenticated users can view vehicles");
     };
     switch (vehicleState.get(vehicleId)) {
-      case (null) { Runtime.trap("Not found") };
+      case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) { vehicle };
     };
   };
@@ -237,7 +239,7 @@ actor {
 
   public query ({ caller }) func getLostVehicles() : async [Vehicle] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only authenticated users can view lost vehicles");
+      Runtime.trap("Unauthorized: Only authenticated users can view lost vehicles");
     };
     let iter = vehicleState.values();
     let filtered = iter.filter(func(vehicle : Vehicle) : Bool {
@@ -251,13 +253,13 @@ actor {
 
   public shared ({ caller }) func markVehicleLost(vehicleId : Text, reportNote : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can mark as lost");
+      Runtime.trap("Unauthorized: Only users can mark vehicles as lost");
     };
     let vehicle = switch (vehicleState.get(vehicleId)) {
-      case (null) { Runtime.trap("Not found") };
+      case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) {
         if (vehicle.owner != caller) {
-          Runtime.trap("Only the owner can mark as lost");
+          Runtime.trap("Unauthorized: Only the owner can mark their vehicle as lost");
         };
         {
           id = vehicle.id;
@@ -279,14 +281,14 @@ actor {
 
   public shared ({ caller }) func reportVehicleFound(vehicleId : Text, finderReport : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only authenticated users can report found vehicles");
+      Runtime.trap("Unauthorized: Only authenticated users can report found vehicles");
     };
     let vehicle = switch (vehicleState.get(vehicleId)) {
-      case (null) { Runtime.trap("Not found") };
+      case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) {
         switch (vehicle.status) {
           case (#LOST(_)) {};
-          case _ { Runtime.trap("Not lost") };
+          case _ { Runtime.trap("Vehicle is not marked as lost") };
         };
         let updatedVehicle = {
           id = vehicle.id;
@@ -324,7 +326,7 @@ actor {
 
   public query ({ caller }) func getMyNotifications() : async [Notification] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can view notifications");
+      Runtime.trap("Unauthorized: Only users can view notifications");
     };
     let iter = notifications.values();
     let filtered = iter.filter(func(notif : Notification) : Bool { notif.recipient == caller });
@@ -333,13 +335,13 @@ actor {
 
   public shared ({ caller }) func markNotificationRead(notificationId : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can mark as read");
+      Runtime.trap("Unauthorized: Only users can mark notifications as read");
     };
     switch (notifications.get(notificationId)) {
-      case null { Runtime.trap("Not found") };
+      case null { Runtime.trap("Notification not found") };
       case (?notif) {
         if (notif.recipient != caller) {
-          Runtime.trap("Only the recipient can mark as read");
+          Runtime.trap("Unauthorized: Only the recipient can mark this notification as read");
         };
         let updatedNotif = {
           id = notif.id;
@@ -358,16 +360,16 @@ actor {
 
   public shared ({ caller }) func initiateTransfer(vehicleId : Text, pin : Text) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can initiate transfers");
+      Runtime.trap("Unauthorized: Only users can initiate transfers");
     };
     if (not verifyPIN(caller, pin)) {
       Runtime.trap("Incorrect PIN");
     };
     let vehicle = switch (vehicleState.get(vehicleId)) {
-      case (null) { Runtime.trap("Not found") };
+      case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) {
         if (vehicle.owner != caller) {
-          Runtime.trap("Only the owner can transfer");
+          Runtime.trap("Unauthorized: Only the owner can transfer their vehicle");
         };
         let timestamp = Int.abs(Time.now()).toText();
         let transferCode = vehicleId.concat("-").concat(timestamp);
@@ -389,18 +391,17 @@ actor {
     };
     vehicleState.add(vehicleId, vehicle);
     switch (vehicle.transferCode) {
-      case (null) { Runtime.trap("Unexpected") };
+      case (null) { Runtime.trap("Transfer code generation failed") };
       case (?code) { code };
     };
   };
 
   public shared ({ caller }) func acceptTransfer(transferCode : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can accept transfers");
+      Runtime.trap("Unauthorized: Only users can accept transfers");
     };
-    func optMatch(v : ?Vehicle) : Bool { false };
     switch (vehicleState.values().toArray().find(func(v) { switch (v.transferCode) { case (?code) { code == transferCode }; case null { false } } })) {
-      case (null) { Runtime.trap("Not found") };
+      case (null) { Runtime.trap("Invalid or expired transfer code") };
       case (?vehicle) {
         let newVehicle = {
           id = vehicle.id;
@@ -424,17 +425,17 @@ actor {
 
   public query ({ caller }) func getRegisteredVehicles() : async [Vehicle] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Only admins can view all vehicles");
+      Runtime.trap("Unauthorized: Only admins can view all vehicles");
     };
     vehicleState.values().toArray();
   };
 
   public shared ({ caller }) func adminUpdateVehicleStatus(vehicleId : Text, newStatus : VehicleStatus) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Only admins can update vehicle status");
+      Runtime.trap("Unauthorized: Only admins can update vehicle status");
     };
     let vehicle = switch (vehicleState.get(vehicleId)) {
-      case (null) { Runtime.trap("Not found") };
+      case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) {
         {
           id = vehicle.id;
@@ -461,7 +462,7 @@ actor {
     totalUsers : Nat;
   } {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Only admins can view stats");
+      Runtime.trap("Unauthorized: Only admins can view system stats");
     };
     let vehicles = vehicleState.values().toArray();
     let totalVehicles = vehicles.size();
@@ -499,7 +500,7 @@ actor {
     totalUsed : Nat;
   } {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Only admins can view reports");
+      Runtime.trap("Unauthorized: Only admins can view invite token reports");
     };
     let totalGenerated = InviteLinksModule.getInviteCodes(inviteState).size();
     let totalUsed = usedInviteTokens.size();

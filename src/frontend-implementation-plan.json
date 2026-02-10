@@ -1,376 +1,187 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Pasar Digital Community (Anti-theft Vehicle Registry) — Frontend Implementation Plan",
+  "title": "Branding/logo fix, admin invite tools visibility, About page, and PWA installability",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Gate all app features behind Internet Identity sign-in and show the signed-in Principal.",
+      "id": "REQ-12",
+      "summary": "Add the provided Pasar Digital Community logo as a static asset and render it consistently on sign-in, onboarding, and header without distortion.",
       "acceptanceCriteria": [
-        "Unauthenticated users are redirected to a sign-in screen",
-        "After signing in with Internet Identity, the UI shows the signed-in Principal and unlocks the app navigation"
+        "The uploaded file \"Logo Pasar Digital Community-1.png\" is included in the repo as a static asset (served by the frontend).",
+        "The logo image is visible on the sign-in screen and in the authenticated app header (no broken/missing image placeholder).",
+        "Logo renders with correct aspect ratio (no stretching) on common viewport sizes (mobile and desktop)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/public/assets/Logo Pasar Digital Community-1.png",
           "operation": "create",
-          "description": "Create the app shell with authenticated/unauthenticated states: an AuthGate that requires Internet Identity (useInternetIdentity) before rendering protected routes; show the signed-in Principal (identity.getPrincipal().toString()) in the header when authenticated."
+          "description": "Add the uploaded branding logo as a static asset served by the frontend."
         },
         {
-          "path": "frontend/src/components/auth/SignInScreen.tsx",
-          "operation": "create",
-          "description": "Implement a sign-in screen that calls useInternetIdentity().login() and provides a logout option via clear(); keep unauthenticated users on this screen."
-        },
+          "path": "frontend/src/components/brand/AppLogo.tsx",
+          "operation": "modify",
+          "description": "Update AppLogo to reference the new static asset path for \"Logo Pasar Digital Community-1.png\" and ensure aspect ratio is preserved (e.g., object-contain) across size variants."
+        }
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "summary": "Make Admin entry discoverable for admins, keep admin routes gated for non-admins, and provide in-app bootstrap guidance when no admins are configured.",
+      "acceptanceCriteria": [
+        "When signed in as an admin principal, the header navigation shows an \"Admin\" entry that navigates to the Admin Dashboard route.",
+        "When signed in as a non-admin principal, Admin routes show an access denied screen and the Admin entry is hidden.",
+        "If the current deployment has no admin principals configured, there is a clear, documented, in-app way to bootstrap/assign the first admin without breaking existing auth gating (must not grant admin to everyone)."
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/components/nav/AppHeader.tsx",
-          "operation": "create",
-          "description": "Add a header that renders only when authenticated: app name, principal display, logout button, and navigation links to the required pages."
+          "operation": "modify",
+          "description": "Ensure the Admin navigation entry is shown only when the current user is an admin (using the authorization component’s admin-check capability via existing hooks). Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
-          "operation": "create",
-          "description": "Add a reusable access denied screen for unauthorized/role-gated routes (e.g., admin pages)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Add invite-only onboarding UI flow and admin invite-token reporting UI.",
-      "acceptanceCriteria": [
-        "Backend can create invitation tokens (single-use) and mark them as used on successful onboarding",
-        "Frontend provides an \"Accept Invitation\" flow where a user inputs/pastes an invite token and can proceed only if it is valid and unused",
-        "Admin can view a list of issued tokens and their status (unused/used), including timestamps for creation and use"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
-          "operation": "create",
-          "description": "Create an \"Accept Invitation\" onboarding page for authenticated users: input/paste invite token and collect initial profile fields; on submit call backend.completeOnboarding(inviteToken, profile) and handle invalid/used-token errors gracefully. Use shadcn-ui form primitives (e.g., Card, Input, Label, Button) to keep design consistent. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "operation": "create",
-          "description": "Create an admin-only page that lists issued invite tokens and status using backend.getInviteCodes(); show created time and used status; include a \"Generate token\" action calling backend.generateInviteCode() with copy-to-clipboard. Use shadcn-ui Table/Badge/Button components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useInviteTokens.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for invite-code operations: getInviteCodes query, generateInviteCode mutation, and cache invalidation after generation."
+          "operation": "modify",
+          "description": "Add an in-app \"Admin bootstrap\" help section for deployments with no admin configured (e.g., instruct how a canister controller assigns the first admin using the existing admin role assignment capability), while keeping access denied by default (do not grant admin broadly)."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Wire the onboarding route into protected navigation and ensure first-time users are directed to onboarding when their profile is missing or not onboarded (based on profile query introduced in REQ-3)."
+          "description": "Confirm Admin Dashboard route wiring remains present and reachable (and keep route registration intact for /admin)."
         }
       ]
     },
     {
-      "id": "REQ-3",
-      "summary": "Implement profile view/update UI linked to Principal and required onboarding profile fields.",
+      "id": "REQ-14",
+      "summary": "Ensure Admin invite-token management works end-to-end with live updates, split used/unused lists, copy onboarding links, and graceful authorization error handling.",
       "acceptanceCriteria": [
-        "On first onboarding (via invite), the user must submit name, email, city, and country",
-        "After onboarding, the user can open a Profile page and update these fields",
-        "Backend enforces that profile data is readable/writable only by the owning Principal (except admin reporting if required by REQ-9)"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/backend.d.ts",
-          "operation": "modify",
-          "description": "Align frontend typing with the authorization component’s expected profile capabilities by adding missing declarations needed by the UI (e.g., getCallerUserProfile(): Promise<Option<UserProfile>> or Promise<UserProfile|null>, and saveCallerUserProfile(profile: UserProfile): Promise<void>) so the Profile and onboarding flows can query/update the current user profile."
-        },
-        {
-          "path": "frontend/src/hooks/useProfile.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for current-user profile: getCallerUserProfile query and saveCallerUserProfile mutation; ensure queries are disabled until actor is available (useActor) to avoid UI flash."
-        },
-        {
-          "path": "frontend/src/pages/ProfilePage.tsx",
-          "operation": "create",
-          "description": "Create a Profile page with view/update of full name, email, city, country; submit updates via saveCallerUserProfile; display principal read-only for debugging/traceability. Use shadcn-ui form components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
-          "operation": "modify",
-          "description": "Use the profile hooks so onboarding writes the profile once and then routes to the main dashboard; enforce required fields in the UI and show server errors (e.g., invite invalid/used)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Implement vehicle registration UI with image upload and owned-vehicles list/detail views.",
-      "acceptanceCriteria": [
-        "Frontend provides a \"Register Vehicle\" form with the required fields and image upload",
-        "Backend stores vehicle records and associates them with the registering Principal as owner",
-        "Users can list and view details of vehicles they own",
-        "Vehicle photo is stored/referenced in a way that is retrievable for display in the UI (within Internet Computer constraints)"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useVehicles.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for vehicles: getUserVehicles, getVehicle, registerVehicle mutation; keep caches consistent after mutations."
-        },
-        {
-          "path": "frontend/src/pages/VehiclesPage.tsx",
-          "operation": "create",
-          "description": "Create a Vehicles page that lists the current user’s vehicles (backend.getUserVehicles) and provides a \"Register Vehicle\" CTA; include basic filtering/sorting client-side where helpful. Use shadcn-ui Card/Table components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/RegisterVehiclePage.tsx",
-          "operation": "create",
-          "description": "Create a vehicle registration form with required fields and image upload. Use the blob-storage component by constructing an ExternalBlob from selected file bytes (ExternalBlob.fromBytes) and track upload progress with withUploadProgress; pass it to backend.registerVehicle. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/VehicleDetailPage.tsx",
-          "operation": "create",
-          "description": "Create a vehicle details view (backend.getVehicle) including status and photo display via ExternalBlob.getDirectURL() for efficient rendering. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire Vehicles, Register Vehicle, and Vehicle Detail pages into the protected navigation and route handling (including passing vehicleId)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Provide PIN setup/update flows and require PIN entry before initiating transfers.",
-      "acceptanceCriteria": [
-        "User can set a PIN (with confirmation) during onboarding or in security settings before any transfer is allowed",
-        "Ownership release/transfer cannot proceed unless the correct PIN is provided",
-        "PIN is never displayed back to the user and is not stored in plaintext (store only a verification representation)"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/usePin.ts",
-          "operation": "create",
-          "description": "Add React Query mutations for setupPIN and updatePIN; centralize error handling for incorrect/invalid PIN responses."
-        },
-        {
-          "path": "frontend/src/pages/SecuritySettingsPage.tsx",
-          "operation": "create",
-          "description": "Create a Security Settings page allowing PIN setup (first time) and PIN update (old+new+confirm); ensure PIN inputs are masked and never displayed back. Use shadcn-ui Input/Button components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/transfer/PinPromptDialog.tsx",
-          "operation": "create",
-          "description": "Create a reusable modal/dialog to prompt for PIN before sensitive actions (transfer initiation). Use shadcn-ui Dialog components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire Security Settings into the protected navigation/routes."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Implement ownership transfer initiation (with PIN) and acceptance flow using transfer code/link.",
-      "acceptanceCriteria": [
-        "Current owner can initiate a transfer for a specific vehicle after PIN verification",
-        "A transfer can be accepted only once, and only by an authenticated Principal",
-        "After acceptance, the vehicle’s owner Principal updates to the new owner and the previous owner no longer sees it in their owned list (but may see history if included)",
-        "Backend prevents non-owners from initiating transfers"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useTransfers.ts",
-          "operation": "create",
-          "description": "Add React Query mutations for initiateTransfer(vehicleId, pin) and acceptTransfer(transferCode) with cache invalidation for vehicle lists/details after success."
-        },
-        {
-          "path": "frontend/src/components/transfer/InitiateTransferPanel.tsx",
-          "operation": "create",
-          "description": "Add a vehicle-detail subcomponent to initiate transfer: opens PIN prompt, calls initiateTransfer, and displays the resulting transfer code/link with copy-to-clipboard. Use shadcn-ui Alert/Dialog/Button components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/AcceptTransferPage.tsx",
-          "operation": "create",
-          "description": "Create a transfer acceptance page that reads a transfer code from URL (e.g., query param) or manual input, calls backend.acceptTransfer, and shows success/error state; ensure it requires authentication (behind AuthGate)."
-        },
-        {
-          "path": "frontend/src/pages/VehicleDetailPage.tsx",
-          "operation": "modify",
-          "description": "Embed InitiateTransferPanel in the vehicle detail view and refresh vehicle data after initiating a transfer."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire the Accept Transfer page route and add a navigation entry only if appropriate (optional), ensuring it stays protected behind sign-in."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Implement lost-vehicle reporting for owners and a searchable lost-vehicles browse page for all authenticated users.",
-      "acceptanceCriteria": [
-        "Owner can create a lost report for a vehicle they own (or mark the vehicle status as Lost)",
-        "All authenticated users can view a Lost Vehicles page listing reported vehicles with key identifiers (at minimum engine number) and report timestamp",
-        "Lost Vehicles page supports searching/filtering by engine number and/or chassis number"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useLostVehicles.ts",
-          "operation": "create",
-          "description": "Add React Query hooks: getLostVehicles query and markVehicleLost mutation; invalidate relevant lists/details after marking lost."
-        },
-        {
-          "path": "frontend/src/components/lost/MarkLostDialog.tsx",
-          "operation": "create",
-          "description": "Create a dialog to mark a vehicle as lost with a required report note; calls backend.markVehicleLost(vehicleId, reportNote). Use shadcn-ui Dialog/Textarea/Button components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/LostVehiclesPage.tsx",
-          "operation": "create",
-          "description": "Create a Lost Vehicles page for authenticated users: list lost vehicles (backend.getLostVehicles) with key identifiers and timestamps; provide client-side search/filter by engine number and chassis number. Use shadcn-ui Input/Table components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/VehicleDetailPage.tsx",
-          "operation": "modify",
-          "description": "Add a \"Mark as Lost\" action for the owner (client-side owner check via identity principal vs vehicle.owner) that opens MarkLostDialog; refresh vehicle state after success."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire the Lost Vehicles page into protected navigation/routes."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Implement found-vehicle reporting and persisted in-app notifications with read/unread state.",
-      "acceptanceCriteria": [
-        "Authenticated user can submit a \"Found\" report referencing a lost vehicle (e.g., by selecting from lost list or entering engine number)",
-        "Vehicle owner can view an in-app Notifications list showing found reports for their vehicles",
-        "Notifications are persisted and remain visible until the user marks them as read"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useNotifications.ts",
-          "operation": "create",
-          "description": "Add React Query hooks: getMyNotifications query (with polling/refetch interval as needed) and markNotificationRead mutation with cache updates."
-        },
-        {
-          "path": "frontend/src/components/lost/ReportFoundDialog.tsx",
-          "operation": "create",
-          "description": "Create a dialog to report a lost vehicle as found with a finder report note; calls backend.reportVehicleFound(vehicleId, finderReport). Use shadcn-ui Dialog/Textarea/Button components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/NotificationsPage.tsx",
-          "operation": "create",
-          "description": "Create a Notifications page listing found reports for the current user (backend.getMyNotifications), showing timestamp, message, and related vehicle; allow marking notifications as read via backend.markNotificationRead. Use shadcn-ui Badge/List/Card components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/LostVehiclesPage.tsx",
-          "operation": "modify",
-          "description": "Add a per-item \"Report Found\" action that opens ReportFoundDialog for the selected lost vehicle; ensure action is available to any authenticated user (including non-owner)."
-        },
-        {
-          "path": "frontend/src/components/nav/AppHeader.tsx",
-          "operation": "modify",
-          "description": "Add a notifications nav item and optionally an unread count badge derived from notifications query."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire the Notifications page into protected navigation/routes."
-        }
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "summary": "Add admin-only dashboard UI with system stats and invite-token issuance/usage report, and guard admin routes.",
-      "acceptanceCriteria": [
-        "Backend has an admin allowlist of Principal(s) (configurable) and enforces admin-only methods",
-        "Admin dashboard shows: total registered vehicles, total lost vehicles/reports, and invitation token status list",
-        "Non-admin users cannot access admin dashboard routes or admin backend methods"
+        "From the Admin area, generating a new invite token succeeds and the token appears in the list without a manual refresh.",
+        "The Admin invite-token page shows two sections (unused and used) reflecting real backend state.",
+        "Unused tokens provide a \"copy link\" action that copies a working onboarding URL containing the inviteToken query param.",
+        "Attempting to call token generation/listing from a non-admin principal fails with an authorization error handled gracefully in the UI."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useAdmin.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for admin capabilities: isCallerAdmin, getSystemStats, getInviteCodes, getInviteTokenReport; ensure queries only run when authenticated and actor is ready."
+          "operation": "modify",
+          "description": "Update admin invite-token hooks to avoid making admin-only calls when the user is not an admin (e.g., accept an enabled flag tied to isAdmin), and ensure authorization failures are surfaced as handled errors in React Query. Use the invite-links component’s invite-code management capability via existing backend functions. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/admin/AdminRouteGuard.tsx",
-          "operation": "create",
-          "description": "Create a guard wrapper that checks backend.isCallerAdmin() and renders AccessDeniedScreen for non-admin users; use it to wrap all admin routes."
+          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+          "operation": "modify",
+          "description": "Make the page resilient and mobile-friendly: gate token listing queries behind confirmed admin status, show friendly error states for auth failures, keep used/unused sections, and wrap tables in a horizontally-scrollable container on small screens. Use the invite-links component’s \"generate invite code\" + \"list invite codes\" capabilities via existing hooks. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "operation": "create",
-          "description": "Create an admin dashboard page showing system stats (backend.getSystemStats) and links/sections for invite token report/list (reuse AdminInviteTokensPage). Use shadcn-ui Card/Separator components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Wire admin routes (dashboard + invite token report page) behind AdminRouteGuard; ensure non-admins cannot navigate to or render admin pages."
+          "description": "Ensure navigation from the Admin Dashboard to the invite-token management page remains present and works reliably on mobile and desktop."
         }
       ]
     },
     {
-      "id": "REQ-10",
-      "summary": "Add the provided logo as a static asset and render it in the header and sign-in/onboarding screens.",
+      "id": "REQ-15",
+      "summary": "Add a responsive About page with the provided admin contact details and link to it from the authenticated app UI.",
       "acceptanceCriteria": [
-        "The uploaded logo file is included in the frontend static assets and rendered crisply without distortion",
-        "Header displays the logo alongside the app name \"Pasar Digital Community\"",
-        "Sign-in/onboarding screens display the logo prominently"
+        "A new route/page exists for \"About\" and is reachable from the authenticated app UI.",
+        "The About page displays the WhatsApp number \"089502436075\" and the email \"pasardigital.ina@gmail.com\" exactly as provided.",
+        "The About page layout is responsive and readable on mobile and desktop."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/assets/logo-pasar-digital-community.png",
+          "path": "frontend/src/pages/AboutPage.tsx",
           "operation": "create",
-          "description": "Add the provided asset \"Logo Pasar Digital Community.png\" to the frontend public assets under this filename (ensure it is not recompressed in a way that blurs edges)."
+          "description": "Create an About page with a brief description and the exact contact details: WhatsApp 089502436075 and email pasardigital.ina@gmail.com, using existing UI composition patterns for responsive layout."
         },
         {
-          "path": "frontend/src/components/brand/AppLogo.tsx",
-          "operation": "create",
-          "description": "Create a reusable AppLogo component that renders the static logo asset with proper sizing and maintains aspect ratio; used by header and auth/onboarding screens."
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Register and wire a new route (e.g., /about) to AboutPage so it is navigable within the app."
+        },
+        {
+          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "operation": "modify",
+          "description": "Add an authenticated-app footer link to the About page (keeping existing footer content) so the route is discoverable."
         },
         {
           "path": "frontend/src/components/nav/AppHeader.tsx",
           "operation": "modify",
-          "description": "Render AppLogo next to the app name \"Pasar Digital Community\" in the authenticated header."
-        },
-        {
-          "path": "frontend/src/components/auth/SignInScreen.tsx",
-          "operation": "modify",
-          "description": "Render AppLogo prominently on the sign-in screen."
-        },
-        {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
-          "operation": "modify",
-          "description": "Render AppLogo prominently on the onboarding/invite screen."
+          "description": "Add an About entry in the user menu (and/or other appropriate authenticated navigation area) to ensure About is reachable from the in-app UI."
         }
       ]
     },
     {
-      "id": "REQ-11",
-      "summary": "Apply a consistent, accessible security/registry theme across all pages (avoid blue/purple).",
+      "id": "REQ-16",
+      "summary": "Enable PWA installability by adding a manifest, required icons/metadata, and installability wiring in the HTML entry point.",
       "acceptanceCriteria": [
-        "All core pages (Sign-in, Onboarding/Invite, Dashboard, Vehicles, Lost Vehicles, Notifications, Admin) share a consistent theme",
-        "Theme uses a non-blue/non-purple primary palette and remains accessible (sufficient contrast for text/buttons)"
+        "The app provides a valid web app manifest and references it from the HTML entry point.",
+        "The app includes appropriate PWA icons (including at least 192x192 and 512x512) and an Apple touch icon so iOS shows a proper home screen icon.",
+        "On supported browsers, the app meets installability requirements (no console errors related to manifest/icons)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/public/manifest.webmanifest",
           "operation": "create",
-          "description": "Add global styles and set CSS variables used by Tailwind/shadcn tokens to a cohesive non-blue/non-purple palette (e.g., dark-neutral surfaces with green/orange accents to match the logo) and ensure readable contrast; keep typography/spacing consistent."
+          "description": "Add a web app manifest configured for installability and referencing required icons, name, short_name, start_url, display, background/theme colors."
         },
         {
-          "path": "frontend/tailwind.config.js",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Adjust Tailwind theme tokens if needed to support the chosen palette and consistent spacing/typography (without introducing blue/purple as primary)."
+          "description": "Reference the manifest and add required PWA metadata (including Apple touch icon and theme-color) in the HTML entry point."
         },
         {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "path": "frontend/public/sw.js",
           "operation": "create",
-          "description": "Create a shared layout wrapper that applies consistent page padding, max-width, background, and section styling for all core pages; use shadcn-ui layout-friendly components where appropriate. Verify the component's usage instructions before implementing."
+          "description": "Add a minimal service worker for PWA installability expectations (basic caching and safe update strategy)."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/main.tsx",
           "operation": "modify",
-          "description": "Wrap protected pages with AppLayout to ensure consistent theming and layout across Sign-in, Onboarding, Dashboard, Vehicles, Lost Vehicles, Notifications, and Admin views."
+          "description": "Register the service worker on app startup (guarded for supported browsers) to support PWA installability without breaking normal web usage."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+          "operation": "create",
+          "description": "Add generated PWA icon asset: frontend/public/assets/generated/pwa-icon.dim_192x192.png and wire it via the manifest."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+          "operation": "create",
+          "description": "Add generated PWA icon asset: frontend/public/assets/generated/pwa-icon.dim_512x512.png and wire it via the manifest."
+        },
+        {
+          "path": "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
+          "operation": "create",
+          "description": "Add generated Apple touch icon asset: frontend/public/assets/generated/apple-touch-icon.dim_180x180.png and reference it from frontend/index.html."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+          "operation": "create",
+          "description": "Add generated maskable icon asset: frontend/public/assets/generated/pwa-maskable.dim_512x512.png and wire it via the manifest with purpose=maskable."
+        }
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "summary": "Improve mobile usability across sign-in, dashboard, admin pages, and token tables (no layout overflow; responsive navigation and readable tables).",
+      "acceptanceCriteria": [
+        "All primary pages are usable at ~360px width without requiring horizontal scrolling for the main layout.",
+        "Admin token tables remain readable on mobile (e.g., responsive table layout, wrapping, or horizontal scroll within the table area only).",
+        "Header navigation works on mobile (menu toggle reveals nav items, including Admin when applicable)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+          "operation": "modify",
+          "description": "Ensure token tables remain readable on small screens by applying a responsive table pattern (e.g., overflow-x-auto wrapper limited to the table region, sensible cell wrapping/truncation)."
+        },
+        {
+          "path": "frontend/src/components/nav/AppHeader.tsx",
+          "operation": "modify",
+          "description": "Review and adjust mobile nav rendering to prevent horizontal overflow and ensure all items remain accessible via the menu toggle (including Admin when applicable)."
+        },
+        {
+          "path": "frontend/src/components/auth/SignInScreen.tsx",
+          "operation": "modify",
+          "description": "Confirm sign-in layout remains mobile-friendly (spacing, card width, and logo sizing) and adjust Tailwind classes if needed to prevent overflow at ~360px width."
         }
       ]
     }

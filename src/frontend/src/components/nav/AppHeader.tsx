@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import AppLogo from '../brand/AppLogo';
 import { useGetMyNotifications } from '../../hooks/useNotifications';
 import { useIsCallerAdmin } from '../../hooks/useAdmin';
-import { Menu, Bell, User, LogOut, Shield, Car, AlertTriangle, Settings } from 'lucide-react';
+import { Menu, Bell, User, LogOut, Shield, Car, AlertTriangle, Settings, Info } from 'lucide-react';
 import { useState } from 'react';
 
 export default function AppHeader() {
@@ -111,6 +111,10 @@ export default function AppHeader() {
                 <DropdownMenuItem onClick={() => navigate({ to: '/security' })}>
                   <Settings className="mr-2 h-4 w-4" />
                   Keamanan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: '/about' })}>
+                  <Info className="mr-2 h-4 w-4" />
+                  Tentang
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">

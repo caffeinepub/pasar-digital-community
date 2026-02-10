@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import AccessDeniedScreen from '../../components/auth/AccessDeniedScreen';
 import { toast } from 'sonner';
 import { Plus, Copy, CheckCircle, Clock } from 'lucide-react';
@@ -45,18 +46,18 @@ export default function AdminInviteTokensPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Token Undangan</h1>
           <p className="text-muted-foreground">Kelola token undangan untuk pengguna baru</p>
         </div>
-        <Button onClick={handleGenerateCode} disabled={generateCode.isPending} className="gap-2">
+        <Button onClick={handleGenerateCode} disabled={generateCode.isPending} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Buat Token Baru
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Total Token</CardTitle>
@@ -90,36 +91,42 @@ export default function AdminInviteTokensPage() {
             <CardDescription>Token yang belum digunakan</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kode</TableHead>
-                  <TableHead>Dibuat</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {unusedCodes.map((code) => (
-                  <TableRow key={code.code}>
-                    <TableCell className="font-mono text-sm">{code.code}</TableCell>
-                    <TableCell>{new Date(Number(code.created / BigInt(1000000))).toLocaleDateString('id-ID')}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="gap-1">
-                        <Clock className="h-3 w-3" />
-                        Tersedia
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleCopyLink(code.code)} className="gap-2">
-                        <Copy className="h-4 w-4" />
-                        Salin Link
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto -mx-6 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">Kode</TableHead>
+                      <TableHead className="min-w-[120px]">Dibuat</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="text-right min-w-[120px]">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unusedCodes.map((code) => (
+                      <TableRow key={code.code}>
+                        <TableCell className="font-mono text-sm break-all">{code.code}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {new Date(Number(code.created / BigInt(1000000))).toLocaleDateString('id-ID')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="gap-1 whitespace-nowrap">
+                            <Clock className="h-3 w-3" />
+                            Tersedia
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleCopyLink(code.code)} className="gap-2">
+                            <Copy className="h-4 w-4" />
+                            <span className="hidden sm:inline">Salin Link</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -131,29 +138,35 @@ export default function AdminInviteTokensPage() {
             <CardDescription>Token yang sudah digunakan</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kode</TableHead>
-                  <TableHead>Dibuat</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {usedCodes.map((code) => (
-                  <TableRow key={code.code}>
-                    <TableCell className="font-mono text-sm">{code.code}</TableCell>
-                    <TableCell>{new Date(Number(code.created / BigInt(1000000))).toLocaleDateString('id-ID')}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Digunakan
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto -mx-6 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">Kode</TableHead>
+                      <TableHead className="min-w-[120px]">Dibuat</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usedCodes.map((code) => (
+                      <TableRow key={code.code}>
+                        <TableCell className="font-mono text-sm break-all">{code.code}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {new Date(Number(code.created / BigInt(1000000))).toLocaleDateString('id-ID')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="gap-1 whitespace-nowrap">
+                            <CheckCircle className="h-3 w-3" />
+                            Digunakan
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

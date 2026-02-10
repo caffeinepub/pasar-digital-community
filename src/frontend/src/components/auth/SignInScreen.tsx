@@ -13,7 +13,9 @@ export default function SignInScreen() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-4">
-          <AppLogo size="large" />
+          <div className="flex justify-center">
+            <AppLogo size="large" />
+          </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Pasar Digital Community</h1>
             <p className="text-muted-foreground mt-2">Sistem Keamanan Kendaraan Berbasis Blockchain</p>
