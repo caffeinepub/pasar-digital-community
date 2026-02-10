@@ -1,0 +1,5 @@
+{
+  "frontend/src/hooks/useProfile.ts": "React Query hooks for user profile operations with workaround for missing backend methods, returning null to trigger onboarding flow.",
+  "frontend/src/App.tsx": "Main application component with TanStack Router setup, authentication gate, and all route definitions for the vehicle registry system.",
+  "frontend/src/pages/ProfilePage.tsx": "Simplified profile page displaying Principal ID and informational message about profile management through onboarding."
+}

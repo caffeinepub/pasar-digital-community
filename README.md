@@ -1,2 +1,3 @@
-# pasar-digital-community
-Exported from Caffeine project: Pasar Digital Community
+## Pasar Digital Community
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`
