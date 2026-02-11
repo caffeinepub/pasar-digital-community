@@ -1,55 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Rebuild and redeploy to recover from stopped backend canister (IC0508)",
+  "title": "Fix allowlisted admin detection so Admin menu and dashboard are accessible after login",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-55",
-      "text": "Trigger a rebuild and redeploy of the existing application (no functional changes required) to restart the backend canister that is currently stopped and causing replica rejection errors (IC0508) during startup.",
-      "target": "unknown",
+      "id": "REQ-62",
+      "text": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after Internet Identity login (without requiring onboarding), so the Admin navigation entry appears and the /admin route is accessible.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-6"
+          "recent-messages"
         ],
         "quotes": [
-          "\"ya, build ulang\""
+          "perbaiki aplikasi agar Principal ID saya langsung dikenali sebagai admin setelah login dan fitur dashboard admin yang bisa di klik"
         ]
       },
       "acceptanceCriteria": [
-        "A new build and deployment completes successfully.",
-        "After deployment, opening the app no longer fails with replica rejection IC0508 / \"Canister ... is stopped\" during startup initialization.",
-        "The app renders past the startup screen and shows the expected Sign In screen for unauthenticated users."
+        "After signing in with Internet Identity using Principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the top navigation includes an \"Admin\" item.",
+        "Clicking \"Admin\" navigates to `/admin` and renders the Admin Dashboard page (not AccessDeniedScreen).",
+        "The allowlisted Principal is not forced into `/onboarding` even when `getCallerUserProfile()` returns null/None.",
+        "Backend admin-gated endpoints (e.g., `getSystemStats`, `getInviteCodes`, `generateInviteCode`) authorize this allowlisted Principal successfully immediately after login."
       ]
     },
     {
-      "id": "REQ-56",
-      "text": "After redeploy, verify that the startup retry flow remains functional: when a connection error occurs, the 'Retry Connection' action must attempt actor initialization again and must not leave the UI stuck on a loading spinner indefinitely.",
+      "id": "REQ-63",
+      "text": "Fix admin-status data flow so the UI does not incorrectly show the allowlisted admin as a normal user (e.g., \"User\" without Admin menu) due to stale React Query cache, query timing, or transient actor bootstrap states.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5",
-          "msg-6"
+          "recent-messages"
         ],
         "quotes": [
-          "Cukup jawab: \"ya, build ulang\" dan saya akan langsung buat versi baru untuk menghidupkan kembali aplikasi kamu.",
-          "\"ya, build ulang\""
+          "saya sudah logout terus masuk lagi melalui internet identity, tapi tetap dashboard admin tidak ada. malah saya masih di anggap user."
         ]
       },
       "acceptanceCriteria": [
-        "If actor initialization fails, the Startup Bootstrap Error screen is shown (not a blank screen).",
-        "Clicking 'Retry Connection' triggers a fresh initialization attempt and either recovers to normal app flow or re-shows an error screen with the latest error message."
+        "Logging out and logging back in with the allowlisted Principal consistently shows the Admin navigation entry without requiring a hard refresh.",
+        "Admin link visibility updates reliably when identity changes (no stale admin status from a previous principal).",
+        "If the admin-status check fails transiently, the UI provides a recoverable state (retry) and does not permanently hide the Admin entry for the allowlisted Principal."
+      ]
+    },
+    {
+      "id": "REQ-64",
+      "text": "Ensure invite-token management is reachable and functional for the allowlisted admin: the Admin Dashboard must provide a working navigation path to `/admin/invite-tokens`, and generating invite tokens must work end-to-end.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "recent-messages"
+        ],
+        "quotes": [
+          "Sekarang mana dashboard nya admin? gimana admin mau buat token undangan?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "From `/admin`, the \"Manage Invite Tokens\" action navigates to `/admin/invite-tokens`.",
+        "On `/admin/invite-tokens`, clicking \"Generate\" (or equivalent) creates a new invite token and it appears in the Unused list without a manual refresh.",
+        "Copy invite link (or equivalent copy action) works for an unused token and includes the token value in the copied URL."
       ]
     }
   ],
   "constraints": [
     "Use English for any user-facing text.",
-    "Do not edit files under frontend/src/components/ui (read-only).",
-    "Do not edit immutable frontend hook paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if a state migration is required (not expected for a rebuild-only deploy)."
+    "Backend must remain a single Motoko actor in `backend/main.mo`; only add `backend/migration.mo` if state migration is required.",
+    "Do not modify any files under `frontend/src/components/ui` or any paths listed in `frontend.immutablePaths` (compose instead)."
   ],
   "nonGoals": [
-    "No new product features or UI redesign beyond what is necessary to validate the rebuild/redeploy recovery.",
-    "No changes to data models, authorization rules, or invite/onboarding logic unless required to complete deployment."
+    "Adding new admin features beyond fixing admin recognition and making the existing Admin Dashboard/Invite Tokens pages accessible.",
+    "Changing the onboarding/invite-token business rules for non-admin users.",
+    "Introducing third-party auth providers or non-Internet-Identity login methods."
   ],
   "imageRequirements": {
     "required": [],

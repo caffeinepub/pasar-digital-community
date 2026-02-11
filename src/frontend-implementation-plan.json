@@ -1,51 +1,89 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend rebuild trigger and startup retry robustness for IC0508 recovery",
+  "title": "Fix allowlisted admin detection and stabilize admin UI flow",
   "requirements": [
     {
-      "id": "REQ-55",
-      "summary": "Make a no-feature-change frontend update to trigger a fresh build/deploy and ensure the unauthenticated Sign In screen renders cleanly after redeploy.",
+      "id": "REQ-62",
+      "summary": "Treat the allowlisted Principal as admin immediately after Internet Identity login so Admin nav and /admin are accessible without onboarding.",
       "acceptanceCriteria": [
-        "A new build and deployment completes successfully.",
-        "After deployment, opening the app no longer fails with replica rejection IC0508 / \"Canister ... is stopped\" during startup initialization.",
-        "The app renders past the startup screen and shows the expected Sign In screen for unauthenticated users."
+        "After signing in with Internet Identity using Principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the top navigation includes an \"Admin\" item.",
+        "Clicking \"Admin\" navigates to `/admin` and renders the Admin Dashboard page (not AccessDeniedScreen).",
+        "The allowlisted Principal is not forced into `/onboarding` even when `getCallerUserProfile()` returns null/None.",
+        "Backend admin-gated endpoints (e.g., `getSystemStats`, `getInviteCodes`, `generateInviteCode`) authorize this allowlisted Principal successfully immediately after login."
       ],
       "file_operations": [
         {
-          "path": "frontend/index.html",
+          "path": "frontend/src/hooks/useAdmin.ts",
           "operation": "modify",
-          "description": "Apply a minimal, non-functional markup update (e.g., update document language/meta description to English) to force a rebuild/redeploy and align non-visible metadata with the English-only user-facing text constraint."
+          "description": "Update admin-detection hooks to immediately return admin=true when the current principal matches the allowlist (use frontend utils in frontend/src/utils/adminAllowlist.ts), while still supporting backend verification via the existing authorization system methods (e.g., isCallerAdmin/isAllowlistAdmin). Ensure the returned shape exposes refetch and error state for UI retry. Use the authorization component’s frontend guidance for auth-dependent queries; verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/auth/SignInScreen.tsx",
+          "path": "frontend/src/components/nav/AppHeader.tsx",
           "operation": "modify",
-          "description": "Update all user-facing strings on the Sign In screen to English (keep layout/behavior unchanged) so post-redeploy unauthenticated users see an English Sign In screen as expected."
+          "description": "Change Admin nav item visibility to rely on the updated admin hook so the allowlisted admin sees \"Admin\" immediately after login (without waiting for backend role fetch). Use the authorization component’s frontend guidance on auth + cache handling; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Gate rendering using the updated admin hook so allowlisted admin is not shown AccessDeniedScreen during transient admin-status checks, and can access the dashboard immediately after login. Verify authorization component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+          "operation": "modify",
+          "description": "Gate rendering using the updated admin hook so allowlisted admin can access invite-token management immediately after login. Verify authorization and invite-links component usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-56",
-      "summary": "Harden the startup retry flow so 'Retry Connection' always performs a fresh actor initialization attempt and the UI does not get stuck on an indefinite loading state.",
+      "id": "REQ-63",
+      "summary": "Fix admin-status data flow to avoid stale cache/timing issues across logout/login and provide a recoverable retry state.",
       "acceptanceCriteria": [
-        "If actor initialization fails, the Startup Bootstrap Error screen is shown (not a blank screen).",
-        "Clicking 'Retry Connection' triggers a fresh initialization attempt and either recovers to normal app flow or re-shows an error screen with the latest error message."
+        "Logging out and logging back in with the allowlisted Principal consistently shows the Admin navigation entry without requiring a hard refresh.",
+        "Admin link visibility updates reliably when identity changes (no stale admin status from a previous principal).",
+        "If the admin-status check fails transiently, the UI provides a recoverable state (retry) and does not permanently hide the Admin entry for the allowlisted Principal."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useActorBootstrapStatus.ts",
+          "path": "frontend/src/hooks/useAdmin.ts",
           "operation": "modify",
-          "description": "Improve the retry mechanism to guarantee a fresh initialization attempt (e.g., cancel any in-flight actor query, clear/remove the cached actor query for the current identity key, then refetch) and expose a reliable 'isLoading' signal for retry-in-progress UI."
+          "description": "Harden React Query behavior for admin-status checks: ensure query keys are principal-scoped, disable any unintended persistence across identity changes, and tune retry/refetch behavior to prevent transient actor/bootstrap failures from permanently producing non-admin UI. Expose refetch/isError for UI retry. Verify the authorization component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/hooks/useActor.ts",
           "operation": "modify",
-          "description": "Wire the improved bootstrap status into the AuthGate so the StartupBootstrapError receives/loading state for retries and the gate transitions cleanly between error ↔ retrying ↔ recovered without leaving the UI on an indefinite spinner."
+          "description": "Ensure actor/identity transitions cannot leave stale principal-scoped data in UI: when identity principal changes, explicitly remove or invalidate principal-scoped queries that could leak previous admin status into the next session. Verify the authorization component's frontend guidance on clearing cached application data on logout; verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/auth/StartupBootstrapError.tsx",
+          "path": "frontend/src/components/nav/AppHeader.tsx",
           "operation": "modify",
-          "description": "Enhance the error screen UX to reflect retry-in-progress (disable button/show loading label) and ensure it continues to display the latest error message after failed retries. Verify the component's usage instructions before implementing."
+          "description": "Add a recoverable UI state when admin-status verification errors (e.g., show a \"Retry admin access\" action that calls the admin hook’s refetch). Ensure allowlisted admin is never permanently missing the Admin entry due to transient failures. Verify the authorization component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-64",
+      "summary": "Ensure Admin Dashboard provides working navigation to Invite Tokens and invite-token generation updates the UI and copy-link works end-to-end.",
+      "acceptanceCriteria": [
+        "From `/admin`, the \"Manage Invite Tokens\" action navigates to `/admin/invite-tokens`.",
+        "On `/admin/invite-tokens`, clicking \"Generate\" (or equivalent) creates a new invite token and it appears in the Unused list without a manual refresh.",
+        "Copy invite link (or equivalent copy action) works for an unused token and includes the token value in the copied URL."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Confirm the \"Manage Invite Tokens\" action remains wired to navigate to `/admin/invite-tokens` and is shown for the allowlisted admin using the updated admin gating. Verify invite-links component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useAdmin.ts",
+          "operation": "modify",
+          "description": "Improve invite-code generation UX to be end-to-end reliable: after generateInviteCode succeeds, update the React Query cache for invite codes (optimistic insert or immediate invalidation+refetch) so the new token appears in the Unused list without manual refresh. Ensure this remains admin-gated via the authorization component. Verify the invite-links component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the Generate action triggers the updated generate hook behavior so newly generated tokens appear immediately in the Unused list, and the copy-link action always copies a URL containing the token value. Keep all user-facing text in English. Verify invite-links component usage instructions before implementing."
         }
       ]
     }

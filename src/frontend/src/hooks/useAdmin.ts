@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
+import { isAllowlistedAdmin } from '../utils/adminAllowlist';
 import type { InviteCode, Vehicle, UserRole } from '../backend';
 
 export function useIsCallerAdmin() {
@@ -10,8 +11,31 @@ export function useIsCallerAdmin() {
   return useQuery<boolean>({
     queryKey: ['isCallerAdmin', identity?.getPrincipal().toString()],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return await actor.isCallerAdmin();
+      if (!actor || !identity) return false;
+      
+      const principalString = identity.getPrincipal().toString();
+      
+      // First check frontend allowlist for immediate admin recognition
+      if (isAllowlistedAdmin(principalString)) {
+        // Verify with backend that this is indeed the allowlist admin
+        try {
+          const isAllowlist = await actor.isAllowlistAdmin();
+          if (isAllowlist) return true;
+        } catch (error) {
+          console.error('Error verifying allowlist admin:', error);
+          // If backend check fails but frontend allowlist matches, still return true
+          // This ensures admin access even during transient backend issues
+          return true;
+        }
+      }
+      
+      // For non-allowlist users, check regular admin role
+      try {
+        return await actor.isCallerAdmin();
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
     },
     enabled: !!actor && !!identity && !isFetching,
     retry: 2,
@@ -112,7 +136,18 @@ export function useGenerateInviteCode() {
       if (!actor) throw new Error('Actor not available');
       return actor.generateInviteCode();
     },
-    onSuccess: () => {
+    onSuccess: (newCode) => {
+      // Optimistically update the cache with the new code
+      queryClient.setQueryData<InviteCode[]>(['inviteCodes'], (old) => {
+        if (!old) return old;
+        const newInviteCode: InviteCode = {
+          code: newCode,
+          created: BigInt(Date.now() * 1000000), // Convert to nanoseconds
+          used: false,
+        };
+        return [newInviteCode, ...old];
+      });
+      // Also invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['inviteCodes'] });
     },
   });

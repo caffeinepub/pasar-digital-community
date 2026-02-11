@@ -46,7 +46,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 onClick={() => navigate({ to: '/about' })}
                 className="text-primary hover:underline"
               >
-                Tentang Aplikasi
+                About
               </button>
             </div>
           </div>

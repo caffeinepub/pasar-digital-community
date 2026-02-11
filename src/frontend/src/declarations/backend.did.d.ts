@@ -118,9 +118,11 @@ export interface _SERVICE {
       'totalUsers' : bigint,
     }
   >,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getUserVehicles' : ActorMethod<[], Array<Vehicle>>,
   'getVehicle' : ActorMethod<[string], Vehicle>,
   'initiateTransfer' : ActorMethod<[string, string], string>,
+  'isAllowlistAdmin' : ActorMethod<[], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isOnboardingAllowed' : ActorMethod<[], boolean>,
   'markNotificationRead' : ActorMethod<[string], undefined>,

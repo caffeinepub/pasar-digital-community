@@ -21,12 +21,13 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const { clear, identity } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
-  const { data: isAdmin, isLoading: adminLoading, isFetched: adminFetched } = useIsCallerAdmin();
+  const { data: isAdmin, isLoading: adminLoading, isFetched: adminFetched, error: adminError, refetch: refetchAdmin } = useIsCallerAdmin();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await clear();
+    // Clear all cached data including admin status
     queryClient.clear();
   };
 
@@ -37,9 +38,13 @@ export default function AppHeader() {
     { label: 'Notifications', path: '/notifications', icon: Bell },
   ];
 
-  // Show admin link when admin status is confirmed
-  if (adminFetched && isAdmin) {
-    navItems.push({ label: 'Admin', path: '/admin', icon: Shield });
+  // Show admin link when admin status is confirmed or when there's an error with retry option
+  if ((adminFetched && isAdmin) || (adminError && !adminLoading)) {
+    navItems.push({ 
+      label: adminError ? 'Admin (Retry)' : 'Admin', 
+      path: '/admin', 
+      icon: Shield 
+    });
   }
 
   return (

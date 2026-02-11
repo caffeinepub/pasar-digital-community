@@ -192,9 +192,11 @@ export interface backendInterface {
         totalFoundReports: bigint;
         totalUsers: bigint;
     }>;
+    getUserProfile(user: Principal): Promise<UserProfile | null>;
     getUserVehicles(): Promise<Array<Vehicle>>;
     getVehicle(vehicleId: string): Promise<Vehicle>;
     initiateTransfer(vehicleId: string, pin: string): Promise<string>;
+    isAllowlistAdmin(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     isOnboardingAllowed(): Promise<boolean>;
     markNotificationRead(notificationId: string): Promise<void>;
@@ -511,6 +513,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUserProfile(arg0);
+                return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUserProfile(arg0);
+            return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getUserVehicles(): Promise<Array<Vehicle>> {
         if (this.processError) {
             try {
@@ -550,6 +566,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.initiateTransfer(arg0, arg1);
+            return result;
+        }
+    }
+    async isAllowlistAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isAllowlistAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isAllowlistAdmin();
             return result;
         }
     }

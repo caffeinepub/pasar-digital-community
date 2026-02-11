@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
+  "projectStateVersion": 33,
   "summary": "Aplikasi “Pasar Digital Community” untuk pencegahan pencurian kendaraan berbasis Principal ID (tanpa server tradisional), dengan registrasi kendaraan, pelepasan/transfer kepemilikan memakai PIN, sistem undangan berbayar via token/link sekali pakai yang dibuat admin (dengan tabel status pemakaian), modul laporan kendaraan hilang–ditemukan dan notifikasi, branding logo di splash/seluruh aplikasi, halaman “Tentang Aplikasi” berisi kontak admin, serta target responsif + PWA installable (Android/iOS).",
   "architectural_notes": [
     "Aplikasi ditargetkan berjalan tanpa server tradisional (mis. canister di Internet Computer); Principal ID digunakan sebagai identifier kriptografis pengguna.",
@@ -24,7 +24,7 @@
     "Flow klaim 'first admin' tidak muncul sama sekali di UI (bootstrap admin tidak tersedia untuk user).",
     "Dashboard Admin masih belum muncul dan fitur pengguna belum bisa digunakan meski sudah login (termasuk saat memakai Principal yang sudah diberikan/di-allowlist); terdapat error di browser console.",
     "Aplikasi blank/error karena backend canister berstatus \"stopped\"; panggilan frontend (mis. `getCallerUserRole`) gagal dengan IC0508 (CallContextManager tidak ada).",
-    "Build attempt failed due to Caffeine internal error: “Unexpected AI error occurred. We're looking into it.” (not an app runtime error)."
+    "Blank/black screen after Internet Identity login due to fatal TanStack Router context error: `Uncaught TypeError: Cannot read properties of null (reading 'navigate')`, caused by `AppLayout` calling `useNavigate()` before `RouterProvider` is active (AppLayout rendered outside router context)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -435,6 +435,62 @@
         "REQ-56"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-restructure-the-tanstack-router-composition-so-that-no-component-calls-usenavigate-or-any-other-router-hook-outside-of-an-active-routerprovider-context-eliminating-the-runtime-crash-uncaught-typeerror-cannot-read-properties-of-null-reading-navigate-that-causes-a-blank-screen-after-internet-identity-login",
+      "title": "Restructure the TanStack Router composition so that no component calls `useNavigate()` (or any other router hook) outside of an active `<RouterProvider>` context, eliminating the runtime crash `Uncaught TypeError: Cannot read properties of null (reading 'navigate')` that causes a blank screen after Internet Identity login.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-move-the-authentication-gating-redirect-logic-currently-implemented-in-authgate-in-frontend-src-app-tsx-inside-the-router-tree-e-g-into-the-root-route-component-so-that-redirects-like-onboarding-use-usenavigate-only-when-router-context-is-available-while-preserving-current-bootstrap-behaviors-sign-in-screen-for-unauthenticated-users-profile-loading-screen-for-authenticated-users-bootstrap-error-screens-with-retry-actions",
+      "title": "Move the authentication gating/redirect logic (currently implemented in `AuthGate` in `frontend/src/App.tsx`) inside the router tree (e.g., into the root route component) so that redirects like `/onboarding` use `useNavigate()` only when router context is available, while preserving current bootstrap behaviors (Sign In screen for unauthenticated users; profile loading screen for authenticated users; bootstrap error screens with retry actions).",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-any-remaining-non-english-user-facing-navigation-labels-revealed-during-router-layout-changes-to-english-specifically-change-the-applayout-footer-button-label-from-tentang-aplikasi-to-about-keeping-the-navigation-target-about-unchanged",
+      "title": "Update any remaining non-English user-facing navigation labels revealed during router/layout changes to English. Specifically, change the AppLayout footer button label from \"Tentang Aplikasi\" to \"About\" (keeping the navigation target `/about` unchanged).",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-root-bootstrap-gating-so-the-allowlisted-admin-principal-id-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-not-redirected-to-onboarding-when-getcalleruserprofile-returns-null-none-instead-the-app-should-render-the-main-application-layout-and-allow-access-to-admin-routes-immediately-after-sign-in",
+      "title": "Update the frontend root bootstrap gating so the allowlisted admin Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is not redirected to `/onboarding` when `getCallerUserProfile()` returns null/None; instead, the app should render the main application layout and allow access to admin routes immediately after sign-in.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-allowlisted-principal-id-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-treated-as-an-admin-immediately-after-internet-identity-login-without-requiring-onboarding-so-the-admin-navigation-entry-appears-and-the-admin-route-is-accessible",
+      "title": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after Internet Identity login (without requiring onboarding), so the Admin navigation entry appears and the /admin route is accessible.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-admin-status-data-flow-so-the-ui-does-not-incorrectly-show-the-allowlisted-admin-as-a-normal-user-e-g-user-without-admin-menu-due-to-stale-react-query-cache-query-timing-or-transient-actor-bootstrap-states",
+      "title": "Fix admin-status data flow so the UI does not incorrectly show the allowlisted admin as a normal user (e.g., \"User\" without Admin menu) due to stale React Query cache, query timing, or transient actor bootstrap states.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-invite-token-management-is-reachable-and-functional-for-the-allowlisted-admin-the-admin-dashboard-must-provide-a-working-navigation-path-to-admin-invite-tokens-and-generating-invite-tokens-must-work-end-to-end",
+      "title": "Ensure invite-token management is reachable and functional for the allowlisted admin: the Admin Dashboard must provide a working navigation path to `/admin/invite-tokens`, and generating invite tokens must work end-to-end.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -577,6 +633,20 @@
       "summary": "Eliminate the recurring console warning about passing both `agent` and `agentOptions` when creating the backend actor by adjusting the actor creation configuration so only one of these is provided consistently.",
       "reqIds": [
         "REQ-43"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Allow allowlisted admin principals to bypass onboarding/registration (no invite token and no initial profile required) and enter the app directly after sign-in.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Update the backend so the allowlisted admin Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` can successfully load the app without completing onboarding (no invite token and no initial profile required), and so profile reads do not trap for this admin during app bootstrap.",
+      "reqIds": [
+        "REQ-60"
       ],
       "status": "pending"
     }

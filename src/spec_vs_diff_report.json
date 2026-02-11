@@ -1,74 +1,77 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T08:29:27.606Z",
-  "summary": "REQ-56 (startup retry flow) appears to be implemented via a new/updated StartupBootstrapError screen and a useActorBootstrapStatus hook that removes/cancels cached actor queries and triggers refetch. REQ-55 is primarily an operational rebuild/redeploy outcome and cannot be verified from the provided code diff; additionally, the diff includes multiple functional/product changes beyond a rebuild-only redeploy, and it modifies files that were explicitly constrained as immutable.",
+  "generatedAt": "2026-02-11T09:29:08.945Z",
+  "summary": "Key admin allowlist requirement appears incorrectly implemented in the backend: admin authorization for the allowlisted principal is still effectively gated by onboarding state, which conflicts with REQ-62 and also breaks downstream invite-token admin endpoints (REQ-64). Frontend includes several fixes for stale admin-status and retry behavior (REQ-63), but also introduces multiple unrelated features (PWA/service worker, About page content, profile editing, etc.) not requested.",
   "missing_requirements": [
     {
-      "id": "REQ-55",
-      "requirement": "Trigger a rebuild and redeploy of the existing application (no functional changes required) to restart the stopped backend canister causing IC0508.",
-      "reason": "The diff shows code changes but does not include any deployment/redeploy configuration or evidence that a rebuild/redeploy was executed successfully or that IC0508 is resolved post-deploy. This requirement is primarily operational and is not demonstrable from the diff summary.",
+      "id": "REQ-62",
+      "requirement": "Ensure the allowlisted Principal is treated as an admin immediately after Internet Identity login (without requiring onboarding), so Admin nav appears and /admin is accessible; backend admin-gated endpoints must authorize the allowlisted principal immediately after login.",
+      "reason": "Backend helper `hasAdminPermission` only returns true for the allowlisted principal if `isAllowlistAdminOnboarded()` is true, which contradicts the requirement that onboarding must not be required for allowlisted admin and that admin-gated endpoints must authorize immediately after login.",
       "evidence": [
-        "File diff summary (no deploy pipeline/config changes shown)"
+        "backend/main.mo: hasAdminPermission(caller) checks isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded() before returning true",
+        "backend/main.mo: generateInviteCode/getInviteCodes/getAllRSVPs trap Unauthorized if not hasAdminPermission(caller)"
       ]
     },
     {
-      "requirement": "Do not edit immutable frontend hook paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
-      "reason": "The diff summary indicates modifications to immutable paths (useActor.ts and main.tsx), violating the stated constraint.",
+      "id": "REQ-64",
+      "requirement": "Ensure invite-token management is reachable and functional for the allowlisted admin; generating invite tokens must work end-to-end and update the unused list without manual refresh.",
+      "reason": "Because backend `generateInviteCode` and `getInviteCodes` are authorized via `hasAdminPermission`, and `hasAdminPermission` denies the allowlisted principal unless onboarded, allowlisted admin invite-token generation/listing may fail immediately after login (violating end-to-end functionality for allowlisted admin).",
       "evidence": [
-        "frontend-file-summaries.txt (mentions modified: \"frontend/src/main.tsx\" and \"frontend/src/hooks/useActor.ts\")"
-      ]
-    },
-    {
-      "requirement": "No new product features or UI redesign beyond what is necessary to validate the rebuild/redeploy recovery.",
-      "reason": "The diff introduces multiple changes that look like new/expanded product behavior (PWA/service worker, admin pages, about page, branding/copy changes, profile editing), which goes beyond what is necessary solely to validate a redeploy recovery.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions PWA support, service worker, About page, admin pages, profile editing, logo/branding updates)",
-        "frontend/index.html (PWA manifest and icon references)"
+        "backend/main.mo: generateInviteCode() authorization uses hasAdminPermission(caller)",
+        "backend/main.mo: getInviteCodes() authorization uses hasAdminPermission(caller)",
+        "backend/main.mo: hasAdminPermission requires allowlist admin to be onboarded"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added/updated PWA support including manifest references, service worker behavior, caching strategy, and update-handling reload logic.",
-      "reason": "Not requested by REQ-55/REQ-56, which are focused on rebuild/redeploy recovery and ensuring retry flow works; PWA changes constitute additional functionality.",
+      "description": "PWA/service worker support and related update-handling and caching strategy changes.",
+      "reason": "Not requested; non-goal focuses on admin recognition/accessibility, not PWA behavior.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/main.tsx\" service worker registration and update handling; \"frontend/public/sw.js\" cache version/network-first strategy; \"frontend/public/manifest.webmanifest\")",
-        "frontend/index.html (manifest + generated icon references)"
+        "frontend-file-summaries.txt: frontend/src/main.tsx service worker registration and reload-on-update behavior",
+        "frontend-file-summaries.txt: frontend/public/sw.js updated cache version and caching strategies",
+        "frontend-file-summaries.txt: frontend/public/manifest.webmanifest icon references"
       ]
     },
     {
-      "description": "Sign-in screen UI overhaul with new marketing/feature highlight copy and layout changes.",
-      "reason": "Not requested; REQ-55 only requires rendering to the expected Sign In screen post-deploy, not a redesign.",
+      "description": "About page content including admin contact information (WhatsApp/email).",
+      "reason": "Not requested; unrelated to admin allowlist/auth flow fixes.",
       "evidence": [
-        "frontend/src/components/auth/SignInScreen.tsx"
+        "frontend-file-summaries.txt: frontend/src/pages/AboutPage.tsx includes admin contact information"
       ]
     },
     {
-      "description": "New/expanded admin and informational pages (AdminDashboardPage, AdminInviteTokensPage, AboutPage) and related behaviors.",
-      "reason": "Not requested by the rebuild/redeploy recovery requirements.",
+      "description": "Profile page inline editing and expanded profile operations beyond admin recognition fix.",
+      "reason": "Not requested in this build; scope was admin recognition and access to existing admin pages.",
       "evidence": [
-        "frontend/src/App.tsx (routes include /admin, /admin/invite-tokens, /about)",
-        "frontend-file-summaries.txt (summaries for AboutPage, AdminDashboardPage, AdminInviteTokensPage)"
+        "frontend-file-summaries.txt: frontend/src/pages/ProfilePage.tsx inline editing capability",
+        "frontend-file-summaries.txt: frontend/src/hooks/useProfile.ts real backend operations for profile save/fetch"
       ]
     },
     {
-      "description": "Profile page changes to support inline editing and updated backend TypeScript interface for profile methods.",
-      "reason": "Not requested by REQ-55/REQ-56 (which focus on startup initialization/retry behavior).",
+      "description": "RouterProvider mounting/context changes and “rebuild trigger added for canister restart.”",
+      "reason": "Not requested; unrelated to admin allowlist detection and admin page access.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/pages/ProfilePage.tsx\" inline editing; \"frontend/src/backend.d.ts\" updated interface)"
+        "frontend-file-summaries.txt: frontend/src/App.tsx RouterProvider mounted directly; rebuild trigger for canister restart"
+      ]
+    },
+    {
+      "description": "New/expanded error screen component (ProfileBootstrapError) with canister-stopped detection and copy-to-clipboard.",
+      "reason": "Not requested; beyond admin recognition/data-flow fixes.",
+      "evidence": [
+        "frontend-file-summaries.txt: frontend/src/components/auth/ProfileBootstrapError.tsx canister-stopped detection, retry, copy-to-clipboard"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/src/App.tsx",
-    "frontend/src/components/auth/SignInScreen.tsx",
-    "frontend/src/components/auth/StartupBootstrapError.tsx",
-    "frontend/src/hooks/useActorBootstrapStatus.ts",
+    "frontend/src/components/nav/AppHeader.tsx",
+    "frontend/src/hooks/useAdmin.ts",
+    "frontend/src/pages/admin/AdminDashboardPage.tsx",
+    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
     "project_state.json"
   ]
 }

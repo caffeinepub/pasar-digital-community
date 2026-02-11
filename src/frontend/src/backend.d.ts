@@ -99,9 +99,11 @@ export interface backendInterface {
         totalFoundReports: bigint;
         totalUsers: bigint;
     }>;
+    getUserProfile(user: Principal): Promise<UserProfile | null>;
     getUserVehicles(): Promise<Array<Vehicle>>;
     getVehicle(vehicleId: string): Promise<Vehicle>;
     initiateTransfer(vehicleId: string, pin: string): Promise<string>;
+    isAllowlistAdmin(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     isOnboardingAllowed(): Promise<boolean>;
     markNotificationRead(notificationId: string): Promise<void>;
