@@ -1,141 +1,126 @@
 {
   "kind": "build_request",
-  "title": "Fix missing branding logo, ensure admin invite-token tools visible, add About page, and enable PWA install",
+  "title": "Fix admin bootstrap visibility, make profile data loadable, and add Logout button on Profile",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-12",
-      "text": "Add the uploaded Pasar Digital Community logo image to the frontend static assets and ensure it renders correctly wherever the app uses the logo (sign-in screen, onboarding, and the in-app header).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-1",
-          "msg-user-2"
-        ],
-        "quotes": [
-          "ini logo nya.",
-          "Untuk logo ketika pertama kali Porgram kebuka dan di dalam program."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The uploaded file \"Logo Pasar Digital Community-1.png\" is included in the repo as a static asset (served by the frontend).",
-        "The logo image is visible on the sign-in screen and in the authenticated app header (no broken/missing image placeholder).",
-        "Logo renders with correct aspect ratio (no stretching) on common viewport sizes (mobile and desktop)."
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "text": "Ensure the Admin features are discoverable and accessible for an admin user: the Admin entry point must appear in navigation when the signed-in principal is an admin, and the Admin Dashboard must be reachable.",
+      "id": "REQ-21",
+      "text": "Fix the user profile data flow so signed-in users are not incorrectly forced into onboarding, and so the Profile feature reliably appears and works after sign-in.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-user-3",
-          "msg-user-4"
+          "msg-user-1"
         ],
         "quotes": [
-          "Tinggal fitur admin yang belum muncul.",
-          "Bagaimana Admin akan membuat Token Undangan (Generate Token)"
+          "INI KOK BELUM MUNCUL JUGA DASHBOARD  ADMIN DAN FITUR PROFIL PENGGUNA ..."
         ]
       },
       "acceptanceCriteria": [
-        "When signed in as an admin principal, the header navigation shows an \"Admin\" entry that navigates to the Admin Dashboard route.",
-        "When signed in as a non-admin principal, Admin routes show an access denied screen and the Admin entry is hidden.",
-        "If the current deployment has no admin principals configured, there is a clear, documented, in-app way to bootstrap/assign the first admin without breaking existing auth gating (must not grant admin to everyone)."
+        "When a user is signed in and has already completed onboarding, the app does not redirect them to the onboarding page.",
+        "The frontend `useGetCallerUserProfile` hook fetches the current caller profile from the backend (instead of always returning `null`).",
+        "The Profile page can be opened at route `/profile` after sign-in and displays the correct user profile data (full name, email, city, country) sourced from the backend.",
+        "If the backend returns that the user is not onboarded / no profile exists, the app routes the user to onboarding as it does today."
       ]
     },
     {
-      "id": "REQ-14",
-      "text": "Make the Admin invite-token management fully functional end-to-end: admin can generate an invitation token and see a table split into unused and used tokens, with a one-click copy of an onboarding link for unused tokens.",
+      "id": "REQ-22",
+      "text": "Add a Logout button inside the Profile page that logs the user out of Internet Identity and clears cached app state.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1"
+        ],
+        "quotes": [
+          "Tambahkan juga di fitur PROFILE PENGGUNA TOMBOL LOGOUT",
+          "2. Iya tombol logout ada di fitur profile pengguna."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Profile page contains a clearly labeled \"Logout\" button.",
+        "Clicking \"Logout\" calls the existing Internet Identity logout/clear logic and clears React Query cache (consistent with the existing header logout behavior).",
+        "After logout, the user is returned to the signed-out experience (SignIn screen) and protected routes are not accessible until signing in again."
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "text": "Ensure the Profile page displays the signed-in user’s Internet Identity Principal ID as read-only text so users can see their Internet ID.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1"
+        ],
+        "quotes": [
+          "KAN MASUKKAN MENGGUNAKAN PRICIPLE ID, BAGAIMANA PENGGUNA AKAN TAHU INTERNET ID NYA?",
+          "1. Iya."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Profile page shows a read-only \"Principal ID\" field populated from the current identity principal string.",
+        "If the identity is temporarily unavailable, the UI shows an appropriate fallback state (e.g., empty state or loading) without crashing."
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "text": "Implement a robust \"claim first admin\" bootstrap that works reliably so the current signed-in user can claim admin and then immediately see the Admin menu and access the Admin Dashboard.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-user-4",
-          "msg-user-5"
+          "msg-user-1"
         ],
         "quotes": [
-          "Bagaimana Admin akan membuat Token Undangan (Generate Token)",
-          "dan ada tabel daftar token (belum dipakai dan sudah di pakai) yang bisa di lihat Admin."
+          "Anda saja yang menambahkan ulang flow nya agar saya klaim sebagai admin",
+          "Reset/tambahkan ulang flow klaim 'first admin' agar pengguna bisa klaim admin saat ini dan menu Admin/Dashboard muncul"
         ]
       },
       "acceptanceCriteria": [
-        "From the Admin area, generating a new invite token succeeds and the token appears in the list without a manual refresh.",
-        "The Admin invite-token page shows two sections (unused and used) reflecting real backend state.",
-        "Unused tokens provide a \"copy link\" action that copies a working onboarding URL containing the inviteToken query param.",
-        "Attempting to call token generation/listing from a non-admin principal fails with an authorization error handled gracefully in the UI."
+        "Backend exposes an explicit way to determine whether \"first admin\" can be claimed (based on whether any admin exists), rather than relying on guessing via unauthorized errors from admin-only APIs.",
+        "Backend exposes a dedicated method to claim first admin that assigns the admin role to the caller only when no admin exists; otherwise it must fail safely.",
+        "Frontend AccessDeniedScreen uses the new backend capability check and claim method to show a \"Claim admin access\" action only when it is truly available.",
+        "After successfully claiming admin, the Admin navigation entry becomes visible without a full refresh, and `/admin` becomes accessible to the claimant immediately."
       ]
     },
     {
-      "id": "REQ-15",
-      "text": "Add an \"About\" page that includes a brief description and the provided admin contact details: WhatsApp 089502436075 and email pasardigital.ina@gmail.com; link to it from within the app UI (footer and/or user menu).",
+      "id": "REQ-25",
+      "text": "Make the admin navigation entry reliably appear for admin users (desktop nav and mobile nav), based on the backend admin check, and ensure the Admin Dashboard route is reachable for admins.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-6"
+          "msg-user-1"
         ],
         "quotes": [
-          "Dan tambahkan juga fitur Tentang aplikasi ini berikut nomor kontak admin (WA) 089502436075 Email: pasardigital.ina@gmail.com"
+          "INI KOK BELUM MUNCUL JUGA DASHBOARD  ADMIN ..."
         ]
       },
       "acceptanceCriteria": [
-        "A new route/page exists for \"About\" and is reachable from the authenticated app UI.",
-        "The About page displays the WhatsApp number \"089502436075\" and the email \"pasardigital.ina@gmail.com\" exactly as provided.",
-        "The About page layout is responsive and readable on mobile and desktop."
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "text": "Add PWA support so the app is installable on Android and iOS (Add to Home Screen), including a web app manifest and required icons/metadata.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-7"
-        ],
-        "quotes": [
-          "Dan aplikasi buat flesible bisa di buka di laptop dan handphone dan jadi PWA di handphone (Install) dan bisa di gunakan di anroid dan IOS."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The app provides a valid web app manifest and references it from the HTML entry point.",
-        "The app includes appropriate PWA icons (including at least 192x192 and 512x512) and an Apple touch icon so iOS shows a proper home screen icon.",
-        "On supported browsers, the app meets installability requirements (no console errors related to manifest/icons)."
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "text": "Ensure core layouts (sign-in, dashboard, admin pages, token tables) are mobile-friendly and usable on small screens (no horizontal overflow, tables remain readable via responsive patterns).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-7"
-        ],
-        "quotes": [
-          "aplikasi buat flesible bisa di buka di laptop dan handphone"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All primary pages are usable at ~360px width without requiring horizontal scrolling for the main layout.",
-        "Admin token tables remain readable on mobile (e.g., responsive table layout, wrapping, or horizontal scroll within the table area only).",
-        "Header navigation works on mobile (menu toggle reveals nav items, including Admin when applicable)."
+        "When the signed-in principal is an admin, the header shows an \"Admin\" navigation entry in both desktop and mobile menus.",
+        "When the signed-in principal is not an admin, the \"Admin\" navigation entry is not shown.",
+        "Navigating to `/admin` as an admin successfully renders the admin dashboard page; navigating as a non-admin shows an access denied experience."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; only add migration.mo if an upgrade requires state migration.",
-    "Do not modify any files under frontend/src/components/ui or other immutablePaths listed in SYSTEM_CONTEXT; compose those components instead.",
-    "Do not introduce external authentication providers; Internet Identity remains the only auth mechanism."
+    "Backend must remain a single Motoko actor; keep logic in `backend/main.mo` (generate `backend/migration.mo` only if state migration is truly required).",
+    "Do not edit any frontend files under `frontend/src/components/ui` (shadcn components are read-only) and do not edit any paths listed in `frontend.immutablePaths` in SYSTEM_CONTEXT.",
+    "All user-facing text added/changed by this request must be in English."
   ],
   "nonGoals": [
-    "Adding real-time features (WebSockets/chat/push notifications).",
-    "Integrating third-party map/GPS/location services.",
-    "Adding non-Internet-Computer databases or external backend services."
+    "Adding third-party authentication providers (only Internet Identity is supported).",
+    "Adding new database services or external backends.",
+    "Changing the invitation-token onboarding product rules beyond fixing the incorrect profile/onboarding detection.",
+    "Redesigning unrelated pages or adding new app modules not mentioned in the request."
   ],
   "imageRequirements": {
-    "required": [
-      "PWA app icon derived from the provided logo, square, centered, with transparent padding (pwa-icon.dim_192x192.png)",
-      "PWA app icon derived from the provided logo, square, centered, with transparent padding (pwa-icon.dim_512x512.png)",
-      "Apple touch icon derived from the provided logo, square, centered (apple-touch-icon.dim_180x180.png)",
-      "Maskable PWA icon derived from the provided logo with safe padding for masking (pwa-maskable.dim_512x512.png)"
-    ],
+    "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

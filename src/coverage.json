@@ -1,137 +1,94 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T23:53:58.823Z",
+  "generatedAt": "2026-02-11T00:29:54.182Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 6,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-12",
-        "summary": "Add the uploaded Pasar Digital Community logo image to the frontend static assets and ensure it renders correctly wherever the app uses the logo (sign-in screen, onboarding, and the in-app header).",
+        "id": "REQ-21",
+        "summary": "Fix the user profile data flow so signed-in users are not incorrectly forced into onboarding, and so the Profile feature reliably appears and works after sign-in.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/public/assets/Logo Pasar Digital Community-1.png",
-          "frontend/src/components/brand/AppLogo.tsx"
+          "frontend/src/backend.d.ts",
+          "frontend/src/hooks/useProfile.ts",
+          "frontend/src/App.tsx",
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/brand/AppLogo.tsx"
+          "frontend/src/backend.d.ts",
+          "frontend/src/hooks/useProfile.ts",
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
-        "id": "REQ-13",
-        "summary": "Ensure the Admin features are discoverable and accessible for an admin user: the Admin entry point must appear in navigation when the signed-in principal is an admin, and the Admin Dashboard must be reachable.",
+        "id": "REQ-22",
+        "summary": "Add a Logout button inside the Profile page that logs the user out of Internet Identity and clears cached app state.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/components/auth/AccessDeniedScreen.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/components/auth/AccessDeniedScreen.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
-        "id": "REQ-14",
-        "summary": "Make the Admin invite-token management fully functional end-to-end: admin can generate an invitation token and see a table split into unused and used tokens, with a one-click copy of an onboarding link for unused tokens.",
+        "id": "REQ-23",
+        "summary": "Ensure the Profile page displays the signed-in user’s Internet Identity Principal ID as read-only text so users can see their Internet ID.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ProfilePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ProfilePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-24",
+        "summary": "Implement a robust \"claim first admin\" bootstrap that works reliably so the current signed-in user can claim admin and then immediately see the Admin menu and access the Admin Dashboard.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/backend.d.ts",
+          "frontend/src/hooks/useAdmin.ts",
+          "frontend/src/components/auth/AccessDeniedScreen.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/backend.d.ts",
+          "frontend/src/hooks/useAdmin.ts",
+          "frontend/src/components/auth/AccessDeniedScreen.tsx"
+        ]
+      },
+      {
+        "id": "REQ-25",
+        "summary": "Make the admin navigation entry reliably appear for admin users (desktop nav and mobile nav), based on the backend admin check, and ensure the Admin Dashboard route is reachable for admins.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "frontend/src/pages/admin/AdminDashboardPage.tsx"
+          "frontend/src/components/nav/AppHeader.tsx"
         ],
         "matchedFiles": [
           "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-15",
-        "summary": "Add an \"About\" page that includes a brief description and the provided admin contact details: WhatsApp 089502436075 and email pasardigital.ina@gmail.com; link to it from within the app UI (footer and/or user menu).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/AboutPage.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/components/layout/AppLayout.tsx",
           "frontend/src/components/nav/AppHeader.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/AboutPage.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/src/components/nav/AppHeader.tsx"
-        ]
-      },
-      {
-        "id": "REQ-16",
-        "summary": "Add PWA support so the app is installable on Android and iOS (Add to Home Screen), including a web app manifest and required icons/metadata.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/public/manifest.webmanifest",
-          "frontend/index.html",
-          "frontend/public/sw.js",
-          "frontend/src/main.tsx",
-          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png"
-        ],
-        "matchedFiles": [
-          "frontend/public/manifest.webmanifest",
-          "frontend/index.html",
-          "frontend/public/sw.js",
-          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png"
-        ]
-      },
-      {
-        "id": "REQ-17",
-        "summary": "Ensure core layouts (sign-in, dashboard, admin pages, token tables) are mobile-friendly and usable on small screens (no horizontal overflow, tables remain readable via responsive patterns).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/components/auth/SignInScreen.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/components/auth/SignInScreen.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
-    "build-template/README.md",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.html",
-    "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-    "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-    "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-    "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-    "frontend/public/manifest.webmanifest",
-    "frontend/public/sw.js",
-    "frontend/src/App.tsx",
+    "frontend/src/backend.d.ts",
     "frontend/src/components/auth/AccessDeniedScreen.tsx",
-    "frontend/src/components/auth/SignInScreen.tsx",
-    "frontend/src/components/brand/AppLogo.tsx",
-    "frontend/src/components/layout/AppLayout.tsx",
     "frontend/src/components/nav/AppHeader.tsx",
     "frontend/src/hooks/useAdmin.ts",
-    "frontend/src/pages/AboutPage.tsx",
-    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+    "frontend/src/hooks/useProfile.ts",
+    "frontend/src/pages/ProfilePage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

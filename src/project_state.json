@@ -1,18 +1,24 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 9,
   "summary": "Aplikasi “Pasar Digital Community” untuk pencegahan pencurian kendaraan berbasis Principal ID (tanpa server tradisional), dengan registrasi kendaraan, pelepasan/transfer kepemilikan memakai PIN, sistem undangan berbayar via token/link sekali pakai yang dibuat admin (dengan tabel status pemakaian), modul laporan kendaraan hilang–ditemukan dan notifikasi, branding logo di splash/seluruh aplikasi, halaman “Tentang Aplikasi” berisi kontak admin, serta target responsif + PWA installable (Android/iOS).",
   "architectural_notes": [
     "Aplikasi ditargetkan berjalan tanpa server tradisional (mis. canister di Internet Computer); Principal ID digunakan sebagai identifier kriptografis pengguna.",
     "Operasional jangka panjang bergantung pada ketersediaan cycles (biaya komputasi/penyimpanan).",
-    "Targetkan UI responsif lintas perangkat dan dukung PWA (installable) agar dapat digunakan di Android & iOS."
+    "Targetkan UI responsif lintas perangkat dan dukung PWA (installable) agar dapat digunakan di Android & iOS.",
+    "Perlu mekanisme bootstrap admin: menetapkan Principal tertentu (mis. user pertama atau daftar allowlist) sebagai admin agar menu Admin/Dashboard muncul.",
+    "Profil pengguna perlu memiliki entry point UI yang jelas (mis. menu akun di pojok kanan atas) agar dapat diakses setelah login.",
+    "Halaman Profil perlu menampilkan Principal ID (Internet Identity) pengguna (read-only) sebagai identitas kriptografis yang bisa disalin/dirujuk.",
+    "Sediakan aksi Logout di halaman Profil (selain/atau menggantikan lokasi logout lain) agar mudah ditemukan pengguna."
   ],
   "known_issues": [
     "Percobaan build sebelumnya gagal dengan pesan: 'AI couldn't process your request successfully. Try simplifying or rewording it.'",
-    "Build/deploy gagal karena 'System configuration error. Please report this issue to the Caffeine team.'"
+    "Build/deploy gagal karena 'System configuration error. Please report this issue to the Caffeine team.'",
+    "Menu Admin/Dashboard tidak muncul karena akun/Principal belum ditetapkan sebagai admin (bootstrap admin belum berjalan/terkonfigurasi).",
+    "Menu/halaman Profil Pengguna tidak muncul di navigasi (belum ada entry point UI meski fitur profil direncanakan).",
+    "Setelah deploy Version 3, menu Admin/Dashboard dan entry point Profil Pengguna masih belum muncul untuk pengguna; perlu perbaikan UI/role-check dan/atau reset flow klaim admin."
   ],
   "isFixRequest": true,
-  "imageRequirements": "## Required Images\n- PWA app icon derived from the provided logo, square, centered, with transparent padding (pwa-icon.dim_192x192.png)\n- PWA app icon derived from the provided logo, square, centered, with transparent padding (pwa-icon.dim_512x512.png)\n- Apple touch icon derived from the provided logo, square, centered (apple-touch-icon.dim_180x180.png)\n- Maskable PWA icon derived from the provided logo with safe padding for masking (pwa-maskable.dim_512x512.png)",
   "existing_features": [
     {
       "id": "feature-implement-internet-identity-principal-based-authentication-and-gate-all-app-features-behind-sign-in",
@@ -149,6 +155,62 @@
         "REQ-17"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-make-the-admin-entry-point-discoverable-after-bootstrap-by-adding-an-in-app-ui-flow-that-allows-the-first-user-to-claim-admin-when-they-are-denied-access-due-to-missing-admin-role-using-clear-english-user-facing-copy",
+      "title": "Make the Admin entry point discoverable after bootstrap by adding an in-app UI flow that allows the first user to claim admin when they are denied access due to missing admin role, using clear English user-facing copy.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-user-profile-feature-end-to-end-in-the-ui-display-and-allow-the-signed-in-user-to-edit-their-profile-fields-full-name-optional-email-city-country-via-the-existing-backend-profile-apis-and-ensure-the-profile-page-is-reachable-from-the-top-right-user-menu",
+      "title": "Implement the User Profile feature end-to-end in the UI: display and allow the signed-in user to edit their profile fields (full name, optional email, city, country) via the existing backend profile APIs, and ensure the Profile page is reachable from the top-right user menu.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-user-profile-data-flow-so-signed-in-users-are-not-incorrectly-forced-into-onboarding-and-so-the-profile-feature-reliably-appears-and-works-after-sign-in",
+      "title": "Fix the user profile data flow so signed-in users are not incorrectly forced into onboarding, and so the Profile feature reliably appears and works after sign-in.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-logout-button-inside-the-profile-page-that-logs-the-user-out-of-internet-identity-and-clears-cached-app-state",
+      "title": "Add a Logout button inside the Profile page that logs the user out of Internet Identity and clears cached app state.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-profile-page-displays-the-signed-in-user-s-internet-identity-principal-id-as-read-only-text-so-users-can-see-their-internet-id",
+      "title": "Ensure the Profile page displays the signed-in user’s Internet Identity Principal ID as read-only text so users can see their Internet ID.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-robust-claim-first-admin-bootstrap-that-works-reliably-so-the-current-signed-in-user-can-claim-admin-and-then-immediately-see-the-admin-menu-and-access-the-admin-dashboard",
+      "title": "Implement a robust \"claim first admin\" bootstrap that works reliably so the current signed-in user can claim admin and then immediately see the Admin menu and access the Admin Dashboard.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-the-admin-navigation-entry-reliably-appear-for-admin-users-desktop-nav-and-mobile-nav-based-on-the-backend-admin-check-and-ensure-the-admin-dashboard-route-is-reachable-for-admins",
+      "title": "Make the admin navigation entry reliably appear for admin users (desktop nav and mobile nav), based on the backend admin check, and ensure the Admin Dashboard route is reachable for admins.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -221,6 +283,32 @@
     {
       "id": "AR-12",
       "summary": "Tampilkan logo saat aplikasi pertama kali dibuka (splash/landing) dan di dalam aplikasi (header/area utama)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Add a one-time \"first admin\" bootstrap mechanism so the currently signed-in Principal can become an admin when no admin has been configured yet, and ensure admin status checks reflect this immediately after the bootstrap action.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Tampilkan Principal ID (Internet Identity) pengguna di halaman Profil sebagai teks read-only agar pengguna tahu Internet ID-nya",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Tambahkan tombol Logout di halaman Profil Pengguna",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Reset/tambahkan ulang flow klaim 'first admin' agar pengguna bisa klaim admin saat ini dan menu Admin/Dashboard muncul",
       "reqIds": [],
       "status": "pending"
     }

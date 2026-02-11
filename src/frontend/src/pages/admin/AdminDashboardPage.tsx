@@ -24,25 +24,25 @@ export default function AdminDashboardPage() {
 
   const statCards = [
     {
-      title: 'Total Kendaraan',
+      title: 'Total Vehicles',
       value: stats?.totalVehicles.toString() || '0',
       icon: Car,
       color: 'text-primary',
     },
     {
-      title: 'Laporan Hilang',
+      title: 'Lost Reports',
       value: stats?.totalLostReports.toString() || '0',
       icon: AlertTriangle,
       color: 'text-destructive',
     },
     {
-      title: 'Laporan Ditemukan',
+      title: 'Found Reports',
       value: stats?.totalFoundReports.toString() || '0',
       icon: CheckCircle,
       color: 'text-chart-2',
     },
     {
-      title: 'Total Pengguna',
+      title: 'Total Users',
       value: stats?.totalUsers.toString() || '0',
       icon: Users,
       color: 'text-chart-4',
@@ -53,7 +53,7 @@ export default function AdminDashboardPage() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Kelola sistem dan pantau statistik</p>
+        <p className="text-muted-foreground">Manage system and monitor statistics</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -75,13 +75,13 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Ticket className="h-5 w-5" />
-              Token Undangan
+              Invite Tokens
             </CardTitle>
-            <CardDescription>Kelola token undangan untuk pengguna baru</CardDescription>
+            <CardDescription>Manage invite tokens for new users</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate({ to: '/admin/invite-tokens' })} className="w-full">
-              Kelola Token Undangan
+              Manage Invite Tokens
             </Button>
           </CardContent>
         </Card>
@@ -90,13 +90,13 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Car className="h-5 w-5" />
-              Kendaraan Terdaftar
+              Registered Vehicles
             </CardTitle>
-            <CardDescription>Lihat semua kendaraan yang terdaftar di sistem</CardDescription>
+            <CardDescription>View all vehicles registered in the system</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate({ to: '/vehicles' })} variant="outline" className="w-full">
-              Lihat Semua Kendaraan
+              View All Vehicles
             </Button>
           </CardContent>
         </Card>

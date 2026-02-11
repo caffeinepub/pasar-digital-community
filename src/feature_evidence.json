@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-the-uploaded-pasar-digital-community-logo-image-to-the-frontend-static-assets-and-ensure-it-renders-correctly-wherever-the-app-uses-the-logo-sign-in-screen-onboarding-and-the-in-app-header",
-      "featureTitle": "Add the uploaded Pasar Digital Community logo image to the frontend static assets and ensure it renders correctly wherever the app uses the logo (sign-in screen, onboarding, and the in-app header).",
+      "featureId": "feature-fix-the-user-profile-data-flow-so-signed-in-users-are-not-incorrectly-forced-into-onboarding-and-so-the-profile-feature-reliably-appears-and-works-after-sign-in",
+      "featureTitle": "Fix the user profile data flow so signed-in users are not incorrectly forced into onboarding, and so the Profile feature reliably appears and works after sign-in.",
       "files": [
-        "frontend/src/components/brand/AppLogo.tsx"
+        "frontend/src/hooks/useProfile.ts",
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -18,17 +19,58 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-12"
+        "REQ-21"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-admin-features-are-discoverable-and-accessible-for-an-admin-user-the-admin-entry-point-must-appear-in-navigation-when-the-signed-in-principal-is-an-admin-and-the-admin-dashboard-must-be-reachable",
-      "featureTitle": "Ensure the Admin features are discoverable and accessible for an admin user: the Admin entry point must appear in navigation when the signed-in principal is an admin, and the Admin Dashboard must be reachable.",
+      "featureId": "feature-add-a-logout-button-inside-the-profile-page-that-logs-the-user-out-of-internet-identity-and-clears-cached-app-state",
+      "featureTitle": "Add a Logout button inside the Profile page that logs the user out of Internet Identity and clears cached app state.",
       "files": [
-        "frontend/src/App.tsx",
+        "frontend/src/pages/ProfilePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-22"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-profile-page-displays-the-signed-in-user-s-internet-identity-principal-id-as-read-only-text-so-users-can-see-their-internet-id",
+      "featureTitle": "Ensure the Profile page displays the signed-in user’s Internet Identity Principal ID as read-only text so users can see their Internet ID.",
+      "files": [
+        "frontend/src/pages/ProfilePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-23"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-robust-claim-first-admin-bootstrap-that-works-reliably-so-the-current-signed-in-user-can-claim-admin-and-then-immediately-see-the-admin-menu-and-access-the-admin-dashboard",
+      "featureTitle": "Implement a robust \"claim first admin\" bootstrap that works reliably so the current signed-in user can claim admin and then immediately see the Admin menu and access the Admin Dashboard.",
+      "files": [
         "frontend/src/components/auth/AccessDeniedScreen.tsx",
-        "frontend/src/components/nav/AppHeader.tsx"
+        "frontend/src/hooks/useAdmin.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -41,40 +83,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-13"
+        "REQ-24"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-make-the-admin-invite-token-management-fully-functional-end-to-end-admin-can-generate-an-invitation-token-and-see-a-table-split-into-unused-and-used-tokens-with-a-one-click-copy-of-an-onboarding-link-for-unused-tokens",
-      "featureTitle": "Make the Admin invite-token management fully functional end-to-end: admin can generate an invitation token and see a table split into unused and used tokens, with a one-click copy of an onboarding link for unused tokens.",
+      "featureId": "feature-make-the-admin-navigation-entry-reliably-appear-for-admin-users-desktop-nav-and-mobile-nav-based-on-the-backend-admin-check-and-ensure-the-admin-dashboard-route-is-reachable-for-admins",
+      "featureTitle": "Make the admin navigation entry reliably appear for admin users (desktop nav and mobile nav), based on the backend admin check, and ensure the Admin Dashboard route is reachable for admins.",
       "files": [
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-14"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-an-about-page-that-includes-a-brief-description-and-the-provided-admin-contact-details-whatsapp-089502436075-and-email-pasardigital-ina-gmail-com-link-to-it-from-within-the-app-ui-footer-and-or-user-menu",
-      "featureTitle": "Add an \"About\" page that includes a brief description and the provided admin contact details: WhatsApp 089502436075 and email pasardigital.ina@gmail.com; link to it from within the app UI (footer and/or user menu).",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/layout/AppLayout.tsx",
         "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/pages/AboutPage.tsx"
+        "frontend/src/hooks/useAdmin.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -87,53 +105,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-15"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-pwa-support-so-the-app-is-installable-on-android-and-ios-add-to-home-screen-including-a-web-app-manifest-and-required-icons-metadata",
-      "featureTitle": "Add PWA support so the app is installable on Android and iOS (Add to Home Screen), including a web app manifest and required icons/metadata.",
-      "files": [
-        "frontend/index.html",
-        "frontend/public/manifest.webmanifest",
-        "frontend/public/sw.js"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-16"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-core-layouts-sign-in-dashboard-admin-pages-token-tables-are-mobile-friendly-and-usable-on-small-screens-no-horizontal-overflow-tables-remain-readable-via-responsive-patterns",
-      "featureTitle": "Ensure core layouts (sign-in, dashboard, admin pages, token tables) are mobile-friendly and usable on small screens (no horizontal overflow, tables remain readable via responsive patterns).",
-      "files": [
-        "frontend/src/components/auth/SignInScreen.tsx",
-        "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-17"
+        "REQ-25"
       ],
       "confidence": "high"
     }

@@ -147,7 +147,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return <SignInScreen />;
   }
 
-  // Check if user needs onboarding
+  // Check if user needs onboarding - only redirect if profile is explicitly null and fetched
   const showOnboarding = isFetched && userProfile === null;
   const currentPath = window.location.hash.replace('#', '') || '/';
 

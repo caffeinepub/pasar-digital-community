@@ -1,15 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Restore correct Pasar Digital Community branding across the app, ensure admin tools (invite tokens) are accessible and functional for admins, add an About page, and make the app installable as a PWA with mobile-friendly layouts.
+**Goal:** Ensure signed-in users can reliably access their profile (without incorrect onboarding redirects), provide a Profile logout action and Principal ID display, and make admin claiming/navigation work consistently so admins can see and access the Admin Dashboard.
 
 **Planned changes:**
-- Add the uploaded Pasar Digital Community logo as a frontend static asset and render it on the sign-in screen, onboarding, and authenticated app header with correct aspect ratio.
-- Ensure admin navigation and routing are discoverable: show an "Admin" entry in the header navigation for admin principals only; hide it for non-admin users; show an access denied screen for non-admin access attempts.
-- Provide an in-app, documented way to bootstrap/assign the first admin if none are configured, without granting admin to all users.
-- Implement end-to-end admin invite-token management: generate tokens, list tokens split into unused/used, and provide a one-click "copy link" action for unused tokens that copies an onboarding URL containing `inviteToken=...`.
-- Add a responsive "About" page reachable from the authenticated UI, displaying WhatsApp `089502436075` and email `pasardigital.ina@gmail.com`.
-- Add PWA install support: include a valid web app manifest, required icons/metadata (including Apple touch icon), and ensure installability with no manifest/icon console errors.
-- Improve responsive behavior for sign-in, dashboard, admin pages, and token tables to be usable on small screens (~360px), including mobile header navigation behavior and readable tables (responsive pattern or table-only scrolling).
+- Fix caller profile loading so the frontend can fetch and display the signed-in user’s profile from the backend and only route to onboarding when the backend indicates no completed profile/onboarding exists.
+- Update the Profile page (`/profile`) to reliably render after sign-in and show profile fields (full name, email, city, country) sourced from the backend.
+- Add a clearly labeled "Logout" button to the Profile page that logs out of Internet Identity and clears cached app state (including React Query cache), returning the user to the signed-out experience.
+- Display the signed-in user’s Internet Identity Principal ID on the Profile page as read-only text with a safe fallback/loading state when unavailable.
+- Add backend support for robust “first admin” bootstrapping: an explicit capability check for whether first admin can be claimed, and a dedicated claim method that only succeeds when no admin exists.
+- Update the frontend access-denied/admin bootstrap flow to use the new backend capability check and claim method, and ensure the Admin menu item and `/admin` access update immediately after a successful claim without a full refresh.
+- Ensure admin navigation visibility (desktop and mobile) is driven by the backend admin check, and `/admin` renders for admins while non-admins see an access denied experience.
 
-**User-visible outcome:** The app shows the correct logo throughout, admins can find and use the Admin dashboard to generate and manage invite tokens (including copying onboarding links), users can access an About page with admin contact info, the app works well on mobile screens, and it can be installed as a PWA on Android and iOS.
+**User-visible outcome:** After signing in, users can open `/profile` to see their stored profile details and their Principal ID, and can log out directly from the Profile page. Admin users reliably see an Admin navigation entry (desktop/mobile) and can access `/admin`; if no admin exists yet, an eligible user can claim first admin and immediately gain access.

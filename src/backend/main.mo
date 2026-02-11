@@ -6,7 +6,6 @@ import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
-import Bool "mo:core/Bool";
 import Int "mo:core/Int";
 import Random "mo:core/Random";
 import MixinAuthorization "authorization/MixinAuthorization";

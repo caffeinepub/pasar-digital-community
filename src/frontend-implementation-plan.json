@@ -1,187 +1,116 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Branding/logo fix, admin invite tools visibility, About page, and PWA installability",
+  "title": "Fix profile loading/onboarding gating, add Profile logout + principal display, and harden admin bootstrap/nav visibility",
   "requirements": [
     {
-      "id": "REQ-12",
-      "summary": "Add the provided Pasar Digital Community logo as a static asset and render it consistently on sign-in, onboarding, and header without distortion.",
+      "id": "REQ-21",
+      "summary": "Load caller profile from backend and fix auth/onboarding gating so onboarded users are not forced into onboarding and Profile reliably works after sign-in.",
       "acceptanceCriteria": [
-        "The uploaded file \"Logo Pasar Digital Community-1.png\" is included in the repo as a static asset (served by the frontend).",
-        "The logo image is visible on the sign-in screen and in the authenticated app header (no broken/missing image placeholder).",
-        "Logo renders with correct aspect ratio (no stretching) on common viewport sizes (mobile and desktop)."
+        "When a user is signed in and has already completed onboarding, the app does not redirect them to the onboarding page.",
+        "The frontend `useGetCallerUserProfile` hook fetches the current caller profile from the backend (instead of always returning `null`).",
+        "The Profile page can be opened at route `/profile` after sign-in and displays the correct user profile data (full name, email, city, country) sourced from the backend.",
+        "If the backend returns that the user is not onboarded / no profile exists, the app routes the user to onboarding as it does today."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/assets/Logo Pasar Digital Community-1.png",
-          "operation": "create",
-          "description": "Add the uploaded branding logo as a static asset served by the frontend."
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Update the frontend backend interface typing to include the backend capability for fetching the current caller user profile (and any related profile capability required by the updated hook)."
         },
         {
-          "path": "frontend/src/components/brand/AppLogo.tsx",
+          "path": "frontend/src/hooks/useProfile.ts",
           "operation": "modify",
-          "description": "Update AppLogo to reference the new static asset path for \"Logo Pasar Digital Community-1.png\" and ensure aspect ratio is preserved (e.g., object-contain) across size variants."
-        }
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "summary": "Make Admin entry discoverable for admins, keep admin routes gated for non-admins, and provide in-app bootstrap guidance when no admins are configured.",
-      "acceptanceCriteria": [
-        "When signed in as an admin principal, the header navigation shows an \"Admin\" entry that navigates to the Admin Dashboard route.",
-        "When signed in as a non-admin principal, Admin routes show an access denied screen and the Admin entry is hidden.",
-        "If the current deployment has no admin principals configured, there is a clear, documented, in-app way to bootstrap/assign the first admin without breaking existing auth gating (must not grant admin to everyone)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/nav/AppHeader.tsx",
-          "operation": "modify",
-          "description": "Ensure the Admin navigation entry is shown only when the current user is an admin (using the authorization component’s admin-check capability via existing hooks). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
-          "operation": "modify",
-          "description": "Add an in-app \"Admin bootstrap\" help section for deployments with no admin configured (e.g., instruct how a canister controller assigns the first admin using the existing admin role assignment capability), while keeping access denied by default (do not grant admin broadly)."
+          "description": "Implement `useGetCallerUserProfile` to call the backend capability to fetch the current caller profile via React Query (enabled only when the actor is available) and return a loading/fetched state that prevents onboarding flash; align with the authorization component’s recommended pattern. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Confirm Admin Dashboard route wiring remains present and reachable (and keep route registration intact for /admin)."
+          "description": "Adjust AuthGate routing logic so onboarding redirection happens only after the caller profile query is fetched, and only when the backend indicates no profile or not onboarded; ensure signed-in + onboarded users are never redirected to onboarding."
+        },
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Load and render the signed-in user’s profile fields (full name, email, city, country) using `useGetCallerUserProfile`, with a safe loading/empty state; if the backend indicates no profile/not onboarded, route the user to onboarding instead of rendering invalid content."
         }
       ]
     },
     {
-      "id": "REQ-14",
-      "summary": "Ensure Admin invite-token management works end-to-end with live updates, split used/unused lists, copy onboarding links, and graceful authorization error handling.",
+      "id": "REQ-22",
+      "summary": "Add a Logout button on the Profile page that logs out of Internet Identity and clears cached app state.",
       "acceptanceCriteria": [
-        "From the Admin area, generating a new invite token succeeds and the token appears in the list without a manual refresh.",
-        "The Admin invite-token page shows two sections (unused and used) reflecting real backend state.",
-        "Unused tokens provide a \"copy link\" action that copies a working onboarding URL containing the inviteToken query param.",
-        "Attempting to call token generation/listing from a non-admin principal fails with an authorization error handled gracefully in the UI."
+        "The Profile page contains a clearly labeled \"Logout\" button.",
+        "Clicking \"Logout\" calls the existing Internet Identity logout/clear logic and clears React Query cache (consistent with the existing header logout behavior).",
+        "After logout, the user is returned to the signed-out experience (SignIn screen) and protected routes are not accessible until signing in again."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Add a clearly labeled \"Logout\" button that reuses the existing Internet Identity `clear()` flow and clears React Query cache (same behavior as the header); after logout, ensure navigation returns to the signed-out experience and protected routes are inaccessible until sign-in again. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "summary": "Show the signed-in user’s Internet Identity Principal ID on the Profile page as read-only text with a safe fallback state.",
+      "acceptanceCriteria": [
+        "The Profile page shows a read-only \"Principal ID\" field populated from the current identity principal string.",
+        "If the identity is temporarily unavailable, the UI shows an appropriate fallback state (e.g., empty state or loading) without crashing."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Ensure the Profile page includes a read-only \"Principal ID\" field sourced from the current Internet Identity principal string, and add a non-crashing fallback (e.g., placeholder or loading state) when identity is temporarily unavailable. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "summary": "Update the admin bootstrap UI to use explicit backend checks/claim methods so first-admin claiming and immediate admin access works reliably.",
+      "acceptanceCriteria": [
+        "Backend exposes an explicit way to determine whether \"first admin\" can be claimed (based on whether any admin exists), rather than relying on guessing via unauthorized errors from admin-only APIs.",
+        "Backend exposes a dedicated method to claim first admin that assigns the admin role to the caller only when no admin exists; otherwise it must fail safely.",
+        "Frontend AccessDeniedScreen uses the new backend capability check and claim method to show a \"Claim admin access\" action only when it is truly available.",
+        "After successfully claiming admin, the Admin navigation entry becomes visible without a full refresh, and `/admin` becomes accessible to the claimant immediately."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Extend frontend typing to reflect the new backend capabilities for (1) checking whether first-admin can be claimed and (2) claiming first-admin, so hooks and UI can call them safely."
+        },
+        {
+          "path": "frontend/src/hooks/useAdmin.ts",
+          "operation": "modify",
+          "description": "Replace the current first-admin detection (guessing via unauthorized errors) with explicit backend capability calls; update the claim mutation to call the dedicated claim method (no direct role assignment via private actor identity), and invalidate/refetch admin-related queries on success so UI updates immediately. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
+          "operation": "modify",
+          "description": "Update AccessDeniedScreen to use the new hooks based on explicit backend first-admin availability/claim capabilities; show \"Claim admin access\" only when available, and on success ensure navigation and cached admin state updates so Admin menu and `/admin` access are immediate."
+        }
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "summary": "Make Admin navigation visibility consistent (desktop/mobile) based on backend admin check and ensure `/admin` route behaves correctly for admins vs non-admins.",
+      "acceptanceCriteria": [
+        "When the signed-in principal is an admin, the header shows an \"Admin\" navigation entry in both desktop and mobile menus.",
+        "When the signed-in principal is not an admin, the \"Admin\" navigation entry is not shown.",
+        "Navigating to `/admin` as an admin successfully renders the admin dashboard page; navigating as a non-admin shows an access denied experience."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useAdmin.ts",
           "operation": "modify",
-          "description": "Update admin invite-token hooks to avoid making admin-only calls when the user is not an admin (e.g., accept an enabled flag tied to isAdmin), and ensure authorization failures are surfaced as handled errors in React Query. Use the invite-links component’s invite-code management capability via existing backend functions. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "operation": "modify",
-          "description": "Make the page resilient and mobile-friendly: gate token listing queries behind confirmed admin status, show friendly error states for auth failures, keep used/unused sections, and wrap tables in a horizontally-scrollable container on small screens. Use the invite-links component’s \"generate invite code\" + \"list invite codes\" capabilities via existing hooks. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Ensure navigation from the Admin Dashboard to the invite-token management page remains present and works reliably on mobile and desktop."
-        }
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "summary": "Add a responsive About page with the provided admin contact details and link to it from the authenticated app UI.",
-      "acceptanceCriteria": [
-        "A new route/page exists for \"About\" and is reachable from the authenticated app UI.",
-        "The About page displays the WhatsApp number \"089502436075\" and the email \"pasardigital.ina@gmail.com\" exactly as provided.",
-        "The About page layout is responsive and readable on mobile and desktop."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AboutPage.tsx",
-          "operation": "create",
-          "description": "Create an About page with a brief description and the exact contact details: WhatsApp 089502436075 and email pasardigital.ina@gmail.com, using existing UI composition patterns for responsive layout."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register and wire a new route (e.g., /about) to AboutPage so it is navigable within the app."
-        },
-        {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
-          "operation": "modify",
-          "description": "Add an authenticated-app footer link to the About page (keeping existing footer content) so the route is discoverable."
+          "description": "Ensure the admin-check query remains the single source of truth for admin UI visibility and is invalidated/refetched after any successful admin-claim flow so navigation updates without refresh."
         },
         {
           "path": "frontend/src/components/nav/AppHeader.tsx",
           "operation": "modify",
-          "description": "Add an About entry in the user menu (and/or other appropriate authenticated navigation area) to ensure About is reachable from the in-app UI."
-        }
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "summary": "Enable PWA installability by adding a manifest, required icons/metadata, and installability wiring in the HTML entry point.",
-      "acceptanceCriteria": [
-        "The app provides a valid web app manifest and references it from the HTML entry point.",
-        "The app includes appropriate PWA icons (including at least 192x192 and 512x512) and an Apple touch icon so iOS shows a proper home screen icon.",
-        "On supported browsers, the app meets installability requirements (no console errors related to manifest/icons)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/public/manifest.webmanifest",
-          "operation": "create",
-          "description": "Add a web app manifest configured for installability and referencing required icons, name, short_name, start_url, display, background/theme colors."
-        },
-        {
-          "path": "frontend/index.html",
-          "operation": "modify",
-          "description": "Reference the manifest and add required PWA metadata (including Apple touch icon and theme-color) in the HTML entry point."
-        },
-        {
-          "path": "frontend/public/sw.js",
-          "operation": "create",
-          "description": "Add a minimal service worker for PWA installability expectations (basic caching and safe update strategy)."
-        },
-        {
-          "path": "frontend/src/main.tsx",
-          "operation": "modify",
-          "description": "Register the service worker on app startup (guarded for supported browsers) to support PWA installability without breaking normal web usage."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-          "operation": "create",
-          "description": "Add generated PWA icon asset: frontend/public/assets/generated/pwa-icon.dim_192x192.png and wire it via the manifest."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "operation": "create",
-          "description": "Add generated PWA icon asset: frontend/public/assets/generated/pwa-icon.dim_512x512.png and wire it via the manifest."
-        },
-        {
-          "path": "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "operation": "create",
-          "description": "Add generated Apple touch icon asset: frontend/public/assets/generated/apple-touch-icon.dim_180x180.png and reference it from frontend/index.html."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-          "operation": "create",
-          "description": "Add generated maskable icon asset: frontend/public/assets/generated/pwa-maskable.dim_512x512.png and wire it via the manifest with purpose=maskable."
-        }
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "summary": "Improve mobile usability across sign-in, dashboard, admin pages, and token tables (no layout overflow; responsive navigation and readable tables).",
-      "acceptanceCriteria": [
-        "All primary pages are usable at ~360px width without requiring horizontal scrolling for the main layout.",
-        "Admin token tables remain readable on mobile (e.g., responsive table layout, wrapping, or horizontal scroll within the table area only).",
-        "Header navigation works on mobile (menu toggle reveals nav items, including Admin when applicable)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "operation": "modify",
-          "description": "Ensure token tables remain readable on small screens by applying a responsive table pattern (e.g., overflow-x-auto wrapper limited to the table region, sensible cell wrapping/truncation)."
-        },
-        {
-          "path": "frontend/src/components/nav/AppHeader.tsx",
-          "operation": "modify",
-          "description": "Review and adjust mobile nav rendering to prevent horizontal overflow and ensure all items remain accessible via the menu toggle (including Admin when applicable)."
-        },
-        {
-          "path": "frontend/src/components/auth/SignInScreen.tsx",
-          "operation": "modify",
-          "description": "Confirm sign-in layout remains mobile-friendly (spacing, card width, and logo sizing) and adjust Tailwind classes if needed to prevent overflow at ~360px width."
+          "description": "Confirm Admin navigation entry rendering is driven by the admin-check hook for both desktop and mobile menus, and adjust if needed so it reliably appears/disappears based on backend admin status (including immediately after claim)."
         }
       ]
     }

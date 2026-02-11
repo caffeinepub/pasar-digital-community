@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import AppLogo from '../brand/AppLogo';
 import { useGetMyNotifications } from '../../hooks/useNotifications';
 import { useIsCallerAdmin } from '../../hooks/useAdmin';
@@ -34,8 +35,8 @@ export default function AppHeader() {
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: Shield },
-    { label: 'Kendaraan Saya', path: '/vehicles', icon: Car },
-    { label: 'Kendaraan Hilang', path: '/lost-vehicles', icon: AlertTriangle },
+    { label: 'My Vehicles', path: '/vehicles', icon: Car },
+    { label: 'Lost Vehicles', path: '/lost-vehicles', icon: AlertTriangle },
   ];
 
   return (
@@ -95,72 +96,68 @@ export default function AppHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">Akun Saya</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {identity?.getPrincipal().toString().slice(0, 20)}...
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
                   <User className="mr-2 h-4 w-4" />
-                  Profil
+                  Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: '/security' })}>
                   <Settings className="mr-2 h-4 w-4" />
-                  Keamanan
+                  Security Settings
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: '/about' })}>
                   <Info className="mr-2 h-4 w-4" />
-                  Tentang
+                  About
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Keluar
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              <Menu className="h-5 w-5" />
-            </Button>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64">
+                <nav className="flex flex-col gap-2 mt-8">
+                  {navItems.map((item) => (
+                    <Button
+                      key={item.path}
+                      variant="ghost"
+                      onClick={() => {
+                        navigate({ to: item.path });
+                        setMobileMenuOpen(false);
+                      }}
+                      className="justify-start gap-2"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Button>
+                  ))}
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        navigate({ to: '/admin' });
+                        setMobileMenuOpen(false);
+                      }}
+                      className="justify-start gap-2"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Admin
+                    </Button>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <nav className="md:hidden border-t py-4 space-y-1">
-            {navItems.map((item) => (
-              <Button
-                key={item.path}
-                variant="ghost"
-                className="w-full justify-start gap-2"
-                onClick={() => {
-                  navigate({ to: item.path });
-                  setMobileMenuOpen(false);
-                }}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Button>
-            ))}
-            {isAdmin && (
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2"
-                onClick={() => {
-                  navigate({ to: '/admin' });
-                  setMobileMenuOpen(false);
-                }}
-              >
-                <Shield className="h-4 w-4" />
-                Admin
-              </Button>
-            )}
-          </nav>
-        )}
       </div>
     </header>
   );
