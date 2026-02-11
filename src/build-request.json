@@ -1,73 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Fix allowlisted admin detection so Admin menu and dashboard are accessible after login",
+  "title": "Make the current Internet Identity principal an admin and bypass onboarding/registration",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-62",
-      "text": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after Internet Identity login (without requiring onboarding), so the Admin navigation entry appears and the /admin route is accessible.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "recent-messages"
-        ],
-        "quotes": [
-          "perbaiki aplikasi agar Principal ID saya langsung dikenali sebagai admin setelah login dan fitur dashboard admin yang bisa di klik"
-        ]
-      },
-      "acceptanceCriteria": [
-        "After signing in with Internet Identity using Principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the top navigation includes an \"Admin\" item.",
-        "Clicking \"Admin\" navigates to `/admin` and renders the Admin Dashboard page (not AccessDeniedScreen).",
-        "The allowlisted Principal is not forced into `/onboarding` even when `getCallerUserProfile()` returns null/None.",
-        "Backend admin-gated endpoints (e.g., `getSystemStats`, `getInviteCodes`, `generateInviteCode`) authorize this allowlisted Principal successfully immediately after login."
-      ]
-    },
-    {
-      "id": "REQ-63",
-      "text": "Fix admin-status data flow so the UI does not incorrectly show the allowlisted admin as a normal user (e.g., \"User\" without Admin menu) due to stale React Query cache, query timing, or transient actor bootstrap states.",
+      "id": "REQ-1",
+      "text": "Update the client-side admin allowlist so the user’s Internet Identity principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin for onboarding-bypass checks (and structure the allowlist so it can support more than one principal without code churn).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "saya sudah logout terus masuk lagi melalui internet identity, tapi tetap dashboard admin tidak ada. malah saya masih di anggap user."
+          "LANJUT DEOLOY"
         ]
       },
       "acceptanceCriteria": [
-        "Logging out and logging back in with the allowlisted Principal consistently shows the Admin navigation entry without requiring a hard refresh.",
-        "Admin link visibility updates reliably when identity changes (no stale admin status from a previous principal).",
-        "If the admin-status check fails transiently, the UI provides a recoverable state (retry) and does not permanently hide the Admin entry for the allowlisted Principal."
+        "`isAllowlistedAdmin(...)` returns true for `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
+        "Allowlist logic is not limited to a single hardcoded string (e.g., uses a list/array/set internally)."
       ]
     },
     {
-      "id": "REQ-64",
-      "text": "Ensure invite-token management is reachable and functional for the allowlisted admin: the Admin Dashboard must provide a working navigation path to `/admin/invite-tokens`, and generating invite tokens must work end-to-end.",
-      "target": "both",
+      "id": "REQ-2",
+      "text": "Change routing/bootstrap behavior so an admin user is never forced into the onboarding/registration flow. Specifically: when the authenticated principal is admin (including the allowlisted admin), do not redirect to `/onboarding` even if `getCallerUserProfile()` returns `null`, and ensure the app lands on a usable authenticated route (e.g., `/` or `/admin`) without showing the onboarding form.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-1"
         ],
         "quotes": [
-          "Sekarang mana dashboard nya admin? gimana admin mau buat token undangan?"
+          "SAYA INI KAN ADMIN JADI TIDAK PERLU DAFTAR",
+          "LANJUT DEOLOY"
         ]
       },
       "acceptanceCriteria": [
-        "From `/admin`, the \"Manage Invite Tokens\" action navigates to `/admin/invite-tokens`.",
-        "On `/admin/invite-tokens`, clicking \"Generate\" (or equivalent) creates a new invite token and it appears in the Unused list without a manual refresh.",
-        "Copy invite link (or equivalent copy action) works for an unused token and includes the token value in the copied URL."
+        "When logged in as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the app does not navigate to `/onboarding` automatically.",
+        "If the user manually visits `/onboarding` while already recognized as admin, the app prevents completing the invite-based onboarding flow and instead routes them back to a main page (e.g., dashboard/admin).",
+        "Admin navigation (e.g., the Admin link) is accessible for the allowlisted/admin principal without completing onboarding."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Update backend authorization so the allowlisted admin principal can be treated as an admin immediately (without requiring onboarding/profile completion), enabling admin APIs that currently rely on `hasAdminPermission` and preventing the ‘admin must register’ dead-end after a reinstall. Keep the allowlisted admin principal value exactly as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "SAYA INI KAN ADMIN JADI TIDAK PERLU DAFTAR",
+          "force-redeploy full (install_code mode reinstall)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After a reinstall (state reset), calls that require admin permission (e.g., generating invite codes, viewing invite codes) succeed for the allowlisted admin principal without requiring `completeOnboarding(...)` first.",
+        "Backend admin checks used by the frontend (e.g., `isCallerAdmin()` and/or `isAllowlistAdmin()`/`isAllowlistAdmin`-style checks if present) return admin=true for the allowlisted admin principal immediately after deploy.",
+        "No backend schema/state migration is required to support this change (behavior-only change)."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Backend must remain a single Motoko actor in `backend/main.mo`; only add `backend/migration.mo` if state migration is required.",
-    "Do not modify any files under `frontend/src/components/ui` or any paths listed in `frontend.immutablePaths` (compose instead)."
+    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
+    "Do not edit any files under `frontend/src/components/ui` or the immutable hook entrypoints listed in SYSTEM_CONTEXT.",
+    "Use English for any new/modified user-facing UI strings introduced as part of these changes."
   ],
   "nonGoals": [
-    "Adding new admin features beyond fixing admin recognition and making the existing Admin Dashboard/Invite Tokens pages accessible.",
-    "Changing the onboarding/invite-token business rules for non-admin users.",
-    "Introducing third-party auth providers or non-Internet-Identity login methods."
+    "Adding third-party authentication providers (only Internet Identity).",
+    "Implementing a new database or external storage.",
+    "Changing unrelated UI copy across the entire app (only update text where required by the admin/onboarding fix)."
   ],
   "imageRequirements": {
     "required": [],

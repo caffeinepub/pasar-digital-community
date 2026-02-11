@@ -2,6 +2,7 @@
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from 'next-themes';
 import { createRouter, createRoute, createRootRoute, RouterProvider } from '@tanstack/react-router';
+import { I18nProvider } from './i18n/I18nProvider';
 import RootRouteGate from './routes/RootRouteGate';
 import DashboardPage from './pages/DashboardPage';
 import VehiclesPage from './pages/VehiclesPage';
@@ -124,8 +125,10 @@ const router = createRouter({ routeTree });
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      <RouterProvider router={router} />
-      <Toaster />
+      <I18nProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </I18nProvider>
     </ThemeProvider>
   );
 }

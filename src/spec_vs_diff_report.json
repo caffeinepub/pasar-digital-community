@@ -1,77 +1,50 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T09:29:08.945Z",
-  "summary": "Key admin allowlist requirement appears incorrectly implemented in the backend: admin authorization for the allowlisted principal is still effectively gated by onboarding state, which conflicts with REQ-62 and also breaks downstream invite-token admin endpoints (REQ-64). Frontend includes several fixes for stale admin-status and retry behavior (REQ-63), but also introduces multiple unrelated features (PWA/service worker, About page content, profile editing, etc.) not requested.",
+  "generatedAt": "2026-02-11T10:28:05.026Z",
+  "summary": "REQ-1 and most of REQ-2 appear implemented via a multi-principal frontend allowlist utility and routing/onboarding guards; backend admin permission checks were updated to grant the specified principal admin rights for invite/admin APIs. However, the diff does not show evidence that any public backend admin-check endpoint(s) used by the frontend (e.g., `isCallerAdmin()` / `isAllowlistAdmin()`) were updated to return `true` for the allowlisted principal, so REQ-3’s AC about those checks cannot be fully verified from the provided snippets.",
   "missing_requirements": [
     {
-      "id": "REQ-62",
-      "requirement": "Ensure the allowlisted Principal is treated as an admin immediately after Internet Identity login (without requiring onboarding), so Admin nav appears and /admin is accessible; backend admin-gated endpoints must authorize the allowlisted principal immediately after login.",
-      "reason": "Backend helper `hasAdminPermission` only returns true for the allowlisted principal if `isAllowlistAdminOnboarded()` is true, which contradicts the requirement that onboarding must not be required for allowlisted admin and that admin-gated endpoints must authorize immediately after login.",
+      "id": "REQ-3",
+      "requirement": "Backend admin checks used by the frontend (e.g., `isCallerAdmin()` and/or `isAllowlistAdmin()`-style checks if present) return admin=true for the allowlisted admin principal immediately after deploy.",
+      "reason": "The diff shows a new internal `hasAdminPermission(caller)` that grants allowlisted admin rights, and admin-gated invite APIs now use it, but it does not show any changes/additions to the public admin-check method(s) (`isCallerAdmin` / `isAllowlistAdmin`) that the frontend calls.",
       "evidence": [
-        "backend/main.mo: hasAdminPermission(caller) checks isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded() before returning true",
-        "backend/main.mo: generateInviteCode/getInviteCodes/getAllRSVPs trap Unauthorized if not hasAdminPermission(caller)"
-      ]
-    },
-    {
-      "id": "REQ-64",
-      "requirement": "Ensure invite-token management is reachable and functional for the allowlisted admin; generating invite tokens must work end-to-end and update the unused list without manual refresh.",
-      "reason": "Because backend `generateInviteCode` and `getInviteCodes` are authorized via `hasAdminPermission`, and `hasAdminPermission` denies the allowlisted principal unless onboarded, allowlisted admin invite-token generation/listing may fail immediately after login (violating end-to-end functionality for allowlisted admin).",
-      "evidence": [
-        "backend/main.mo: generateInviteCode() authorization uses hasAdminPermission(caller)",
-        "backend/main.mo: getInviteCodes() authorization uses hasAdminPermission(caller)",
-        "backend/main.mo: hasAdminPermission requires allowlist admin to be onboarded"
+        "backend/main.mo (truncated)",
+        "frontend-file-summaries.txt (mentions frontend calling `isAllowlistAdmin()`/`isCallerAdmin()` but no corresponding backend endpoint changes shown)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "PWA/service worker support and related update-handling and caching strategy changes.",
-      "reason": "Not requested; non-goal focuses on admin recognition/accessibility, not PWA behavior.",
+      "description": "Added an `isAllowlistAdminOnboarded()` helper that checks allowlisted admin onboarding state.",
+      "reason": "Not requested by the BuildRequest/REQs, and no acceptance criteria mention needing an onboarded-state helper for the allowlisted admin (bypass is explicitly required).",
       "evidence": [
-        "frontend-file-summaries.txt: frontend/src/main.tsx service worker registration and reload-on-update behavior",
-        "frontend-file-summaries.txt: frontend/public/sw.js updated cache version and caching strategies",
-        "frontend-file-summaries.txt: frontend/public/manifest.webmanifest icon references"
+        "backend/main.mo (truncated): `func isAllowlistAdminOnboarded() : Bool { ... }`"
       ]
     },
     {
-      "description": "About page content including admin contact information (WhatsApp/email).",
-      "reason": "Not requested; unrelated to admin allowlist/auth flow fixes.",
+      "description": "Added `getAllowlistedAdminPrincipals()` API in the frontend allowlist utility.",
+      "reason": "REQ-1 only requires `isAllowlistedAdmin(...)` and an allowlist structure supporting multiple principals; exposing the entire list was not requested.",
       "evidence": [
-        "frontend-file-summaries.txt: frontend/src/pages/AboutPage.tsx includes admin contact information"
+        "frontend/src/utils/adminAllowlist.ts: `export function getAllowlistedAdminPrincipals(): string[] { ... }`"
       ]
     },
     {
-      "description": "Profile page inline editing and expanded profile operations beyond admin recognition fix.",
-      "reason": "Not requested in this build; scope was admin recognition and access to existing admin pages.",
+      "description": "Added an \"admin retry\" nav item behavior that shows an Admin link when the admin check errors.",
+      "reason": "REQ-2 only requires admin navigation be accessible for the allowlisted/admin principal; adding an error-driven retry label/link is extra behavior not specified.",
       "evidence": [
-        "frontend-file-summaries.txt: frontend/src/pages/ProfilePage.tsx inline editing capability",
-        "frontend-file-summaries.txt: frontend/src/hooks/useProfile.ts real backend operations for profile save/fetch"
-      ]
-    },
-    {
-      "description": "RouterProvider mounting/context changes and “rebuild trigger added for canister restart.”",
-      "reason": "Not requested; unrelated to admin allowlist detection and admin page access.",
-      "evidence": [
-        "frontend-file-summaries.txt: frontend/src/App.tsx RouterProvider mounted directly; rebuild trigger for canister restart"
-      ]
-    },
-    {
-      "description": "New/expanded error screen component (ProfileBootstrapError) with canister-stopped detection and copy-to-clipboard.",
-      "reason": "Not requested; beyond admin recognition/data-flow fixes.",
-      "evidence": [
-        "frontend-file-summaries.txt: frontend/src/components/auth/ProfileBootstrapError.tsx canister-stopped detection, retry, copy-to-clipboard"
+        "frontend/src/components/nav/AppHeader.tsx (truncated): uses `adminError ? t('nav.adminRetry') : t('nav.admin')` and pushes Admin link when `adminError`"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/hooks/useAdmin.ts",
-    "frontend/src/pages/admin/AdminDashboardPage.tsx",
-    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+    "frontend/src/pages/OnboardingInvitePage.tsx",
+    "frontend/src/routes/RootRouteGate.tsx",
+    "frontend/src/utils/adminAllowlist.ts",
     "project_state.json"
   ]
 }

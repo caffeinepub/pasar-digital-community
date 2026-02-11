@@ -84,7 +84,8 @@ actor {
 
   // Helper function to check if caller has admin permission (including allowlist admin)
   func hasAdminPermission(caller : Principal) : Bool {
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // If the caller is the allowlisted admin, grant permission regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       return true;
     };
     AccessControl.hasPermission(accessControlState, caller, #admin);
@@ -123,13 +124,9 @@ actor {
 
   // ---------------------- User Profile Management ----------------------
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    // Allowlist admin can access their profile if onboarded
+    // Allowlist admin can access their profile regardless of onboarding status
     if (isCallerAllowlistAdmin(caller)) {
-      if (isAllowlistAdminOnboarded()) {
-        return userProfiles.get(caller);
-      } else {
-        return null;
-      };
+      return userProfiles.get(caller);
     };
 
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -156,8 +153,8 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    // Allowlist admin can save their profile if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can save their profile regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       userProfiles.add(caller, profile);
       return;
     };
@@ -219,8 +216,8 @@ actor {
 
   // ---------------------- PIN Management ----------------------
   public shared ({ caller }) func setupPIN(pin : Text) : async () {
-    // Allowlist admin can setup PIN if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can setup PIN regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       userPINs.add(caller, pin);
       return;
     };
@@ -232,8 +229,8 @@ actor {
   };
 
   public shared ({ caller }) func updatePIN(oldPin : Text, newPin : Text) : async () {
-    // Allowlist admin can update PIN if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can update PIN regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       switch (userPINs.get(caller)) {
         case null { Runtime.trap("No PIN set for this user") };
         case (?storedPin) {
@@ -277,8 +274,8 @@ actor {
     location : Text,
     vehiclePhoto : Storage.ExternalBlob,
   ) : async Text {
-    // Allowlist admin can register vehicles if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can register vehicles regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       let id = engineNumber.concat(chassisNumber);
       switch (vehicleState.get(id)) {
         case (?_) { Runtime.trap("Vehicle already registered") };
@@ -329,8 +326,8 @@ actor {
   };
 
   public query ({ caller }) func getUserVehicles() : async [Vehicle] {
-    // Allowlist admin can view their vehicles if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can view their vehicles regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       let iter = vehicleState.values();
       let filtered = iter.filter(func(vehicle : Vehicle) : Bool { vehicle.owner == caller });
       return filtered.toArray();
@@ -345,8 +342,8 @@ actor {
   };
 
   public query ({ caller }) func getVehicle(vehicleId : Text) : async Vehicle {
-    // Allowlist admin can view any vehicle if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can view any vehicle regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       switch (vehicleState.get(vehicleId)) {
         case (null) { Runtime.trap("Vehicle not found") };
         case (?vehicle) { return vehicle };
@@ -364,7 +361,7 @@ actor {
 
   public query ({ caller }) func getLostVehicles() : async [Vehicle] {
     // Allowlist admin can view lost vehicles if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    if (isCallerAllowlistAdmin(caller)) {
       let iter = vehicleState.values();
       let filtered = iter.filter(func(vehicle : Vehicle) : Bool {
         switch (vehicle.status) {
@@ -390,7 +387,7 @@ actor {
 
   public shared ({ caller }) func markVehicleLost(vehicleId : Text, reportNote : Text) : async () {
     // Allowlist admin can mark their vehicles as lost if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    if (isCallerAllowlistAdmin(caller)) {
       let vehicle = switch (vehicleState.get(vehicleId)) {
         case (null) { Runtime.trap("Vehicle not found") };
         case (?vehicle) {
@@ -445,7 +442,7 @@ actor {
 
   public shared ({ caller }) func reportVehicleFound(vehicleId : Text, finderReport : Text) : async () {
     // Allowlist admin can report found vehicles if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    if (isCallerAllowlistAdmin(caller)) {
       let vehicle = switch (vehicleState.get(vehicleId)) {
         case (null) { Runtime.trap("Vehicle not found") };
         case (?vehicle) {
@@ -530,8 +527,8 @@ actor {
 
   // ---------------------- Notifications ----------------------
   public query ({ caller }) func getMyNotifications() : async [Notification] {
-    // Allowlist admin can view their notifications if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can view their notifications regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       let iter = notifications.values();
       let filtered = iter.filter(func(notif : Notification) : Bool { notif.recipient == caller });
       return filtered.toArray();
@@ -546,8 +543,8 @@ actor {
   };
 
   public shared ({ caller }) func markNotificationRead(notificationId : Text) : async () {
-    // Allowlist admin can mark their notifications as read if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can mark their notifications as read regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       switch (notifications.get(notificationId)) {
         case null { Runtime.trap("Notification not found") };
         case (?notif) {
@@ -592,8 +589,8 @@ actor {
 
   // ---------------------- Transfer System ----------------------
   public shared ({ caller }) func initiateTransfer(vehicleId : Text, pin : Text) : async Text {
-    // Allowlist admin can initiate transfers if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can initiate transfers regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       if (not verifyPIN(caller, pin)) {
         Runtime.trap("Incorrect PIN");
       };
@@ -666,8 +663,8 @@ actor {
   };
 
   public shared ({ caller }) func acceptTransfer(transferCode : Text) : async () {
-    // Allowlist admin can accept transfers if onboarded
-    if (isCallerAllowlistAdmin(caller) and isAllowlistAdminOnboarded()) {
+    // Allowlist admin can accept transfers regardless of onboarding status
+    if (isCallerAllowlistAdmin(caller)) {
       switch (vehicleState.values().toArray().find(func(v) { switch (v.transferCode) { case (?code) { code == transferCode }; case null { false } } })) {
         case (null) { Runtime.trap("Invalid or expired transfer code") };
         case (?vehicle) {

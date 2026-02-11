@@ -2,13 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-allowlisted-principal-id-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-treated-as-an-admin-immediately-after-internet-identity-login-without-requiring-onboarding-so-the-admin-navigation-entry-appears-and-the-admin-route-is-accessible",
-      "featureTitle": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after Internet Identity login (without requiring onboarding), so the Admin navigation entry appears and the /admin route is accessible.",
+      "featureId": "feature-update-the-client-side-admin-allowlist-so-the-user-s-internet-identity-principal-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-treated-as-an-admin-for-onboarding-bypass-checks-and-structure-the-allowlist-so-it-can-support-more-than-one-principal-without-code-churn",
+      "featureTitle": "Update the client-side admin allowlist so the user’s Internet Identity principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin for onboarding-bypass checks (and structure the allowlist so it can support more than one principal without code churn).",
       "files": [
-        "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/pages/admin/AdminDashboardPage.tsx",
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+        "frontend/src/utils/adminAllowlist.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,16 +18,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-62"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-admin-status-data-flow-so-the-ui-does-not-incorrectly-show-the-allowlisted-admin-as-a-normal-user-e-g-user-without-admin-menu-due-to-stale-react-query-cache-query-timing-or-transient-actor-bootstrap-states",
-      "featureTitle": "Fix admin-status data flow so the UI does not incorrectly show the allowlisted admin as a normal user (e.g., \"User\" without Admin menu) due to stale React Query cache, query timing, or transient actor bootstrap states.",
+      "featureId": "feature-change-routing-bootstrap-behavior-so-an-admin-user-is-never-forced-into-the-onboarding-registration-flow-specifically-when-the-authenticated-principal-is-admin-including-the-allowlisted-admin-do-not-redirect-to-onboarding-even-if-getcalleruserprofile-returns-null-and-ensure-the-app-lands-on-a-usable-authenticated-route-e-g-or-admin-without-showing-the-onboarding-form",
+      "featureTitle": "Change routing/bootstrap behavior so an admin user is never forced into the onboarding/registration flow. Specifically: when the authenticated principal is admin (including the allowlisted admin), do not redirect to `/onboarding` even if `getCallerUserProfile()` returns `null`, and ensure the app lands on a usable authenticated route (e.g., `/` or `/admin`) without showing the onboarding form.",
       "files": [
         "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/hooks/useAdmin.ts"
+        "frontend/src/pages/OnboardingInvitePage.tsx",
+        "frontend/src/routes/RootRouteGate.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -43,30 +41,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-63"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-invite-token-management-is-reachable-and-functional-for-the-allowlisted-admin-the-admin-dashboard-must-provide-a-working-navigation-path-to-admin-invite-tokens-and-generating-invite-tokens-must-work-end-to-end",
-      "featureTitle": "Ensure invite-token management is reachable and functional for the allowlisted admin: the Admin Dashboard must provide a working navigation path to `/admin/invite-tokens`, and generating invite tokens must work end-to-end.",
-      "files": [
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/pages/admin/AdminDashboardPage.tsx",
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-64"
+        "REQ-2"
       ],
       "confidence": "high"
     }

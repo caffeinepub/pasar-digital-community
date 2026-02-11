@@ -1,89 +1,46 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix allowlisted admin detection and stabilize admin UI flow",
+  "title": "Allowlisted admin onboarding bypass and routing guard",
   "requirements": [
     {
-      "id": "REQ-62",
-      "summary": "Treat the allowlisted Principal as admin immediately after Internet Identity login so Admin nav and /admin are accessible without onboarding.",
+      "id": "REQ-1",
+      "summary": "Expand the client-side admin allowlist to support multiple principals and treat the specified principal as admin for onboarding-bypass checks.",
       "acceptanceCriteria": [
-        "After signing in with Internet Identity using Principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the top navigation includes an \"Admin\" item.",
-        "Clicking \"Admin\" navigates to `/admin` and renders the Admin Dashboard page (not AccessDeniedScreen).",
-        "The allowlisted Principal is not forced into `/onboarding` even when `getCallerUserProfile()` returns null/None.",
-        "Backend admin-gated endpoints (e.g., `getSystemStats`, `getInviteCodes`, `generateInviteCode`) authorize this allowlisted Principal successfully immediately after login."
+        "`isAllowlistedAdmin(...)` returns true for `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
+        "Allowlist logic is not limited to a single hardcoded string (e.g., uses a list/array/set internally)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useAdmin.ts",
+          "path": "frontend/src/utils/adminAllowlist.ts",
           "operation": "modify",
-          "description": "Update admin-detection hooks to immediately return admin=true when the current principal matches the allowlist (use frontend utils in frontend/src/utils/adminAllowlist.ts), while still supporting backend verification via the existing authorization system methods (e.g., isCallerAdmin/isAllowlistAdmin). Ensure the returned shape exposes refetch and error state for UI retry. Use the authorization component’s frontend guidance for auth-dependent queries; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/nav/AppHeader.tsx",
-          "operation": "modify",
-          "description": "Change Admin nav item visibility to rely on the updated admin hook so the allowlisted admin sees \"Admin\" immediately after login (without waiting for backend role fetch). Use the authorization component’s frontend guidance on auth + cache handling; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Gate rendering using the updated admin hook so allowlisted admin is not shown AccessDeniedScreen during transient admin-status checks, and can access the dashboard immediately after login. Verify authorization component usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "operation": "modify",
-          "description": "Gate rendering using the updated admin hook so allowlisted admin can access invite-token management immediately after login. Verify authorization and invite-links component usage instructions before implementing."
+          "description": "Refactor the allowlist to be backed by a collection (e.g., Set/array) that can hold multiple principals without code churn; ensure `isAllowlistedAdmin` checks membership and includes `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` exactly, and keep a helper to retrieve the allowlist for future growth."
         }
       ]
     },
     {
-      "id": "REQ-63",
-      "summary": "Fix admin-status data flow to avoid stale cache/timing issues across logout/login and provide a recoverable retry state.",
+      "id": "REQ-2",
+      "summary": "Prevent admins (including allowlisted admin) from being forced into onboarding/registration and guard /onboarding from admin completion.",
       "acceptanceCriteria": [
-        "Logging out and logging back in with the allowlisted Principal consistently shows the Admin navigation entry without requiring a hard refresh.",
-        "Admin link visibility updates reliably when identity changes (no stale admin status from a previous principal).",
-        "If the admin-status check fails transiently, the UI provides a recoverable state (retry) and does not permanently hide the Admin entry for the allowlisted Principal."
+        "When logged in as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the app does not navigate to `/onboarding` automatically.",
+        "If the user manually visits `/onboarding` while already recognized as admin, the app prevents completing the invite-based onboarding flow and instead routes them back to a main page (e.g., dashboard/admin).",
+        "Admin navigation (e.g., the Admin link) is accessible for the allowlisted/admin principal without completing onboarding."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useAdmin.ts",
+          "path": "frontend/src/routes/RootRouteGate.tsx",
           "operation": "modify",
-          "description": "Harden React Query behavior for admin-status checks: ensure query keys are principal-scoped, disable any unintended persistence across identity changes, and tune retry/refetch behavior to prevent transient actor/bootstrap failures from permanently producing non-admin UI. Expose refetch/isError for UI retry. Verify the authorization component's usage instructions before implementing."
+          "description": "Update the bootstrap redirect logic to treat any authenticated admin as exempt from onboarding redirects: use the existing admin-check hook (built on the authorization component’s admin checks) to determine admin status (including allowlisted admin) and skip navigation to `/onboarding` when admin=true even if `getCallerUserProfile()` is null. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/hooks/useActor.ts",
+          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
           "operation": "modify",
-          "description": "Ensure actor/identity transitions cannot leave stale principal-scoped data in UI: when identity principal changes, explicitly remove or invalidate principal-scoped queries that could leak previous admin status into the next session. Verify the authorization component's frontend guidance on clearing cached application data on logout; verify the component's usage instructions before implementing."
+          "description": "Add an admin guard so that if an authenticated user is already recognized as admin (including allowlisted admin), the page immediately routes them away (e.g., to `/admin` or `/`) and blocks form submission; any new/modified user-facing messages introduced here must be in English. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/components/nav/AppHeader.tsx",
           "operation": "modify",
-          "description": "Add a recoverable UI state when admin-status verification errors (e.g., show a \"Retry admin access\" action that calls the admin hook’s refetch). Ensure allowlisted admin is never permanently missing the Admin entry due to transient failures. Verify the authorization component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-64",
-      "summary": "Ensure Admin Dashboard provides working navigation to Invite Tokens and invite-token generation updates the UI and copy-link works end-to-end.",
-      "acceptanceCriteria": [
-        "From `/admin`, the \"Manage Invite Tokens\" action navigates to `/admin/invite-tokens`.",
-        "On `/admin/invite-tokens`, clicking \"Generate\" (or equivalent) creates a new invite token and it appears in the Unused list without a manual refresh.",
-        "Copy invite link (or equivalent copy action) works for an unused token and includes the token value in the copied URL."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Confirm the \"Manage Invite Tokens\" action remains wired to navigate to `/admin/invite-tokens` and is shown for the allowlisted admin using the updated admin gating. Verify invite-links component usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useAdmin.ts",
-          "operation": "modify",
-          "description": "Improve invite-code generation UX to be end-to-end reliable: after generateInviteCode succeeds, update the React Query cache for invite codes (optimistic insert or immediate invalidation+refetch) so the new token appears in the Unused list without manual refresh. Ensure this remains admin-gated via the authorization component. Verify the invite-links component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "operation": "modify",
-          "description": "Ensure the Generate action triggers the updated generate hook behavior so newly generated tokens appear immediately in the Unused list, and the copy-link action always copies a URL containing the token value. Keep all user-facing text in English. Verify invite-links component usage instructions before implementing."
+          "description": "Ensure admin navigation remains available for admin users even when no profile exists by relying on the admin-check hook state (and not on profile presence) for showing the Admin link; keep behavior consistent for allowlisted admin. Verify the component's usage instructions before implementing."
         }
       ]
     }

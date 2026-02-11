@@ -16,32 +16,35 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, User, LogOut, Shield, Bell, Car, Home, Search, Settings } from 'lucide-react';
 import AppLogo from '../brand/AppLogo';
 import { useQueryClient } from '@tanstack/react-query';
+import { useT } from '../../i18n/I18nProvider';
+import LanguageSwitcher from '../i18n/LanguageSwitcher';
 
 export default function AppHeader() {
   const navigate = useNavigate();
   const { clear, identity } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
-  const { data: isAdmin, isLoading: adminLoading, isFetched: adminFetched, error: adminError, refetch: refetchAdmin } = useIsCallerAdmin();
+  const { data: isAdmin, isLoading: adminLoading, isFetched: adminFetched, error: adminError } = useIsCallerAdmin();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const t = useT();
 
   const handleLogout = async () => {
     await clear();
-    // Clear all cached data including admin status
     queryClient.clear();
   };
 
   const navItems = [
-    { label: 'Dashboard', path: '/', icon: Home },
-    { label: 'My Vehicles', path: '/vehicles', icon: Car },
-    { label: 'Lost Vehicles', path: '/lost-vehicles', icon: Search },
-    { label: 'Notifications', path: '/notifications', icon: Bell },
+    { label: t('nav.dashboard'), path: '/', icon: Home },
+    { label: t('nav.myVehicles'), path: '/vehicles', icon: Car },
+    { label: t('nav.lostVehicles'), path: '/lost-vehicles', icon: Search },
+    { label: t('nav.notifications'), path: '/notifications', icon: Bell },
   ];
 
-  // Show admin link when admin status is confirmed or when there's an error with retry option
+  // Show admin link based on admin status (not profile presence)
+  // Admin status is determined by backend checks including allowlisted admin
   if ((adminFetched && isAdmin) || (adminError && !adminLoading)) {
     navItems.push({ 
-      label: adminError ? 'Admin (Retry)' : 'Admin', 
+      label: adminError ? t('nav.adminRetry') : t('nav.admin'), 
       path: '/admin', 
       icon: Shield 
     });
@@ -73,6 +76,8 @@ export default function AppHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="hidden md:flex">
@@ -83,7 +88,7 @@ export default function AppHeader() {
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {userProfile?.fullName || 'User'}
+                    {userProfile?.fullName || t('nav.user')}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {userProfile?.email || identity?.getPrincipal().toString().slice(0, 20) + '...'}
@@ -93,16 +98,16 @@ export default function AppHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
                 <User className="mr-2 h-4 w-4" />
-                Profile
+                {t('nav.profile')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: '/security' })}>
                 <Settings className="mr-2 h-4 w-4" />
-                Security Settings
+                {t('nav.securitySettings')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                {t('nav.logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -117,7 +122,7 @@ export default function AppHeader() {
               <div className="flex flex-col gap-4 mt-8">
                 <div className="flex flex-col space-y-1 pb-4 border-b">
                   <p className="text-sm font-medium">
-                    {userProfile?.fullName || 'User'}
+                    {userProfile?.fullName || t('nav.user')}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {userProfile?.email || identity?.getPrincipal().toString().slice(0, 20) + '...'}
@@ -151,7 +156,7 @@ export default function AppHeader() {
                     }}
                   >
                     <User className="h-4 w-4" />
-                    Profile
+                    {t('nav.profile')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -162,7 +167,7 @@ export default function AppHeader() {
                     }}
                   >
                     <Settings className="h-4 w-4" />
-                    Security Settings
+                    {t('nav.securitySettings')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -173,7 +178,7 @@ export default function AppHeader() {
                     }}
                   >
                     <LogOut className="h-4 w-4" />
-                    Logout
+                    {t('nav.logout')}
                   </Button>
                 </div>
               </div>

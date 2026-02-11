@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCompleteOnboarding } from '../hooks/useOnboarding';
+import { useIsCallerAdmin } from '../hooks/useAdmin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,19 +9,34 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLogo from '../components/brand/AppLogo';
 import { toast } from 'sonner';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Shield } from 'lucide-react';
 
 export default function OnboardingInvitePage() {
   const navigate = useNavigate();
   const completeOnboarding = useCompleteOnboarding();
+  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const [inviteToken, setInviteToken] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('Indonesia');
 
+  // Redirect admins away from onboarding page
+  useEffect(() => {
+    if (!adminLoading && isAdmin) {
+      toast.info('Admin access detected. Redirecting to dashboard...');
+      navigate({ to: '/admin' });
+    }
+  }, [isAdmin, adminLoading, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Block form submission if user is admin
+    if (isAdmin) {
+      toast.error('Admins cannot complete invite-based onboarding');
+      return;
+    }
 
     if (!inviteToken.trim()) {
       toast.error('Token undangan harus diisi');
@@ -45,6 +61,41 @@ export default function OnboardingInvitePage() {
       toast.error(error.message || 'Gagal menyelesaikan pendaftaran');
     }
   };
+
+  // Show loading while checking admin status
+  if (adminLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Checking access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show admin notice if user is admin (before redirect completes)
+  if (isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
+        <Card className="w-full max-w-lg border-2">
+          <CardHeader>
+            <div className="flex items-center gap-2 text-primary">
+              <Shield className="h-6 w-6" />
+              <CardTitle>Admin Access Detected</CardTitle>
+            </div>
+            <CardDescription>You have admin privileges and do not need to complete onboarding.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">Redirecting to admin dashboard...</p>
+            <Button onClick={() => navigate({ to: '/admin' })} className="w-full">
+              Go to Admin Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">

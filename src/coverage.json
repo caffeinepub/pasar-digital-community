@@ -1,60 +1,47 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T09:29:08.949Z",
+  "generatedAt": "2026-02-11T10:28:05.029Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 3,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-62",
-        "summary": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after Internet Identity login (without requiring onboarding), so the Admin navigation entry appears and the /admin route is accessible.",
+        "id": "REQ-1",
+        "summary": "Update the client-side admin allowlist so the user’s Internet Identity principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin for onboarding-bypass checks (and structure the allowlist so it can support more than one principal without code churn).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+          "frontend/src/utils/adminAllowlist.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+          "frontend/src/utils/adminAllowlist.ts"
         ]
       },
       {
-        "id": "REQ-63",
-        "summary": "Fix admin-status data flow so the UI does not incorrectly show the allowlisted admin as a normal user (e.g., \"User\" without Admin menu) due to stale React Query cache, query timing, or transient actor bootstrap states.",
+        "id": "REQ-2",
+        "summary": "Change routing/bootstrap behavior so an admin user is never forced into the onboarding/registration flow. Specifically: when the authenticated principal is admin (including the allowlisted admin), do not redirect to `/onboarding` even if `getCallerUserProfile()` returns `null`, and ensure the app lands on a usable authenticated route (e.g., `/` or `/admin`) without showing the onboarding form.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/hooks/useActor.ts",
+          "frontend/src/routes/RootRouteGate.tsx",
+          "frontend/src/pages/OnboardingInvitePage.tsx",
           "frontend/src/components/nav/AppHeader.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useAdmin.ts",
+          "frontend/src/routes/RootRouteGate.tsx",
+          "frontend/src/pages/OnboardingInvitePage.tsx",
           "frontend/src/components/nav/AppHeader.tsx"
         ]
       },
       {
-        "id": "REQ-64",
-        "summary": "Ensure invite-token management is reachable and functional for the allowlisted admin: the Admin Dashboard must provide a working navigation path to `/admin/invite-tokens`, and generating invite tokens must work end-to-end.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-        ]
+        "id": "REQ-3",
+        "summary": "Update backend authorization so the allowlisted admin principal can be treated as an admin immediately (without requiring onboarding/profile completion), enabling admin APIs that currently rely on `hasAdminPermission` and preventing the ‘admin must register’ dead-end after a reinstall. Keep the allowlisted admin principal value exactly as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
@@ -64,14 +51,10 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
     "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useAdmin.ts",
-    "frontend/src/pages/admin/AdminDashboardPage.tsx",
-    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+    "frontend/src/pages/OnboardingInvitePage.tsx",
+    "frontend/src/routes/RootRouteGate.tsx",
+    "frontend/src/utils/adminAllowlist.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
