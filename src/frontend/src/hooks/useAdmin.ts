@@ -1,23 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 import type { InviteCode, Vehicle, UserRole } from '../backend';
 
 export function useIsCallerAdmin() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<boolean>({
-    queryKey: ['isCallerAdmin'],
+    queryKey: ['isCallerAdmin', identity?.getPrincipal().toString()],
     queryFn: async () => {
-      if (!actor) return false;
-      try {
-        return await actor.isCallerAdmin();
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        return false;
-      }
+      if (!actor) throw new Error('Actor not available');
+      return await actor.isCallerAdmin();
     },
-    enabled: !!actor && !isFetching,
-    retry: false,
+    enabled: !!actor && !!identity && !isFetching,
+    retry: 2,
+    retryDelay: 1000,
   });
 }
 
@@ -29,18 +27,11 @@ export function useCanClaimFirstAdmin() {
     queryFn: async () => {
       if (!actor) return false;
       try {
-        // Check if caller is already admin
-        const isAdmin = await actor.isCallerAdmin();
-        if (isAdmin) return false;
-
-        // Try to get system stats - if it fails with unauthorized, no admin exists yet
-        await actor.getSystemStats();
-        return false; // Admin exists
-      } catch (error: any) {
-        // If error contains "Unauthorized" or "Only admins", no admin exists yet
-        if (error?.message?.includes('Unauthorized') || error?.message?.includes('Only admins')) {
-          return true;
-        }
+        // Use the dedicated backend method to check if onboarding is allowed
+        // This properly handles the allowlist admin exclusion
+        return await actor.isOnboardingAllowed();
+      } catch (error) {
+        console.error('Error checking first admin claim:', error);
         return false;
       }
     },
@@ -54,22 +45,24 @@ export function useClaimFirstAdmin() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (profile: { fullName: string; email: string; city: string; country: string }) => {
       if (!actor) throw new Error('Actor not available');
       
-      // Get the caller's principal from the actor's identity
-      const identity = (actor as any)._identity;
-      if (!identity) throw new Error('Identity not available');
-      
-      const callerPrincipal = identity.getPrincipal();
-      
-      // Assign caller as admin using the backend method
-      await actor.assignCallerUserRole(callerPrincipal, 'admin' as UserRole);
+      // Use completeOnboarding with empty invite token for allowlist admin
+      // The backend will recognize the allowlist admin and skip invite validation
+      await actor.completeOnboarding('', {
+        fullName: profile.fullName,
+        email: profile.email,
+        city: profile.city,
+        country: profile.country,
+        onboarded: true,
+      });
     },
     onSuccess: () => {
-      // Invalidate admin check to update UI immediately
+      // Invalidate all relevant queries to update UI immediately
       queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
       queryClient.invalidateQueries({ queryKey: ['canClaimFirstAdmin'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
 }

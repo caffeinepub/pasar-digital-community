@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T00:44:55.383Z",
+  "generatedAt": "2026-02-11T01:24:53.456Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,61 +11,62 @@
     "implemented": 4,
     "items": [
       {
-        "id": "REQ-26",
-        "summary": "Update the authentication gate so the app never blocks on profile/actor queries before the user has authenticated, and so an unauthenticated visitor always sees the Sign In screen instead of an infinite \"Loading...\" screen.",
+        "id": "REQ-35",
+        "summary": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after sign-in, so the Admin navigation entry appears and admin routes are accessible for this Principal.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
+          "frontend/src/hooks/useAdmin.ts",
+          "frontend/src/components/nav/AppHeader.tsx",
+          "frontend/src/pages/admin/AdminDashboardPage.tsx",
+          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAdmin.ts",
+          "frontend/src/components/nav/AppHeader.tsx",
+          "frontend/src/pages/admin/AdminDashboardPage.tsx",
+          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-36",
+        "summary": "Fix the frontend admin-status data flow so `useIsCallerAdmin()` accurately reflects backend admin status (including the allowlist admin) and updates the UI reliably after authentication and after any admin-claim action.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useAdmin.ts",
+          "frontend/src/pages/admin/AdminDashboardPage.tsx",
+          "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+          "frontend/src/components/auth/AccessDeniedScreen.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAdmin.ts",
+          "frontend/src/pages/admin/AdminDashboardPage.tsx",
+          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-37",
+        "summary": "Replace the placeholder Profile hook implementation so the app fetches the real stored profile from the backend and can persist profile edits (full name, optional email, city, country).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/backend.d.ts",
           "frontend/src/hooks/useProfile.ts"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
+          "frontend/src/backend.d.ts",
           "frontend/src/hooks/useProfile.ts"
         ]
       },
       {
-        "id": "REQ-27",
-        "summary": "Fix the caller profile data flow to use the real backend profile API (not placeholder role-based data), and ensure onboarding redirects only happen after the profile fetch has definitively completed.",
+        "id": "REQ-38",
+        "summary": "Update the Profile page to provide an editable form for full name, email, city, and country, with clear English user-facing text and Save/Cancel actions.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useProfile.ts",
-          "frontend/src/App.tsx",
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/hooks/useProfile.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useProfile.ts",
-          "frontend/src/App.tsx",
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/pages/ProfilePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-28",
-        "summary": "Add resilient error handling for profile/role checks so transient backend errors do not cause an infinite loading state; show a recoverable UI state (e.g., Sign In if not authenticated, or an error message with a retry action if authenticated).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/auth/ProfileBootstrapError.tsx",
-          "frontend/src/hooks/useProfile.ts",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/auth/ProfileBootstrapError.tsx",
-          "frontend/src/hooks/useProfile.ts",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-29",
-        "summary": "Ensure the main layout (AppLayout) does not hide all navigation/content in a way that appears like a broken app during onboarding and immediately after login; the header may be hidden on onboarding, but the page content must always render.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/hooks/useProfile.ts"
         ]
       }
     ]
@@ -75,13 +76,13 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
-    "frontend/src/components/auth/ProfileBootstrapError.tsx",
-    "frontend/src/components/layout/AppLayout.tsx",
     "frontend/src/components/nav/AppHeader.tsx",
+    "frontend/src/hooks/useAdmin.ts",
     "frontend/src/hooks/useProfile.ts",
     "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/admin/AdminDashboardPage.tsx",
+    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

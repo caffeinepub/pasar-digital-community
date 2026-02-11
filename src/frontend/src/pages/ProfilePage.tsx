@@ -46,12 +46,20 @@ export default function ProfilePage() {
           <CardContent className="space-y-4">
             {userProfile ? (
               <>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    Your profile information was set during onboarding. Profile editing will be available in a future
+                    update when the backend methods are exposed in the TypeScript interface.
+                  </AlertDescription>
+                </Alert>
+
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     Full Name
                   </Label>
-                  <p className="text-sm font-medium">{userProfile.fullName || 'Not provided'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
                 </div>
 
                 <div className="space-y-2">
@@ -59,7 +67,7 @@ export default function ProfilePage() {
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
-                  <p className="text-sm font-medium">{userProfile.email || 'Not provided'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
                 </div>
 
                 <div className="space-y-2">
@@ -67,7 +75,7 @@ export default function ProfilePage() {
                     <MapPin className="h-4 w-4" />
                     City
                   </Label>
-                  <p className="text-sm font-medium">{userProfile.city || 'Not provided'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
                 </div>
 
                 <div className="space-y-2">
@@ -75,7 +83,7 @@ export default function ProfilePage() {
                     <Globe className="h-4 w-4" />
                     Country
                   </Label>
-                  <p className="text-sm font-medium">{userProfile.country || 'Not provided'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
                 </div>
               </>
             ) : (
@@ -105,7 +113,8 @@ export default function ProfilePage() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                Your Principal ID is your unique identifier on the Internet Computer blockchain. Keep it safe and never share your Internet Identity credentials.
+                Your Principal ID is your unique identifier on the Internet Computer blockchain. Keep it safe and never
+                share your Internet Identity credentials.
               </AlertDescription>
             </Alert>
           </CardContent>

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
+  "projectStateVersion": 15,
   "summary": "Aplikasi “Pasar Digital Community” untuk pencegahan pencurian kendaraan berbasis Principal ID (tanpa server tradisional), dengan registrasi kendaraan, pelepasan/transfer kepemilikan memakai PIN, sistem undangan berbayar via token/link sekali pakai yang dibuat admin (dengan tabel status pemakaian), modul laporan kendaraan hilang–ditemukan dan notifikasi, branding logo di splash/seluruh aplikasi, halaman “Tentang Aplikasi” berisi kontak admin, serta target responsif + PWA installable (Android/iOS).",
   "architectural_notes": [
     "Aplikasi ditargetkan berjalan tanpa server tradisional (mis. canister di Internet Computer); Principal ID digunakan sebagai identifier kriptografis pengguna.",
@@ -10,7 +10,8 @@
     "Profil pengguna perlu memiliki entry point UI yang jelas (mis. menu akun di pojok kanan atas) agar dapat diakses setelah login.",
     "Halaman Profil perlu menampilkan Principal ID (Internet Identity) pengguna (read-only) sebagai identitas kriptografis yang bisa disalin/dirujuk.",
     "Sediakan aksi Logout di halaman Profil (selain/atau menggantikan lokasi logout lain) agar mudah ditemukan pengguna.",
-    "Versi 4 mengalami risiko deadlock UI bila AuthGate/AppLayout bergantung pada userProfile.onboarded/role check sebelum data profil tersedia; perlu fallback render/login agar aplikasi tidak stuck di state initializing."
+    "Versi 4 mengalami risiko deadlock UI bila AuthGate/AppLayout bergantung pada userProfile.onboarded/role check sebelum data profil tersedia; perlu fallback render/login agar aplikasi tidak stuck di state initializing.",
+    "Tambahkan mekanisme admin permanen berbasis allowlist Principal ID (mis. set hardcoded/config) untuk memastikan admin tertentu selalu dikenali sebagai admin."
   ],
   "known_issues": [
     "Percobaan build sebelumnya gagal dengan pesan: 'AI couldn't process your request successfully. Try simplifying or rewording it.'",
@@ -18,7 +19,9 @@
     "Menu Admin/Dashboard tidak muncul karena akun/Principal belum ditetapkan sebagai admin (bootstrap admin belum berjalan/terkonfigurasi).",
     "Menu/halaman Profil Pengguna tidak muncul di navigasi (belum ada entry point UI meski fitur profil direncanakan).",
     "Setelah deploy Version 3, menu Admin/Dashboard dan entry point Profil Pengguna masih belum muncul untuk pengguna; perlu perbaikan UI/role-check dan/atau reset flow klaim admin.",
-    "Aplikasi stuck loading (layar hitam “Loading…”) saat membuka link awal setelah rilis Version 4; diduga terkait flow AuthGate/AppLayout + profile/role check yang menunggu data tidak pernah ter-resolve."
+    "Aplikasi stuck loading (layar hitam “Loading…”) saat membuka link awal setelah rilis Version 4; diduga terkait flow AuthGate/AppLayout + profile/role check yang menunggu data tidak pernah ter-resolve.",
+    "Halaman Profil tidak menampilkan tombol/form Edit sehingga profil tidak bisa diisi/diupdate.",
+    "Flow klaim 'first admin' tidak muncul sama sekali di UI (bootstrap admin tidak tersedia untuk user)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -245,6 +248,62 @@
         "REQ-29"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-profile-ui-to-support-editing-and-saving-profile-fields-full-name-email-city-country-with-clear-english-user-facing-copy-using-the-real-backend-profile-apis-the-page-must-include-an-obvious-action-to-enter-edit-mode-and-to-save-cancel-changes",
+      "title": "Update the Profile UI to support editing and saving profile fields (Full Name, Email, City, Country) with clear English user-facing copy, using the real backend profile APIs. The page must include an obvious action to enter edit mode and to save/cancel changes.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-frontend-profile-data-flow-so-it-no-longer-uses-role-based-placeholder-profile-values-replace-the-workaround-in-the-profile-hook-with-a-real-fetch-of-the-backend-user-profile-and-implement-a-working-mutation-for-saving-profile-edits-with-react-query-cache-invalidation",
+      "title": "Fix the frontend profile data flow so it no longer uses role-based placeholder profile values. Replace the workaround in the profile hook with a real fetch of the backend user profile, and implement a working mutation for saving profile edits with React Query cache invalidation.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-a-functional-claim-first-admin-flow-ensure-the-ui-can-reliably-determine-whether-admin-can-be-claimed-show-the-claim-action-when-appropriate-and-successfully-claim-admin-so-the-admin-navigation-entry-appears-immediately-all-user-facing-text-must-be-in-english",
+      "title": "Restore a functional “claim first admin” flow: ensure the UI can reliably determine whether admin can be claimed, show the claim action when appropriate, and successfully claim admin so the Admin navigation entry appears immediately. All user-facing text must be in English.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-allowlisted-principal-id-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-treated-as-an-admin-immediately-after-sign-in-so-the-admin-navigation-entry-appears-and-admin-routes-are-accessible-for-this-principal",
+      "title": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after sign-in, so the Admin navigation entry appears and admin routes are accessible for this Principal.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-frontend-admin-status-data-flow-so-useiscalleradmin-accurately-reflects-backend-admin-status-including-the-allowlist-admin-and-updates-the-ui-reliably-after-authentication-and-after-any-admin-claim-action",
+      "title": "Fix the frontend admin-status data flow so `useIsCallerAdmin()` accurately reflects backend admin status (including the allowlist admin) and updates the UI reliably after authentication and after any admin-claim action.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-placeholder-profile-hook-implementation-so-the-app-fetches-the-real-stored-profile-from-the-backend-and-can-persist-profile-edits-full-name-optional-email-city-country",
+      "title": "Replace the placeholder Profile hook implementation so the app fetches the real stored profile from the backend and can persist profile edits (full name, optional email, city, country).",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-profile-page-to-provide-an-editable-form-for-full-name-email-city-and-country-with-clear-english-user-facing-text-and-save-cancel-actions",
+      "title": "Update the Profile page to provide an editable form for full name, email, city, and country, with clear English user-facing text and Save/Cancel actions.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -344,6 +403,34 @@
       "id": "AR-16",
       "summary": "Reset/tambahkan ulang flow klaim 'first admin' agar pengguna bisa klaim admin saat ini dan menu Admin/Dashboard muncul",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Perbaiki halaman Profil agar bisa diedit (tampilkan tombol/form Edit/Update Profile dan pastikan bisa menyimpan perubahan)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Tetapkan Principal ID dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae sebagai admin permanen (allowlist) agar menu/dashboard Admin selalu muncul",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Add backend APIs to fetch and update the signed-in caller’s user profile so the frontend can display real stored profile data (not placeholder values) and persist profile edits after onboarding.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Permanently grant admin access to Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` via a backend allowlist rule, and ensure all admin checks and admin-gated backend endpoints treat this Principal as admin immediately after sign-in.",
+      "reqIds": [
+        "REQ-33"
+      ],
       "status": "pending"
     }
   ],

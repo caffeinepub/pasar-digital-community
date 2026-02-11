@@ -135,6 +135,7 @@ export const idlService = IDL.Service({
   'getVehicle' : IDL.Func([IDL.Text], [Vehicle], ['query']),
   'initiateTransfer' : IDL.Func([IDL.Text, IDL.Text], [IDL.Text], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isOnboardingAllowed' : IDL.Func([], [IDL.Bool], ['query']),
   'markNotificationRead' : IDL.Func([IDL.Text], [], []),
   'markVehicleLost' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'registerVehicle' : IDL.Func(
@@ -278,6 +279,7 @@ export const idlFactory = ({ IDL }) => {
     'getVehicle' : IDL.Func([IDL.Text], [Vehicle], ['query']),
     'initiateTransfer' : IDL.Func([IDL.Text, IDL.Text], [IDL.Text], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isOnboardingAllowed' : IDL.Func([], [IDL.Bool], ['query']),
     'markNotificationRead' : IDL.Func([IDL.Text], [], []),
     'markVehicleLost' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'registerVehicle' : IDL.Func(

@@ -195,6 +195,7 @@ export interface backendInterface {
     getVehicle(vehicleId: string): Promise<Vehicle>;
     initiateTransfer(vehicleId: string, pin: string): Promise<string>;
     isCallerAdmin(): Promise<boolean>;
+    isOnboardingAllowed(): Promise<boolean>;
     markNotificationRead(notificationId: string): Promise<void>;
     markVehicleLost(vehicleId: string, reportNote: string): Promise<void>;
     registerVehicle(engineNumber: string, chassisNumber: string, brand: string, model: string, year: bigint, location: string, vehiclePhoto: ExternalBlob): Promise<string>;
@@ -547,6 +548,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async isOnboardingAllowed(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isOnboardingAllowed();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isOnboardingAllowed();
             return result;
         }
     }

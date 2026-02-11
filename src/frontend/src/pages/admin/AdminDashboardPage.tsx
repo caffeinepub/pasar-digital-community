@@ -2,18 +2,38 @@ import { useIsCallerAdmin, useGetSystemStats } from '../../hooks/useAdmin';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import AccessDeniedScreen from '../../components/auth/AccessDeniedScreen';
-import { Car, AlertTriangle, CheckCircle, Users, Ticket } from 'lucide-react';
+import { Car, AlertTriangle, CheckCircle, Users, Ticket, AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
+  const { data: isAdmin, isLoading: adminLoading, error: adminError, refetch: refetchAdmin } = useIsCallerAdmin();
   const { data: stats, isLoading: statsLoading } = useGetSystemStats();
 
   if (adminLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  if (adminError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Failed to verify admin status. Please try again.</span>
+              <Button variant="outline" size="sm" onClick={() => refetchAdmin()} className="ml-4">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }

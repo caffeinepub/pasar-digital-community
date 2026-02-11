@@ -21,7 +21,7 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const { clear, identity } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
-  const { data: isAdmin } = useIsCallerAdmin();
+  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -37,7 +37,7 @@ export default function AppHeader() {
     { label: 'Notifications', path: '/notifications', icon: Bell },
   ];
 
-  if (isAdmin) {
+  if (isAdmin && !adminLoading) {
     navItems.push({ label: 'Admin', path: '/admin', icon: Shield });
   }
 
@@ -160,7 +160,7 @@ export default function AppHeader() {
                   </Button>
                   <Button
                     variant="ghost"
-                    className="justify-start gap-2 text-destructive"
+                    className="justify-start gap-2 text-destructive hover:text-destructive"
                     onClick={() => {
                       handleLogout();
                       setMobileMenuOpen(false);

@@ -1,70 +1,90 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T00:44:55.379Z",
-  "summary": "Diff addresses the loading/auth bootstrap with a new AuthGate flow, adds an authenticated-profile error UI with retry, and adjusts layout/header rendering. However, the profile data flow still relies on a placeholder role-based workaround rather than the real backend caller profile API, and several unrelated features (PWA, About/Admin enhancements) were added beyond the stated scope.",
+  "generatedAt": "2026-02-11T01:24:53.452Z",
+  "summary": "Admin status querying and recoverable error UI on admin pages were improved on the frontend, and the header now conditionally shows an Admin nav item when `useIsCallerAdmin()` returns true. However, the allowlisted-admin backend behavior is not evidenced, and the Profile hooks/page remain non-editable and still use placeholders/throw errors instead of real backend profile fetch/save.",
   "missing_requirements": [
     {
-      "id": "REQ-27",
-      "requirement": "Fix the caller profile data flow to use the real backend profile API (not placeholder role-based data), and ensure onboarding redirects only happen after the profile fetch has definitively completed.",
-      "reason": "The profile hook explicitly uses getCallerUserRole and returns a placeholder UserProfile (empty fields) to infer onboarding, stating that getCallerUserProfile is not exposed/used. The diff summary does not show corresponding backend/main.mo changes to expose a real getCallerUserProfile implementation, and the Profile/Header continue to consume this placeholder data.",
+      "id": "REQ-35",
+      "requirement": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after sign-in so Admin nav appears and /admin is accessible without a separate claim step.",
+      "reason": "No backend (Motoko) changes are shown that would implement the allowlist/admin recognition or ensure admin-gated endpoints succeed for that principal immediately after sign-in. The diff only shows frontend gating based on `actor.isCallerAdmin()`.",
+      "evidence": [
+        "frontend/src/hooks/useAdmin.ts",
+        "frontend/src/components/nav/AppHeader.tsx",
+        "frontend/src/pages/admin/AdminDashboardPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "requirement": "Fix admin-status data flow so `useIsCallerAdmin()` accurately reflects backend admin status and does not silently downgrade a real admin to non-admin on query failures; provide recoverable UI state where appropriate.",
+      "reason": "While admin pages show a retry UI on admin-check errors, the header/nav appears to simply omit the Admin item unless `isAdmin && !adminLoading`, with no visible recoverable state for admin-check failures in navigation. This can still effectively 'downgrade' the UI to non-admin during errors.",
+      "evidence": [
+        "frontend/src/components/nav/AppHeader.tsx",
+        "frontend/src/pages/admin/AdminDashboardPage.tsx",
+        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "requirement": "Replace placeholder Profile hooks so the app fetches the real stored profile from the backend and can persist profile edits; `useSaveCallerUserProfile()` should call backend and invalidate/refetch `currentUserProfile`.",
+      "reason": "`useGetCallerUserProfile()` still returns placeholders based on `getCallerUserRole()` rather than fetching real saved values, and `useSaveCallerUserProfile()` throws an error instead of performing a backend call.",
       "evidence": [
         "frontend/src/hooks/useProfile.ts",
-        "frontend/src/pages/ProfilePage.tsx",
-        "frontend/src/components/nav/AppHeader.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/pages/ProfilePage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "requirement": "Update the Profile page to provide an editable form for full name, email, city, and country with Save/Cancel actions, success confirmation, and principal shown read-only.",
+      "reason": "Profile page explicitly states editing is not available and shows read-only placeholders ('Set during onboarding') without edit mode, inputs, Save/Cancel, or success confirmation.",
+      "evidence": [
+        "frontend/src/pages/ProfilePage.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "PWA installability support (manifest, service worker registration, caching/offline strategy, meta tags).",
-      "reason": "Not requested in BuildRequest; non-goals emphasize avoiding new product features beyond fixing loading/auth/profile flow.",
+      "description": "Added/modified PWA installability features (manifest, service worker, meta tags, registration).",
+      "reason": "Not requested by REQ-35–REQ-38 and unrelated to admin visibility or editable Profile form.",
       "evidence": [
         "frontend/index.html",
         "frontend/src/main.tsx",
         "frontend/public/manifest.webmanifest",
-        "frontend/public/sw.js",
-        "frontend-file-summaries.txt"
+        "frontend/public/sw.js"
       ]
     },
     {
-      "description": "About page with app description and admin contact information.",
-      "reason": "Not requested as part of fixing the loading/auth/profile/onboarding/admin-check flow.",
+      "description": "Added/refactored authentication gate and new profile bootstrap error screen/component.",
+      "reason": "Not explicitly requested in REQ-35–REQ-38 (beyond ensuring admin/profile functionality).",
       "evidence": [
-        "frontend/src/pages/AboutPage.tsx",
-        "frontend/src/components/layout/AppLayout.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/App.tsx",
+        "frontend/src/components/auth/ProfileBootstrapError.tsx"
       ]
     },
     {
-      "description": "First-admin bootstrap/claim admin access hooks and related access-denied UI changes.",
-      "reason": "BuildRequest only mentions fixing existing admin-check flow robustness, not adding new admin-claim/bootstrap capabilities.",
+      "description": "Added/updated About page content including admin contact information.",
+      "reason": "Not requested by REQ-35–REQ-38.",
       "evidence": [
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/components/auth/AccessDeniedScreen.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/pages/AboutPage.tsx"
       ]
     },
     {
-      "description": "Admin invite token page enhancements and other admin UI changes unrelated to the loading/auth bootstrap fix.",
-      "reason": "Not requested; outside the targeted scope.",
+      "description": "Added a 'Security Settings' navigation destination from the user dropdown.",
+      "reason": "Not requested by REQ-35–REQ-38.",
       "evidence": [
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-        "frontend/src/pages/admin/AdminDashboardPage.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/components/nav/AppHeader.tsx"
       ]
     }
   ],
   "confidence": 0.74,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/auth/ProfileBootstrapError.tsx",
-    "frontend/src/components/layout/AppLayout.tsx",
     "frontend/src/components/nav/AppHeader.tsx",
+    "frontend/src/hooks/useAdmin.ts",
     "frontend/src/hooks/useProfile.ts",
     "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/admin/AdminDashboardPage.tsx",
+    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
     "project_state.json"
   ]
 }

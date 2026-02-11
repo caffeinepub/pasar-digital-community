@@ -1,94 +1,108 @@
 {
   "kind": "build_request",
-  "title": "Fix infinite Loading screen on initial app open (AuthGate/Profile bootstrap)",
+  "title": "Fix admin access visibility and enable editable Profile form",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-26",
-      "text": "Update the authentication gate so the app never blocks on profile/actor queries before the user has authenticated, and so an unauthenticated visitor always sees the Sign In screen instead of an infinite \"Loading...\" screen.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "recent-1"
-        ],
-        "quotes": [
-          "kok loading terus? tidak kebuka program nya",
-          "“ya, perbaiki”."
-        ]
-      },
-      "acceptanceCriteria": [
-        "With no existing Internet Identity session, opening the app shows the Sign In screen (not a loading spinner) within 2 seconds.",
-        "While Internet Identity is initializing, a loading indicator may appear, but it must resolve to either Sign In (if not authenticated) or the app (if authenticated) without getting stuck.",
-        "The profile query is not awaited/required to render Sign In when identity is missing."
-      ]
-    },
-    {
-      "id": "REQ-27",
-      "text": "Fix the caller profile data flow to use the real backend profile API (not placeholder role-based data), and ensure onboarding redirects only happen after the profile fetch has definitively completed.",
+      "id": "REQ-35",
+      "text": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after sign-in, so the Admin navigation entry appears and admin routes are accessible for this Principal.",
       "target": "both",
       "source": {
         "messageIds": [
-          "recent-1"
+          "msg-user-last"
         ],
         "quotes": [
-          "Aplikasi stuck loading (layar hitam “Loading…”) saat membuka link awal setelah rilis Version 4; diduga terkait flow AuthGate/AppLayout + profile/role check yang menunggu data tidak pernah ter-resolve."
+          "langsung lakukan perbaikan admin-access + perbaikan form Profile di build"
         ]
       },
       "acceptanceCriteria": [
-        "When authenticated and the backend returns no profile / not onboarded, the user is redirected to /onboarding exactly once and the page renders (no redirect loop).",
-        "When authenticated and the backend returns an onboarded profile, the user is not redirected to /onboarding and can access the dashboard.",
-        "The Profile page and header logic rely on the fetched profile (including onboarded flag) rather than a hard-coded placeholder profile.",
-        "If the generated frontend actor typings do not currently expose getCallerUserProfile (or equivalent), the backend must expose a public method that returns the caller profile used by the UI, without changing the existing stored profile schema."
+        "When signed in as Principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the top navigation (desktop) and mobile navigation show an 'Admin' item.",
+        "When signed in as that Principal, visiting `/admin` renders the Admin Dashboard page (not Access Denied).",
+        "All backend admin-gated endpoints used by the Admin UI succeed for that Principal without requiring a separate 'claim first admin' step."
       ]
     },
     {
-      "id": "REQ-28",
-      "text": "Add resilient error handling for profile/role checks so transient backend errors do not cause an infinite loading state; show a recoverable UI state (e.g., Sign In if not authenticated, or an error message with a retry action if authenticated).",
+      "id": "REQ-36",
+      "text": "Fix the frontend admin-status data flow so `useIsCallerAdmin()` accurately reflects backend admin status (including the allowlist admin) and updates the UI reliably after authentication and after any admin-claim action.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-1"
+          "msg-user-last"
         ],
         "quotes": [
-          "kok loading terus? tidak kebuka program nya"
+          "langsung lakukan perbaikan admin-access + perbaikan form Profile di build"
         ]
       },
       "acceptanceCriteria": [
-        "If profile fetch fails while authenticated, the UI displays an error state with a visible retry action instead of remaining on an indefinite spinner.",
-        "Retrying after a failure successfully re-attempts the profile fetch and proceeds to the correct route (dashboard or onboarding) when the backend responds.",
-        "Console errors may exist for debugging, but the UI must not remain blocked indefinitely."
+        "After login completes, the Admin menu item appears/disappears correctly based on the backend admin check without requiring a hard refresh.",
+        "If the user successfully claims admin via the existing claim flow, the Admin menu item appears within the same session (no reload).",
+        "Admin status query failures do not silently downgrade a real admin to non-admin; show a recoverable UI state (e.g., retry) where appropriate on admin pages."
       ]
     },
     {
-      "id": "REQ-29",
-      "text": "Ensure the main layout (AppLayout) does not hide all navigation/content in a way that appears like a broken app during onboarding and immediately after login; the header may be hidden on onboarding, but the page content must always render.",
-      "target": "frontend",
+      "id": "REQ-37",
+      "text": "Replace the placeholder Profile hook implementation so the app fetches the real stored profile from the backend and can persist profile edits (full name, optional email, city, country).",
+      "target": "both",
       "source": {
         "messageIds": [
-          "recent-1"
+          "msg-user-last"
         ],
         "quotes": [
-          "di awal membuka link nya. ini screnshot nya saya kirim"
+          "langsung lakukan perbaikan admin-access + perbaikan form Profile di build"
         ]
       },
       "acceptanceCriteria": [
-        "After login, the onboarding page content renders even if the header is intentionally hidden.",
-        "After login and successful profile load, dashboard content renders and navigation becomes available for onboarded users.",
-        "There is no full-screen blank/black page caused by layout gating conditions."
+        "`useGetCallerUserProfile()` returns the actual saved values (fullName/email/city/country/onboarded) instead of role-based placeholders.",
+        "`useSaveCallerUserProfile()` performs a real backend call to persist edits and invalidates/refetches the `currentUserProfile` query on success.",
+        "If the backend interface used by the frontend is missing the profile methods, it is updated so the generated actor exposes the required profile APIs used by the hooks."
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "text": "Update the Profile page to provide an editable form for full name, email, city, and country, with clear English user-facing text and Save/Cancel actions.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-last"
+        ],
+        "quotes": [
+          "langsung lakukan perbaikan admin-access + perbaikan form Profile di build"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Profile page shows an obvious 'Edit profile' action when viewing the profile.",
+        "In edit mode, the user can type into inputs for Full Name (required), Email (optional), City, and Country, then Save or Cancel.",
+        "Saving shows a success confirmation, exits edit mode, and the displayed values match what is fetched from the backend after save.",
+        "Cancel discards unsaved changes and returns to view mode.",
+        "The Principal ID remains visible as read-only text on the Profile page.",
+        "The existing Logout action continues to log out and clears cached app state."
       ]
     }
   ],
   "constraints": [
-    "Frontend files under frontend/src/components/ui and the immutable hook paths listed in SYSTEM_CONTEXT must not be edited directly; compose around them if changes are needed.",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add migration.mo if a stable-state upgrade is required (avoid if not necessary)."
+    "Backend must remain a single Motoko actor in backend/main.mo; do not introduce additional backend services.",
+    "Do not edit files under frontend/src/components/ui or other immutablePaths; compose existing UI components instead.",
+    "Use English for all user-facing text introduced or modified by this change."
   ],
   "nonGoals": [
-    "Adding new product features beyond fixing the loading/auth/profile/onboarding/admin-check flow.",
-    "Changing the data model/schema for user profiles, vehicles, transfers, lost/found reports, or invite tokens (unless strictly required to fix the loading issue).",
-    "Introducing external services, databases, or new authentication providers beyond Internet Identity."
+    "Do not redesign the overall navigation structure beyond what is required to make Admin and Profile functionality work.",
+    "Do not add new authentication providers (Internet Identity remains the only auth method).",
+    "Do not add new profile fields beyond full name, email, city, and country."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [
+      "Use English for any user-facing text."
+    ],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

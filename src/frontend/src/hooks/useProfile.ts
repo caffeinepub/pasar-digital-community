@@ -3,27 +3,28 @@ import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
 import type { UserProfile, UserRole } from '../backend';
 
+// Note: getCallerUserProfile and saveCallerUserProfile are provided by MixinAuthorization
+// in the backend but are not exposed in the generated TypeScript interface.
+// Using getCallerUserRole as a workaround to determine onboarding status.
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
   const { identity } = useInternetIdentity();
 
   const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile'],
+    queryKey: ['currentUserProfile', identity?.getPrincipal().toString()],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       
       try {
-        // Backend's getCallerUserProfile is not exposed in the TypeScript interface
-        // Use getCallerUserRole as a workaround to determine onboarding status
+        // Check user role to determine if onboarded
         const role = await actor.getCallerUserRole();
         
         // If user has 'user' or 'admin' role, they've completed onboarding
-        // If they have 'guest' role, they need to onboard
         if (role === ('user' as UserRole) || role === ('admin' as UserRole)) {
-          // Return a placeholder profile indicating onboarding is complete
-          // The actual profile data is stored in backend but not retrievable via current interface
+          // Profile data exists in backend but cannot be retrieved via TypeScript interface
+          // Return a placeholder indicating onboarding is complete
           return {
-            fullName: '',
+            fullName: 'Profile data set during onboarding',
             email: '',
             city: '',
             country: '',
@@ -38,7 +39,6 @@ export function useGetCallerUserProfile() {
         if (error.message?.includes('not found') || error.message?.includes('No profile')) {
           return null;
         }
-        // For other errors, throw to trigger error state
         throw error;
       }
     },
@@ -61,9 +61,9 @@ export function useSaveCallerUserProfile() {
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
       if (!actor) throw new Error('Actor not available');
-      // Backend's saveCallerUserProfile is not exposed in the TypeScript interface
-      // Profile updates are handled during onboarding via completeOnboarding
-      throw new Error('Profile updates are not available. Profile is set during onboarding.');
+      // Backend MixinAuthorization provides saveCallerUserProfile but it's not exposed in the TypeScript interface
+      // Profile updates after onboarding are not currently supported via the generated interface
+      throw new Error('Profile editing is not available. The backend method saveCallerUserProfile is not exposed in the TypeScript interface.');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });

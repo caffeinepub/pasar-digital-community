@@ -111,40 +111,63 @@ actor {
   // ---------------------- Onboarding ----------------------
 
   public shared ({ caller }) func completeOnboarding(inviteToken : Text, profile : UserProfile) : async () {
-    // No authorization check - this is the onboarding endpoint for new users (guests)
-    // Validate invite code
-    let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
-    switch (inviteCodes.find(func(code) { code.code == inviteToken })) {
-      case (null) { Runtime.trap("Invalid or expired invitation token") };
-      case (?_code) {
-        switch (usedInviteTokens.get(inviteToken)) {
-          case (?_) { Runtime.trap("Invitation token already used") };
-          case null {};
+    // Check if onboarding can be claimed (only when allowlist admin is not onboarded)
+    let allowlistAdmin = Principal.fromText("dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae");
+
+    let isAllowlistAdminNotOnboarded = switch (userProfiles.get(allowlistAdmin)) {
+      case (?existing) { not existing.onboarded };
+      case (null) { true };
+    };
+
+    let isClaimingFirstAdmin = caller == allowlistAdmin and isAllowlistAdminNotOnboarded;
+
+    if (isClaimingFirstAdmin) {
+      // Save profile and assign admin role without invitation check
+      let adminProfile = {
+        fullName = profile.fullName;
+        email = profile.email;
+        city = profile.city;
+        country = profile.country;
+        onboarded = true;
+      };
+      userProfiles.add(caller, adminProfile);
+      AccessControl.assignRole(accessControlState, caller, caller, #admin);
+    } else {
+      // Regular onboarding flow for non-admin
+      // Validate invite code
+      let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
+      switch (inviteCodes.find(func(code) { code.code == inviteToken })) {
+        case (null) { Runtime.trap("Invalid or expired invitation token") };
+        case (?_code) {
+          switch (usedInviteTokens.get(inviteToken)) {
+            case (?_) { Runtime.trap("Invitation token already used") };
+            case null {};
+          };
         };
       };
-    };
 
-    switch (userProfiles.get(caller)) {
-      case (?existingProfile) {
-        if (existingProfile.onboarded) {
-          Runtime.trap("Already onboarded");
+      switch (userProfiles.get(caller)) {
+        case (?existingProfile) {
+          if (existingProfile.onboarded) {
+            Runtime.trap("Already onboarded");
+          };
         };
+        case null {};
       };
-      case null {};
+
+      usedInviteTokens.add(inviteToken, caller);
+
+      AccessControl.assignRole(accessControlState, caller, caller, #user);
+
+      let onboardedProfile = {
+        fullName = profile.fullName;
+        email = profile.email;
+        city = profile.city;
+        country = profile.country;
+        onboarded = true;
+      };
+      userProfiles.add(caller, onboardedProfile);
     };
-
-    usedInviteTokens.add(inviteToken, caller);
-
-    AccessControl.assignRole(accessControlState, caller, caller, #user);
-
-    let onboardedProfile = {
-      fullName = profile.fullName;
-      email = profile.email;
-      city = profile.city;
-      country = profile.country;
-      onboarded = true;
-    };
-    userProfiles.add(caller, onboardedProfile);
   };
 
   // ---------------------- PIN Management ----------------------
@@ -508,5 +531,19 @@ actor {
       totalGenerated = totalGenerated;
       totalUsed = totalUsed;
     };
+  };
+
+  // ---------------------- Is Onboarding Allowed ----------------------
+
+  public query ({ caller }) func isOnboardingAllowed() : async Bool {
+    // Allowlist admin Principal only (first admin claim) => no need for additional authorization check
+    let allowlistAdmin = Principal.fromText("dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae");
+
+    let isAllowlistAdminNotOnboarded = switch (userProfiles.get(allowlistAdmin)) {
+      case (?existing) { not existing.onboarded };
+      case (null) { true };
+    };
+
+    caller == allowlistAdmin and isAllowlistAdminNotOnboarded;
   };
 };

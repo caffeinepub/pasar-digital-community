@@ -121,6 +121,7 @@ export interface _SERVICE {
   'getVehicle' : ActorMethod<[string], Vehicle>,
   'initiateTransfer' : ActorMethod<[string, string], string>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isOnboardingAllowed' : ActorMethod<[], boolean>,
   'markNotificationRead' : ActorMethod<[string], undefined>,
   'markVehicleLost' : ActorMethod<[string, string], undefined>,
   'registerVehicle' : ActorMethod<

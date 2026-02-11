@@ -133,74 +133,47 @@ const router = createRouter({ routeTree });
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { identity, isInitializing } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading, isFetched, isError, error, refetch } = useGetCallerUserProfile();
-  const [hasRedirected, setHasRedirected] = useState(false);
+  const navigate = useNavigate();
+  const hasRedirected = useRef(false);
 
-  // Show loading only while Internet Identity is initializing
-  if (isInitializing) {
+  useEffect(() => {
+    if (!identity || !isFetched || hasRedirected.current) return;
+
+    if (userProfile === null) {
+      hasRedirected.current = true;
+      navigate({ to: '/onboarding' });
+    }
+  }, [identity, userProfile, isFetched, navigate]);
+
+  // Show loading while initializing auth or fetching profile
+  if (isInitializing || (identity && profileLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Menginisialisasi...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // If not authenticated, show sign-in immediately (don't wait for profile)
+  // Show sign-in screen if not authenticated
   if (!identity) {
     return <SignInScreen />;
   }
 
-  // Authenticated: show loading while profile is being fetched
-  if (profileLoading && !isFetched) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Memuat profil...</p>
-        </div>
-      </div>
-    );
+  // Show error screen if profile fetch failed
+  if (isError && error) {
+    return <ProfileBootstrapError error={error} onRetry={refetch} />;
   }
 
-  // If profile fetch failed, show error with retry
-  if (isError && isFetched) {
-    return (
-      <ProfileBootstrapError
-        error={error}
-        onRetry={() => {
-          setHasRedirected(false);
-          refetch();
-        }}
-      />
-    );
-  }
-
-  // Profile fetched successfully - handle onboarding redirect
-  const currentPath = window.location.hash.replace('#', '') || '/';
-  const needsOnboarding = isFetched && userProfile === null;
-
-  // Redirect to onboarding if needed (only once)
-  if (needsOnboarding && currentPath !== '/onboarding' && !hasRedirected) {
-    setHasRedirected(true);
-    window.location.hash = '#/onboarding';
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Mengarahkan ke pendaftaran...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Show children if authenticated and profile exists
   return <>{children}</>;
 }
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthGate>
         <RouterProvider router={router} />
       </AuthGate>
