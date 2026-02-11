@@ -1,52 +1,20 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Build/deployed app includes an invite-token based registration flow; user requests simplifying invitation so clicking the invite link auto-applies the token and goes directly to account registration without manual token entry.",
+  "summary": "New project",
   "architectural_notes": [
-    "Invitation/registration flow should accept invite token via link (e.g., embedded in URL) and not require manual token input on the UI."
+    "User signup/onboarding flow should not require admin authorization for normal end-users (only for admin-specific actions/roles)."
   ],
   "known_issues": [
-    "Current invite flow requires users to manually input an invite token after receiving it from admin; UX is confusing and should be one-click from invite link."
+    "User account onboarding still prompts for admin authorization even though registration should be simplified."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-invite-based-onboarding-flow-so-that-when-a-user-opens-an-invite-link-containing-an-invite-token-e-g-onboarding-invitetoken-the-app-automatically-reads-and-applies-the-token-and-the-user-is-not-required-to-manually-type-paste-any-invite-token",
-      "title": "Update the invite-based onboarding flow so that when a user opens an invite link containing an invite token (e.g. `/#/onboarding?inviteToken=...`), the app automatically reads and applies the token and the user is not required to manually type/paste any invite token.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-revise-frontend-src-pages-onboardinginvitepage-tsx-ui-so-the-invite-token-is-not-shown-as-a-required-input-field-when-it-is-present-via-url-session-user-facing-text-on-this-page-must-be-in-english-replace-existing-indonesian-toasts-labels-messages",
-      "title": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session; user-facing text on this page must be in English (replace existing Indonesian toasts/labels/messages).",
+      "id": "feature-update-the-frontend-onboarding-error-handling-so-that-if-the-backend-still-returns-an-authorization-related-onboarding-failure-the-onboarding-ui-shows-a-clear-english-message-explaining-registration-could-not-be-completed-without-mentioning-admin-role-assignment-and-does-not-display-the-raw-backend-error-string-to-end-users",
+      "title": "Update the frontend onboarding error handling so that if the backend still returns an authorization-related onboarding failure, the onboarding UI shows a clear English message explaining registration could not be completed (without mentioning admin role assignment), and does not display the raw backend error string to end users.",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-invite-tokens-passed-in-the-url-are-persisted-for-the-session-and-removed-from-the-address-bar-after-being-captured-so-users-can-navigate-sign-in-and-return-to-onboarding-without-losing-the-token-and-without-leaving-the-token-visible-in-the-url",
-      "title": "Ensure invite tokens passed in the URL are persisted for the session and removed from the address bar after being captured, so users can navigate/sign-in and return to onboarding without losing the token and without leaving the token visible in the URL.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-keep-the-admin-invite-token-sharing-ux-aligned-with-the-one-click-onboarding-flow-by-ensuring-frontend-src-pages-admin-admininvitetokenspage-tsx-copies-an-invite-link-that-works-with-the-new-auto-apply-onboarding-behavior-and-use-english-only-success-error-toasts",
-      "title": "Keep the admin invite-token sharing UX aligned with the one-click onboarding flow by ensuring `frontend/src/pages/admin/AdminInviteTokensPage.tsx` copies an invite link that works with the new auto-apply onboarding behavior, and use English-only success/error toasts.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-do-not-change-the-backend-invite-token-validation-semantics-onboarding-must-continue-to-enforce-that-the-token-exists-and-is-unused-using-the-existing-completeonboarding-invitetoken-profile-backend-api-only-the-frontend-experience-should-change-to-make-it-one-click",
-      "title": "Do not change the backend invite-token validation semantics: onboarding must continue to enforce that the token exists and is unused, using the existing `completeOnboarding(inviteToken, profile)` backend API; only the frontend experience should change to make it one-click.",
-      "reqIds": [
-        "REQ-5"
       ],
       "version": 1
     }
@@ -54,12 +22,20 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Simplify invitation onboarding: invite link should auto-apply token and open registration form without requiring users to manually enter an invite token",
+      "summary": "Permudah pendaftaran akun pengguna: hilangkan/skip permintaan authorize ke admin saat user signup/onboarding",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with the error `Unauthorized: Only admins can assign user roles`. Keep the existing behavior for the allowlisted first-admin claim (allowlisted principal can complete onboarding with an empty token).",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Make invite links one-click onboarding (auto-apply invite token; no manual token input)",
+  "projectName": "Fix user onboarding so registration does not require admin authorization",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

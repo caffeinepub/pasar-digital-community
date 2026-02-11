@@ -1,106 +1,52 @@
 {
   "kind": "build_request",
-  "title": "Make invite links one-click onboarding (auto-apply invite token; no manual token input)",
+  "title": "Fix user onboarding so registration does not require admin authorization",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the invite-based onboarding flow so that when a user opens an invite link containing an invite token (e.g. `/#/onboarding?inviteToken=...`), the app automatically reads and applies the token and the user is not required to manually type/paste any invite token.",
-      "target": "frontend",
+      "text": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with the error `Unauthorized: Only admins can assign user roles`. Keep the existing behavior for the allowlisted first-admin claim (allowlisted principal can complete onboarding with an empty token).",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-6"
         ],
         "quotes": [
-          "Seharusnya ketika klik link, harus nya sudah otomatis masuk dan pengguna hanya memasukan data pengguna saja seperti nama dan lain-lain.",
-          "Buat simpel saja, sekali klik langung masuk ke fitur pendaftaran akun tanpa memasukan Token Undangan"
+          "ini sekarang di akun pengguna, masih tetap minta authorize ke admin. Kan saya sudah bilang di permudah untuk daftar nya, Coba lihat screnshot yang saya kirim"
         ]
       },
       "acceptanceCriteria": [
-        "Opening `/#/onboarding?inviteToken=<token>` pre-fills the onboarding flow with `<token>` without any user action.",
-        "The onboarding form submission succeeds using the URL-provided token and only requires the user profile fields (e.g., name, email, city, country).",
-        "If the invite token is missing from the URL and not available from session persistence, the page shows a clear English message instructing the user to use an invite link from an admin (and does not present a blank required token field)."
+        "When a non-admin, non-allowlisted user calls `completeOnboarding(inviteToken, profile)` with a valid, unused invite token, the call succeeds and the user can subsequently access user-gated methods (e.g., `getCallerUserProfile` returns a non-null profile, `registerVehicle` is allowed).",
+        "The onboarding flow does not produce/trap with `Unauthorized: Only admins can assign user roles` for normal users.",
+        "The allowlisted admin principal (\"dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae\") can still call `completeOnboarding('', profile)` (when not yet onboarded) successfully."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session; user-facing text on this page must be in English (replace existing Indonesian toasts/labels/messages).",
+      "text": "Update the frontend onboarding error handling so that if the backend still returns an authorization-related onboarding failure, the onboarding UI shows a clear English message explaining registration could not be completed (without mentioning admin role assignment), and does not display the raw backend error string to end users.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-6"
         ],
         "quotes": [
-          "Kalau masukin Token Undangan, pengguna mana tahu Token Undangan nya"
+          "masih tetap minta authorize ke admin"
         ]
       },
       "acceptanceCriteria": [
-        "When an invite token is available (from URL/session), the UI does not ask the user to enter an invite token.",
-        "All visible strings and toast messages on the onboarding page are English-only (e.g., errors, headings, button labels).",
-        "If the backend returns an invalid/expired/used-token error, the UI displays the error in English in a user-comprehensible way (may include the backend message, but must not be Indonesian)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Ensure invite tokens passed in the URL are persisted for the session and removed from the address bar after being captured, so users can navigate/sign-in and return to onboarding without losing the token and without leaving the token visible in the URL.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "Seharusnya ketika klik link, harus nya sudah otomatis masuk"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the user opens an invite link and then navigates within the app (or completes Internet Identity sign-in), the invite token remains available for onboarding completion without re-copying the link.",
-        "After the token is read, the app removes the `inviteToken` parameter from the visible URL (hash/query) without reloading the page."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Keep the admin invite-token sharing UX aligned with the one-click onboarding flow by ensuring `frontend/src/pages/admin/AdminInviteTokensPage.tsx` copies an invite link that works with the new auto-apply onboarding behavior, and use English-only success/error toasts.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "ini kenapa admin share token undangan ke pengguna"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Clicking “Copy Link” (and the post-generate auto-copy) copies an invite link that sends users directly to the onboarding registration form with the token auto-applied.",
-        "Admin page toasts related to invite link creation/copying are English-only."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Do not change the backend invite-token validation semantics: onboarding must continue to enforce that the token exists and is unused, using the existing `completeOnboarding(inviteToken, profile)` backend API; only the frontend experience should change to make it one-click.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "Seharusnya ketika klik link, harus nya sudah otomatis masuk ... tanpa memasukan Token Undangan"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend continues to reject invalid/expired/used tokens as it does today.",
-        "Frontend continues to call `completeOnboarding(inviteToken, profile)` with a token value, but the token value comes from the invite link/session rather than manual user entry."
+        "On `/onboarding`, users do not see the raw error text `Unauthorized: Only admins can assign user roles` in the inline alert or toast.",
+        "The user-facing error message is in English and is actionable (e.g., suggests trying again or contacting an admin), while preserving existing error mappings for invalid/used tokens and already-onboarded users."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under `frontend/src/components/ui` (compose existing shadcn components instead).",
-    "Do not edit immutable hook files listed in SYSTEM_CONTEXT (e.g., `frontend/src/hooks/useInternetIdentity.ts(x)`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`).",
-    "Backend must remain a single Motoko actor in `backend/main.mo`; only add `backend/migration.mo` if state schema changes are required (not expected for this request)."
+    "Backend must remain a single-actor Motoko canister; keep all Motoko logic in `backend/main.mo`.",
+    "Do not modify files under `frontend/src/hooks/useInternetIdentity.ts` / `.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, or anything in `frontend/src/components/ui` (immutable paths).",
+    "Do not change the public backend API method names/signatures used by the frontend (e.g., `completeOnboarding`, `getCallerUserProfile`)."
   ],
   "nonGoals": [
-    "Changing invite token generation rules or adding a new backend invite-link endpoint.",
-    "Adding third-party auth or any non-Internet-Identity authentication.",
-    "Redesigning unrelated pages (dashboard/vehicles/etc.)."
+    "Removing the invite-token requirement for non-admin users (registration should still follow the existing invite-token rules unless explicitly changed later).",
+    "Adding new authentication providers or third-party identity systems."
   ],
   "imageRequirements": {
     "required": [],

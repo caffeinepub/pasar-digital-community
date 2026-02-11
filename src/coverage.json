@@ -1,77 +1,31 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T15:26:31.978Z",
+  "generatedAt": "2026-02-11T16:31:49.082Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 2,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the invite-based onboarding flow so that when a user opens an invite link containing an invite token (e.g. `/#/onboarding?inviteToken=...`), the app automatically reads and applies the token and the user is not required to manually type/paste any invite token.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/OnboardingInvitePage.tsx",
-          "frontend/src/routes/RootRouteGate.tsx",
-          "frontend/src/utils/urlParams.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/OnboardingInvitePage.tsx",
-          "frontend/src/routes/RootRouteGate.tsx",
-          "frontend/src/utils/urlParams.ts"
-        ]
+        "summary": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with the error `Unauthorized: Only admins can assign user roles`. Keep the existing behavior for the allowlisted first-admin claim (allowlisted principal can complete onboarding with an empty token).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session; user-facing text on this page must be in English (replace existing Indonesian toasts/labels/messages).",
+        "summary": "Update the frontend onboarding error handling so that if the backend still returns an authorization-related onboarding failure, the onboarding UI shows a clear English message explaining registration could not be completed (without mentioning admin role assignment), and does not display the raw backend error string to end users.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/hooks/useOnboarding.ts",
           "frontend/src/pages/OnboardingInvitePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/OnboardingInvitePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Ensure invite tokens passed in the URL are persisted for the session and removed from the address bar after being captured, so users can navigate/sign-in and return to onboarding without losing the token and without leaving the token visible in the URL.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/utils/urlParams.ts",
-          "frontend/src/routes/RootRouteGate.tsx",
-          "frontend/src/pages/OnboardingInvitePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/utils/urlParams.ts",
-          "frontend/src/routes/RootRouteGate.tsx",
-          "frontend/src/pages/OnboardingInvitePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Keep the admin invite-token sharing UX aligned with the one-click onboarding flow by ensuring `frontend/src/pages/admin/AdminInviteTokensPage.tsx` copies an invite link that works with the new auto-apply onboarding behavior, and use English-only success/error toasts.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Do not change the backend invite-token validation semantics: onboarding must continue to enforce that the token exists and is unused, using the existing `completeOnboarding(inviteToken, profile)` backend API; only the frontend experience should change to make it one-click.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/OnboardingInvitePage.tsx",
-          "frontend/src/hooks/useOnboarding.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/OnboardingInvitePage.tsx",
           "frontend/src/hooks/useOnboarding.ts"
         ]
       }
@@ -84,9 +38,6 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/hooks/useOnboarding.ts",
-    "frontend/src/pages/OnboardingInvitePage.tsx",
-    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-    "frontend/src/routes/RootRouteGate.tsx",
     "frontend/src/utils/urlParams.ts",
     "project_state.json",
     "scratch/component-selection.json",

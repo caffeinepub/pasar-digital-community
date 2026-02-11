@@ -1,66 +1,46 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T15:26:31.975Z",
-  "summary": "Diff implements key pieces of one-click invite onboarding: admin page now copies `/#/onboarding?inviteToken=...` links with English toasts, root gate captures/persists inviteToken early, onboarding page loads token from session and submits `completeOnboarding(inviteToken, profile)` with English toasts/errors. However, due to truncation, it’s not fully verifiable that the invite token input is hidden when token exists, nor that the token is removed from the address bar after capture.",
+  "generatedAt": "2026-02-11T16:31:49.079Z",
+  "summary": "REQ-2 (frontend onboarding error handling) appears implemented in `frontend/src/hooks/useOnboarding.ts` by mapping authorization-related backend errors to friendly English messages and avoiding exposing the raw backend string. REQ-1 (backend onboarding role assignment fix) is not evidenced in the provided truncated `backend/main.mo` diff. Additionally, the diff summary indicates multiple unrelated frontend changes and modifications to files that were explicitly constrained as immutable.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session.",
-      "reason": "The page still imports `Input`/`Label` and maintains `inviteToken` state with `setInviteToken`, but the diff is truncated before rendering logic; there is no visible evidence that the token input is conditionally hidden when a token exists.",
-      "evidence": [
-        "frontend/src/pages/OnboardingInvitePage.tsx (truncated)"
-      ]
-    },
-    {
       "id": "REQ-1",
-      "requirement": "If the invite token is missing from the URL and not available from session persistence, the page shows a clear English message instructing the user to use an invite link from an admin (and does not present a blank required token field).",
-      "reason": "There is evidence of an English toast on submit when `inviteToken` is empty, but the UI requirement is about what the page shows when no token is available (and specifically not presenting a blank required token field). The render portion is truncated, so this can’t be confirmed.",
+      "requirement": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with `Unauthorized: Only admins can assign user roles`. Keep existing allowlisted first-admin claim behavior.",
+      "reason": "The provided `backend/main.mo` diff excerpt shows new helper functions (e.g., `hasAdminPermission`) and existing admin checks (e.g., `generateInviteCode`), but does not include any visible change to `completeOnboarding` logic or role assignment that would prevent the `Only admins can assign user roles` trap for normal users. Because the relevant section is truncated, there is insufficient evidence the requirement is implemented.",
       "evidence": [
-        "frontend/src/pages/OnboardingInvitePage.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "After the token is read, the app removes the `inviteToken` parameter from the visible URL (hash/query) without reloading the page.",
-      "reason": "`RootRouteGate` calls `captureAndPersistInviteToken()`, and `urlParams.ts` contains helpers and a `clearParamFromHash` function, but the diff is truncated before showing `captureAndPersistInviteToken` implementation and whether it actually invokes URL replacement/removal for `inviteToken`. इसलिए the AC cannot be verified from provided evidence.",
-      "evidence": [
-        "frontend/src/routes/RootRouteGate.tsx (truncated)",
-        "frontend/src/utils/urlParams.ts (truncated)"
+        "backend/main.mo (truncated; no `completeOnboarding` changes shown)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Admin-detection behavior on onboarding page that redirects admins to `/admin` and blocks admins from completing invite-based onboarding.",
-      "reason": "BuildRequest focuses on invite token capture/persistence and UI changes; it does not request adding admin-specific redirects/blocks for onboarding.",
+      "description": "Modified frontend immutable files that were explicitly constrained as 'Do not modify' (at least `frontend/src/main.tsx` and `frontend/src/hooks/useActor.ts`).",
+      "reason": "BuildRequest constraints prohibit changes to these paths, but the diff summary text indicates they were changed.",
       "evidence": [
-        "frontend/src/pages/OnboardingInvitePage.tsx (truncated)"
+        "frontend-file-summaries.txt (mentions modifications to `frontend/src/main.tsx` and `frontend/src/hooks/useActor.ts`)"
       ]
     },
     {
-      "description": "Backend changes related to allowlist admin helpers and RSVP/invite-code validation logic shown in `backend/main.mo`.",
-      "reason": "REQ-5 explicitly says the frontend experience should change and backend invite-token validation semantics should not change; the diff shows backend modifications unrelated to one-click onboarding, which were not requested.",
+      "description": "Large set of unrelated frontend feature additions/changes (e.g., new /vehicle-check route, About page, navigation/menu updates, PWA/service worker/manifest updates, i18n provider integration, admin dashboard/invite-token management UI work).",
+      "reason": "These features are not requested by REQ-1/REQ-2 and are outside the stated scope (only onboarding authorization + onboarding error message mapping).",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "frontend-file-summaries.txt (multiple entries describing new routes/pages/PWA/i18n/admin UI changes)"
       ]
     },
     {
-      "description": "RootRouteGate copy updates for various bootstrapping/auth status messages (English-only) beyond invite onboarding.",
-      "reason": "Only onboarding/admin invite pages’ English copy is required (REQ-2/REQ-4). Updating broader app gate messaging is not requested in the BuildRequest.",
+      "description": "Added/updated URL parameter + sessionStorage utilities in `frontend/src/utils/urlParams.ts` beyond onboarding error handling.",
+      "reason": "REQ-2 only asks to update onboarding error handling messages; URL param persistence utilities are not requested in the BuildRequest.",
       "evidence": [
-        "frontend/src/routes/RootRouteGate.tsx (truncated)"
+        "frontend/src/utils/urlParams.ts"
       ]
     }
   ],
-  "confidence": 0.56,
+  "confidence": 0.66,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/hooks/useOnboarding.ts",
-    "frontend/src/pages/OnboardingInvitePage.tsx",
-    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-    "frontend/src/routes/RootRouteGate.tsx",
     "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]

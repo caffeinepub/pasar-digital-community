@@ -14,6 +14,8 @@ import AccessControl "authorization/access-control";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 
+
+
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -108,7 +110,6 @@ actor {
   };
 
   public func submitRSVP(name : Text, attending : Bool, inviteCode : Text) : async () {
-    // Validate that the invite code exists before accepting RSVP
     let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
     switch (inviteCodes.find(func(code) { code.code == inviteCode })) {
       case (null) { Runtime.trap("Invalid invitation code") };
@@ -139,7 +140,7 @@ actor {
     };
 
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get their own profile");
+      return null;
     };
     userProfiles.get(caller);
   };
@@ -180,7 +181,6 @@ actor {
         onboarded = true;
       };
       userProfiles.add(caller, adminProfile);
-      AccessControl.assignRole(accessControlState, caller, caller, #admin);
     } else {
       // Validate invite token exists and is unused
       let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
@@ -726,8 +726,8 @@ actor {
     time : Time.Time;
   } {
     {
-      build = "v0.1.0";
+      build = "v0.1.1";
       time = Time.now();
     };
   };
-}
+};

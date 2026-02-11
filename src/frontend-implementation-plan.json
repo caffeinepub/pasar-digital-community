@@ -1,107 +1,25 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "One-click invite link onboarding with session-persisted token capture",
+  "title": "Onboarding UI: hide raw authorization errors and show clear registration failure message",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Auto-read invite token from the invite link and apply it to onboarding so users only enter profile details.",
-      "acceptanceCriteria": [
-        "Opening `/#/onboarding?inviteToken=<token>` pre-fills the onboarding flow with `<token>` without any user action.",
-        "The onboarding form submission succeeds using the URL-provided token and only requires the user profile fields (e.g., name, email, city, country).",
-        "If the invite token is missing from the URL and not available from session persistence, the page shows a clear English message instructing the user to use an invite link from an admin (and does not present a blank required token field)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
-          "operation": "modify",
-          "description": "Update onboarding to source inviteToken from URL/session automatically, prefill internal state, and avoid requiring manual token entry; show an English missing-token guidance state when no token is available. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/routes/RootRouteGate.tsx",
-          "operation": "modify",
-          "description": "Capture and persist `inviteToken` from the current URL early (before/while showing sign-in) so the token is available once the user returns to onboarding after Internet Identity sign-in. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/utils/urlParams.ts",
-          "operation": "modify",
-          "description": "Add/extend helpers to (1) read inviteToken from hash/query, (2) persist to sessionStorage, and (3) support explicit clearing of `inviteToken` from the visible URL after capture. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
       "id": "REQ-2",
-      "summary": "Hide the token field when token is available and ensure onboarding page strings/toasts are English with understandable errors.",
+      "summary": "Normalize onboarding authorization-related failures into a clear English message and prevent raw backend error strings from being shown on the onboarding UI.",
       "acceptanceCriteria": [
-        "When an invite token is available (from URL/session), the UI does not ask the user to enter an invite token.",
-        "All visible strings and toast messages on the onboarding page are English-only (e.g., errors, headings, button labels).",
-        "If the backend returns an invalid/expired/used-token error, the UI displays the error in English in a user-comprehensible way (may include the backend message, but must not be Indonesian)."
+        "On `/onboarding`, users do not see the raw error text `Unauthorized: Only admins can assign user roles` in the inline alert or toast.",
+        "The user-facing error message is in English and is actionable (e.g., suggests trying again or contacting an admin), while preserving existing error mappings for invalid/used tokens and already-onboarded users."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
-          "operation": "modify",
-          "description": "Revise UI to conditionally render the invite token input only when no token is available, replace Indonesian headings/labels/button text/toasts with English, and add an error-normalization mapping so token-related backend failures are shown in English. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Persist invite tokens for the session and remove them from the address bar after capture without reloading.",
-      "acceptanceCriteria": [
-        "If the user opens an invite link and then navigates within the app (or completes Internet Identity sign-in), the invite token remains available for onboarding completion without re-copying the link.",
-        "After the token is read, the app removes the `inviteToken` parameter from the visible URL (hash/query) without reloading the page."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/urlParams.ts",
-          "operation": "modify",
-          "description": "Implement an exported helper to capture `inviteToken` into sessionStorage and then remove it from the current hash/query via history.replaceState (no page reload), covering hash-based routing (`/#/onboarding?inviteToken=...`) and any non-hash query usage. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/routes/RootRouteGate.tsx",
-          "operation": "modify",
-          "description": "Call the new capture+clear helper on initial mount so the token is persisted even if the user must sign in first, and ensure this does not trigger navigation loops. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
-          "operation": "modify",
-          "description": "Use the persisted session token as the source of truth for onboarding completion; do not rely on the address bar after initial capture. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Ensure admin invite token sharing copies a link compatible with auto-apply onboarding and uses English-only toasts.",
-      "acceptanceCriteria": [
-        "Clicking “Copy Link” (and the post-generate auto-copy) copies an invite link that sends users directly to the onboarding registration form with the token auto-applied.",
-        "Admin page toasts related to invite link creation/copying are English-only."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "operation": "modify",
-          "description": "Confirm/adjust copied invite link format to `/#/onboarding?inviteToken=<code>` (matching the auto-capture behavior) and ensure all invite copy/generate success/error toasts are English-only and consistent. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Keep invite token validation enforced by the existing backend API while sourcing the token from URL/session instead of manual entry.",
-      "acceptanceCriteria": [
-        "Backend continues to reject invalid/expired/used tokens as it does today.",
-        "Frontend continues to call `completeOnboarding(inviteToken, profile)` with a token value, but the token value comes from the invite link/session rather than manual user entry."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
-          "operation": "modify",
-          "description": "Ensure form submit continues to call `useCompleteOnboarding` with a non-empty inviteToken value sourced from URL/session capture (never from a required blank input), while keeping profile fields as the only user-entered data. Verify the component's usage instructions before implementing."
-        },
         {
           "path": "frontend/src/hooks/useOnboarding.ts",
           "operation": "modify",
-          "description": "Keep the mutation contract aligned with `completeOnboarding(inviteToken, profile)` while improving frontend-side error surfacing if needed (no backend behavior changes), ensuring token is always provided from captured state when onboarding is attempted. Verify the component's usage instructions before implementing."
+          "description": "Extend error normalization for completeOnboarding so any authorization-related onboarding failure (including the `Unauthorized: Only admins can assign user roles` trap) is converted into a clear, actionable English registration message that does not mention admin role assignment; keep existing mappings for invalid/expired tokens, used tokens, and already-onboarded users; for unmapped errors, return a safe generic registration failure message instead of rethrowing the raw backend error."
+        },
+        {
+          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
+          "operation": "modify",
+          "description": "Ensure `/onboarding` only displays normalized, user-safe messages from the onboarding mutation (toast + inline Alert), avoiding fallback to raw error objects/strings; keep existing UX for token-required and first-admin claim flows."
         }
       ]
     }

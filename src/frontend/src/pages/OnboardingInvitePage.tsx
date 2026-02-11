@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCompleteOnboarding } from '../hooks/useOnboarding';
-import { useIsCallerAdmin } from '../hooks/useAdmin';
+import { useCanClaimFirstAdmin } from '../hooks/useAdmin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,13 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLogo from '../components/brand/AppLogo';
 import { toast } from 'sonner';
-import { AlertCircle, Shield, Info } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import { getPersistedInviteToken, clearPersistedInviteToken } from '../utils/urlParams';
 
 export default function OnboardingInvitePage() {
   const navigate = useNavigate();
   const completeOnboarding = useCompleteOnboarding();
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
+  const { data: canClaimFirstAdmin, isLoading: checkingAdminEligibility } = useCanClaimFirstAdmin();
   const [inviteToken, setInviteToken] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,31 +30,21 @@ export default function OnboardingInvitePage() {
     }
   }, []);
 
-  // Redirect admins away from onboarding page
-  useEffect(() => {
-    if (!adminLoading && isAdmin) {
-      toast.info('Admin access detected. Redirecting to dashboard...');
-      navigate({ to: '/admin' });
-    }
-  }, [isAdmin, adminLoading, navigate]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Block form submission if user is admin
-    if (isAdmin) {
-      toast.error('Admins cannot complete invite-based onboarding');
-      return;
-    }
+    // Allow empty token only for allowlisted admin claiming first admin access
+    const isFirstAdminClaim = canClaimFirstAdmin === true;
+    const tokenToSubmit = isFirstAdminClaim ? '' : inviteToken.trim();
 
-    if (!inviteToken.trim()) {
+    if (!isFirstAdminClaim && !tokenToSubmit) {
       toast.error('Invite token is required. Please use an invite link from an admin.');
       return;
     }
 
     try {
       await completeOnboarding.mutateAsync({
-        inviteToken: inviteToken.trim(),
+        inviteToken: tokenToSubmit,
         profile: {
           fullName,
           email,
@@ -62,71 +52,43 @@ export default function OnboardingInvitePage() {
           country,
           onboarded: true,
         },
+        isFirstAdminClaim,
       });
 
       // Clear the persisted token after successful onboarding
       clearPersistedInviteToken();
 
       toast.success('Welcome! Your account has been created successfully');
-      navigate({ to: '/' });
-    } catch (error: any) {
-      // Normalize backend error messages to English
-      let errorMessage = 'Failed to complete registration';
-
-      if (error.message) {
-        const msg = error.message.toLowerCase();
-        if (msg.includes('invalid') || msg.includes('expired')) {
-          errorMessage = 'Invalid or expired invitation token';
-        } else if (msg.includes('already used')) {
-          errorMessage = 'This invitation token has already been used';
-        } else if (msg.includes('already onboarded')) {
-          errorMessage = 'You have already completed onboarding';
-        } else {
-          errorMessage = error.message;
-        }
+      
+      // Navigate to admin dashboard if claiming first admin, otherwise to home
+      if (isFirstAdminClaim) {
+        navigate({ to: '/admin' });
+      } else {
+        navigate({ to: '/' });
       }
-
+    } catch (error: any) {
+      // Error is already normalized in useOnboarding hook
+      const errorMessage = error?.message || 'Failed to complete registration';
       toast.error(errorMessage);
     }
   };
 
-  // Show loading while checking admin status
-  if (adminLoading) {
+  // Determine if form can be submitted
+  const isFirstAdminClaim = canClaimFirstAdmin === true;
+  const hasToken = inviteToken.trim().length > 0;
+  const canSubmit = isFirstAdminClaim || hasToken;
+
+  // Show loading while checking admin eligibility
+  if (checkingAdminEligibility) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Checking access...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
   }
-
-  // Show admin notice if user is admin (before redirect completes)
-  if (isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
-        <Card className="w-full max-w-lg border-2">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-primary">
-              <Shield className="h-6 w-6" />
-              <CardTitle>Admin Access Detected</CardTitle>
-            </div>
-            <CardDescription>You have admin privileges and do not need to complete onboarding.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Redirecting to admin dashboard...</p>
-            <Button onClick={() => navigate({ to: '/admin' })} className="w-full">
-              Go to Admin Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show missing token guidance if no token is available
-  const hasToken = inviteToken.trim().length > 0;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
@@ -142,15 +104,28 @@ export default function OnboardingInvitePage() {
         <Card className="border-2">
           <CardHeader>
             <CardTitle>Account Registration</CardTitle>
-            <CardDescription>Enter your details to create your account</CardDescription>
+            <CardDescription>
+              {isFirstAdminClaim
+                ? 'Set up your admin account'
+                : 'Enter your details to create your account'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {!hasToken && (
+            {!isFirstAdminClaim && !hasToken && (
               <Alert className="mb-4">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
                   You need an invitation link from an admin to register. Please contact an admin to get your invite
                   link.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isFirstAdminClaim && (
+              <Alert className="mb-4 border-primary/50 bg-primary/5">
+                <Info className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-primary">
+                  You are setting up the admin account. No invite token required.
                 </AlertDescription>
               </Alert>
             )}
@@ -201,17 +176,17 @@ export default function OnboardingInvitePage() {
                 />
               </div>
 
-              {completeOnboarding.isError && (
+              {completeOnboarding.isError && completeOnboarding.error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {completeOnboarding.error?.message || 'An error occurred during registration'}
+                    {completeOnboarding.error.message || 'An error occurred during registration'}
                   </AlertDescription>
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={completeOnboarding.isPending || !hasToken}>
-                {completeOnboarding.isPending ? 'Processing...' : 'Register'}
+              <Button type="submit" className="w-full" disabled={completeOnboarding.isPending || !canSubmit}>
+                {completeOnboarding.isPending ? 'Processing...' : isFirstAdminClaim ? 'Set Up Admin Account' : 'Register'}
               </Button>
             </form>
           </CardContent>

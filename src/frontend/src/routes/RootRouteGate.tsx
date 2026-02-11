@@ -8,7 +8,6 @@ import { Outlet, useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from '../hooks/useProfile';
 import { useActorBootstrapStatus } from '../hooks/useActorBootstrapStatus';
-import { useIsCallerAdmin } from '../hooks/useAdmin';
 import SignInScreen from '../components/auth/SignInScreen';
 import ProfileBootstrapError from '../components/auth/ProfileBootstrapError';
 import StartupBootstrapError from '../components/auth/StartupBootstrapError';
@@ -18,7 +17,6 @@ import { captureAndPersistInviteToken } from '../utils/urlParams';
 export default function RootRouteGate() {
   const { identity, isInitializing } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading, isFetched, isError, error, refetch } = useGetCallerUserProfile();
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const {
     isError: actorError,
     error: actorErrorObj,
@@ -50,15 +48,15 @@ export default function RootRouteGate() {
   }, [identity]);
 
   // Redirect to onboarding if authenticated but no profile
-  // Exception: admins (including allowlisted admin) can bypass onboarding
+  // When getCallerUserProfile returns null, user needs to complete onboarding
   useEffect(() => {
-    if (!identity || !isFetched || hasRedirectedRef.current || adminLoading) return;
+    if (!identity || !isFetched || hasRedirectedRef.current) return;
 
-    if (userProfile === null && !isAdmin) {
+    if (userProfile === null) {
       hasRedirectedRef.current = true;
       navigate({ to: '/onboarding' });
     }
-  }, [identity, userProfile, isFetched, isAdmin, adminLoading, navigate]);
+  }, [identity, userProfile, isFetched, navigate]);
 
   // Show auto-retry status screen (including continuous retry mode)
   if (identity && autoRetryStatus) {
@@ -107,8 +105,8 @@ export default function RootRouteGate() {
     );
   }
 
-  // Show loading while fetching profile or admin status for authenticated users
-  if (identity && (profileLoading || adminLoading)) {
+  // Show loading while fetching profile for authenticated users
+  if (identity && profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
