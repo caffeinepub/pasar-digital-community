@@ -1,90 +1,74 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T01:24:53.452Z",
-  "summary": "Admin status querying and recoverable error UI on admin pages were improved on the frontend, and the header now conditionally shows an Admin nav item when `useIsCallerAdmin()` returns true. However, the allowlisted-admin backend behavior is not evidenced, and the Profile hooks/page remain non-editable and still use placeholders/throw errors instead of real backend profile fetch/save.",
+  "generatedAt": "2026-02-11T08:29:27.606Z",
+  "summary": "REQ-56 (startup retry flow) appears to be implemented via a new/updated StartupBootstrapError screen and a useActorBootstrapStatus hook that removes/cancels cached actor queries and triggers refetch. REQ-55 is primarily an operational rebuild/redeploy outcome and cannot be verified from the provided code diff; additionally, the diff includes multiple functional/product changes beyond a rebuild-only redeploy, and it modifies files that were explicitly constrained as immutable.",
   "missing_requirements": [
     {
-      "id": "REQ-35",
-      "requirement": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after sign-in so Admin nav appears and /admin is accessible without a separate claim step.",
-      "reason": "No backend (Motoko) changes are shown that would implement the allowlist/admin recognition or ensure admin-gated endpoints succeed for that principal immediately after sign-in. The diff only shows frontend gating based on `actor.isCallerAdmin()`.",
+      "id": "REQ-55",
+      "requirement": "Trigger a rebuild and redeploy of the existing application (no functional changes required) to restart the stopped backend canister causing IC0508.",
+      "reason": "The diff shows code changes but does not include any deployment/redeploy configuration or evidence that a rebuild/redeploy was executed successfully or that IC0508 is resolved post-deploy. This requirement is primarily operational and is not demonstrable from the diff summary.",
       "evidence": [
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/pages/admin/AdminDashboardPage.tsx"
+        "File diff summary (no deploy pipeline/config changes shown)"
       ]
     },
     {
-      "id": "REQ-36",
-      "requirement": "Fix admin-status data flow so `useIsCallerAdmin()` accurately reflects backend admin status and does not silently downgrade a real admin to non-admin on query failures; provide recoverable UI state where appropriate.",
-      "reason": "While admin pages show a retry UI on admin-check errors, the header/nav appears to simply omit the Admin item unless `isAdmin && !adminLoading`, with no visible recoverable state for admin-check failures in navigation. This can still effectively 'downgrade' the UI to non-admin during errors.",
+      "requirement": "Do not edit immutable frontend hook paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
+      "reason": "The diff summary indicates modifications to immutable paths (useActor.ts and main.tsx), violating the stated constraint.",
       "evidence": [
-        "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/pages/admin/AdminDashboardPage.tsx",
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+        "frontend-file-summaries.txt (mentions modified: \"frontend/src/main.tsx\" and \"frontend/src/hooks/useActor.ts\")"
       ]
     },
     {
-      "id": "REQ-37",
-      "requirement": "Replace placeholder Profile hooks so the app fetches the real stored profile from the backend and can persist profile edits; `useSaveCallerUserProfile()` should call backend and invalidate/refetch `currentUserProfile`.",
-      "reason": "`useGetCallerUserProfile()` still returns placeholders based on `getCallerUserRole()` rather than fetching real saved values, and `useSaveCallerUserProfile()` throws an error instead of performing a backend call.",
+      "requirement": "No new product features or UI redesign beyond what is necessary to validate the rebuild/redeploy recovery.",
+      "reason": "The diff introduces multiple changes that look like new/expanded product behavior (PWA/service worker, admin pages, about page, branding/copy changes, profile editing), which goes beyond what is necessary solely to validate a redeploy recovery.",
       "evidence": [
-        "frontend/src/hooks/useProfile.ts",
-        "frontend/src/pages/ProfilePage.tsx"
-      ]
-    },
-    {
-      "id": "REQ-38",
-      "requirement": "Update the Profile page to provide an editable form for full name, email, city, and country with Save/Cancel actions, success confirmation, and principal shown read-only.",
-      "reason": "Profile page explicitly states editing is not available and shows read-only placeholders ('Set during onboarding') without edit mode, inputs, Save/Cancel, or success confirmation.",
-      "evidence": [
-        "frontend/src/pages/ProfilePage.tsx"
+        "frontend-file-summaries.txt (mentions PWA support, service worker, About page, admin pages, profile editing, logo/branding updates)",
+        "frontend/index.html (PWA manifest and icon references)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added/modified PWA installability features (manifest, service worker, meta tags, registration).",
-      "reason": "Not requested by REQ-35–REQ-38 and unrelated to admin visibility or editable Profile form.",
+      "description": "Added/updated PWA support including manifest references, service worker behavior, caching strategy, and update-handling reload logic.",
+      "reason": "Not requested by REQ-55/REQ-56, which are focused on rebuild/redeploy recovery and ensuring retry flow works; PWA changes constitute additional functionality.",
       "evidence": [
-        "frontend/index.html",
-        "frontend/src/main.tsx",
-        "frontend/public/manifest.webmanifest",
-        "frontend/public/sw.js"
+        "frontend-file-summaries.txt (\"frontend/src/main.tsx\" service worker registration and update handling; \"frontend/public/sw.js\" cache version/network-first strategy; \"frontend/public/manifest.webmanifest\")",
+        "frontend/index.html (manifest + generated icon references)"
       ]
     },
     {
-      "description": "Added/refactored authentication gate and new profile bootstrap error screen/component.",
-      "reason": "Not explicitly requested in REQ-35–REQ-38 (beyond ensuring admin/profile functionality).",
+      "description": "Sign-in screen UI overhaul with new marketing/feature highlight copy and layout changes.",
+      "reason": "Not requested; REQ-55 only requires rendering to the expected Sign In screen post-deploy, not a redesign.",
       "evidence": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/auth/ProfileBootstrapError.tsx"
+        "frontend/src/components/auth/SignInScreen.tsx"
       ]
     },
     {
-      "description": "Added/updated About page content including admin contact information.",
-      "reason": "Not requested by REQ-35–REQ-38.",
+      "description": "New/expanded admin and informational pages (AdminDashboardPage, AdminInviteTokensPage, AboutPage) and related behaviors.",
+      "reason": "Not requested by the rebuild/redeploy recovery requirements.",
       "evidence": [
-        "frontend/src/pages/AboutPage.tsx"
+        "frontend/src/App.tsx (routes include /admin, /admin/invite-tokens, /about)",
+        "frontend-file-summaries.txt (summaries for AboutPage, AdminDashboardPage, AdminInviteTokensPage)"
       ]
     },
     {
-      "description": "Added a 'Security Settings' navigation destination from the user dropdown.",
-      "reason": "Not requested by REQ-35–REQ-38.",
+      "description": "Profile page changes to support inline editing and updated backend TypeScript interface for profile methods.",
+      "reason": "Not requested by REQ-55/REQ-56 (which focus on startup initialization/retry behavior).",
       "evidence": [
-        "frontend/src/components/nav/AppHeader.tsx"
+        "frontend-file-summaries.txt (\"frontend/src/pages/ProfilePage.tsx\" inline editing; \"frontend/src/backend.d.ts\" updated interface)"
       ]
     }
   ],
   "confidence": 0.74,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/hooks/useAdmin.ts",
-    "frontend/src/hooks/useProfile.ts",
-    "frontend/src/pages/ProfilePage.tsx",
-    "frontend/src/pages/admin/AdminDashboardPage.tsx",
-    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/auth/SignInScreen.tsx",
+    "frontend/src/components/auth/StartupBootstrapError.tsx",
+    "frontend/src/hooks/useActorBootstrapStatus.ts",
     "project_state.json"
   ]
 }

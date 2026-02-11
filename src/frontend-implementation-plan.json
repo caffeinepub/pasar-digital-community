@@ -1,112 +1,51 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix admin visibility after sign-in and enable editable Profile form",
+  "title": "Frontend rebuild trigger and startup retry robustness for IC0508 recovery",
   "requirements": [
     {
-      "id": "REQ-35",
-      "summary": "Ensure the allowlisted Principal is treated as admin immediately after authentication so Admin navigation and routes work in-session.",
+      "id": "REQ-55",
+      "summary": "Make a no-feature-change frontend update to trigger a fresh build/deploy and ensure the unauthenticated Sign In screen renders cleanly after redeploy.",
       "acceptanceCriteria": [
-        "When signed in as Principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the top navigation (desktop) and mobile navigation show an 'Admin' item.",
-        "When signed in as that Principal, visiting `/admin` renders the Admin Dashboard page (not Access Denied).",
-        "All backend admin-gated endpoints used by the Admin UI succeed for that Principal without requiring a separate 'claim first admin' step."
+        "A new build and deployment completes successfully.",
+        "After deployment, opening the app no longer fails with replica rejection IC0508 / \"Canister ... is stopped\" during startup initialization.",
+        "The app renders past the startup screen and shows the expected Sign In screen for unauthenticated users."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useAdmin.ts",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Update the admin-check query used by the Admin UI so it re-evaluates correctly after sign-in (keyed by current principal/actor) and does not incorrectly resolve to non-admin during initialization. Verify the component's usage instructions before implementing."
+          "description": "Apply a minimal, non-functional markup update (e.g., update document language/meta description to English) to force a rebuild/redeploy and align non-visible metadata with the English-only user-facing text constraint."
         },
         {
-          "path": "frontend/src/components/nav/AppHeader.tsx",
+          "path": "frontend/src/components/auth/SignInScreen.tsx",
           "operation": "modify",
-          "description": "Ensure the 'Admin' navigation item (desktop + mobile) reflects the corrected admin-check state immediately after sign-in and does not disappear due to transient admin-check failures. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
-          "operation": "modify",
-          "description": "Adjust the admin gate for `/admin` so an admin-check failure does not render 'Access Denied' for a real admin; instead show a recoverable error state with retry. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
-          "operation": "modify",
-          "description": "Align admin gating behavior with `/admin`: avoid treating admin-check errors as non-admin, and add a retryable error state so allowlisted admins can access admin tools without a refresh. Verify the component's usage instructions before implementing."
+          "description": "Update all user-facing strings on the Sign In screen to English (keep layout/behavior unchanged) so post-redeploy unauthenticated users see an English Sign In screen as expected."
         }
       ]
     },
     {
-      "id": "REQ-36",
-      "summary": "Fix frontend admin-status data flow so useIsCallerAdmin() reflects backend admin status reliably after auth and after admin-claim actions, with recoverable error handling.",
+      "id": "REQ-56",
+      "summary": "Harden the startup retry flow so 'Retry Connection' always performs a fresh actor initialization attempt and the UI does not get stuck on an indefinite loading state.",
       "acceptanceCriteria": [
-        "After login completes, the Admin menu item appears/disappears correctly based on the backend admin check without requiring a hard refresh.",
-        "If the user successfully claims admin via the existing claim flow, the Admin menu item appears within the same session (no reload).",
-        "Admin status query failures do not silently downgrade a real admin to non-admin; show a recoverable UI state (e.g., retry) where appropriate on admin pages."
+        "If actor initialization fails, the Startup Bootstrap Error screen is shown (not a blank screen).",
+        "Clicking 'Retry Connection' triggers a fresh initialization attempt and either recovers to normal app flow or re-shows an error screen with the latest error message."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useAdmin.ts",
+          "path": "frontend/src/hooks/useActorBootstrapStatus.ts",
           "operation": "modify",
-          "description": "Refactor useIsCallerAdmin() to: (1) key the query by the active identity/principal (and thus by actor lifecycle), (2) avoid swallowing errors by returning false, and (3) support in-session updates via existing invalidations after admin-claim. Verify the component's usage instructions before implementing."
+          "description": "Improve the retry mechanism to guarantee a fresh initialization attempt (e.g., cancel any in-flight actor query, clear/remove the cached actor query for the current identity key, then refetch) and expose a reliable 'isLoading' signal for retry-in-progress UI."
         },
         {
-          "path": "frontend/src/pages/admin/AdminDashboardPage.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add an explicit admin-check error UI (English copy) with a retry action that triggers the admin check refetch, ensuring failures do not auto-downgrade admins to non-admin. Verify the component's usage instructions before implementing."
+          "description": "Wire the improved bootstrap status into the AuthGate so the StartupBootstrapError receives/loading state for retries and the gate transitions cleanly between error ↔ retrying ↔ recovered without leaving the UI on an indefinite spinner."
         },
         {
-          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+          "path": "frontend/src/components/auth/StartupBootstrapError.tsx",
           "operation": "modify",
-          "description": "Add the same retryable admin-check error handling used on `/admin`, and ensure any modified user-facing text is in English. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/auth/AccessDeniedScreen.tsx",
-          "operation": "modify",
-          "description": "Ensure any new/modified copy for admin claim / access messaging remains English-only and that claim success continues to invalidate admin-related queries in-session. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-37",
-      "summary": "Replace the placeholder Profile hooks so they fetch and persist real backend-stored profile data and refetch after saves.",
-      "acceptanceCriteria": [
-        "`useGetCallerUserProfile()` returns the actual saved values (fullName/email/city/country/onboarded) instead of role-based placeholders.",
-        "`useSaveCallerUserProfile()` performs a real backend call to persist edits and invalidates/refetches the `currentUserProfile` query on success.",
-        "If the backend interface used by the frontend is missing the profile methods, it is updated so the generated actor exposes the required profile APIs used by the hooks."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/backend.d.ts",
-          "operation": "modify",
-          "description": "Update the frontend backend interface typings to include the profile capabilities required by the Profile hooks (getCallerUserProfile and saveCallerUserProfile), matching the existing UserProfile shape used in the app. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useProfile.ts",
-          "operation": "modify",
-          "description": "Replace the role-based placeholder logic with real backend calls for getCallerUserProfile/saveCallerUserProfile; ensure save invalidates/refetches the `currentUserProfile` query on success and handles missing actor/unauthenticated states cleanly. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-38",
-      "summary": "Update the Profile page to support editing and saving full name, email (optional), city, and country with Save/Cancel and clear English text.",
-      "acceptanceCriteria": [
-        "Profile page shows an obvious 'Edit profile' action when viewing the profile.",
-        "In edit mode, the user can type into inputs for Full Name (required), Email (optional), City, and Country, then Save or Cancel.",
-        "Saving shows a success confirmation, exits edit mode, and the displayed values match what is fetched from the backend after save.",
-        "Cancel discards unsaved changes and returns to view mode.",
-        "The Principal ID remains visible as read-only text on the Profile page.",
-        "The existing Logout action continues to log out and clears cached app state."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/ProfilePage.tsx",
-          "operation": "modify",
-          "description": "Implement view + edit modes for profile fields (Full Name required; Email optional; City; Country) using existing composed UI components; wire Save to useSaveCallerUserProfile() with success confirmation and post-save refetch, and wire Cancel to discard local edits; keep Principal ID visible read-only and keep Logout behavior clearing React Query cache. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useProfile.ts",
-          "operation": "modify",
-          "description": "Ensure the hooks provide the Profile page with the correct loading/saving states and that successful saves trigger a refetch so the view mode reflects backend-stored values. Verify the component's usage instructions before implementing."
+          "description": "Enhance the error screen UX to reflect retry-in-progress (disable button/show loading label) and ensure it continues to display the latest error message after failed retries. Verify the component's usage instructions before implementing."
         }
       ]
     }

@@ -5,9 +5,10 @@ import AppLogo from '../brand/AppLogo';
 import { Shield, Lock, Users } from 'lucide-react';
 
 export default function SignInScreen() {
-  const { login, loginStatus } = useInternetIdentity();
+  const { login, loginStatus, isInitializing } = useInternetIdentity();
 
   const isLoggingIn = loginStatus === 'logging-in';
+  const isDisabled = isLoggingIn || isInitializing;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
@@ -18,15 +19,15 @@ export default function SignInScreen() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Pasar Digital Community</h1>
-            <p className="text-muted-foreground mt-2">Sistem Keamanan Kendaraan Berbasis Blockchain</p>
+            <p className="text-muted-foreground mt-2">Blockchain-Based Vehicle Security System</p>
           </div>
         </div>
 
         <Card className="border-2">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Selamat Datang</CardTitle>
+            <CardTitle className="text-2xl text-center">Welcome</CardTitle>
             <CardDescription className="text-center">
-              Masuk dengan Internet Identity untuk melindungi kendaraan Anda
+              Sign in with Internet Identity to protect your vehicle
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -34,32 +35,32 @@ export default function SignInScreen() {
               <div className="flex items-start gap-3 text-sm">
                 <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Keamanan Terjamin</p>
-                  <p className="text-muted-foreground">Data kendaraan tersimpan aman di blockchain</p>
+                  <p className="font-medium">Guaranteed Security</p>
+                  <p className="text-muted-foreground">Vehicle data stored securely on blockchain</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 text-sm">
                 <Lock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Pencegahan Pencurian</p>
-                  <p className="text-muted-foreground">Verifikasi kepemilikan dengan PIN</p>
+                  <p className="font-medium">Theft Prevention</p>
+                  <p className="text-muted-foreground">Ownership verification with PIN</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 text-sm">
                 <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">Komunitas Terpercaya</p>
-                  <p className="text-muted-foreground">Laporan kendaraan hilang dan ditemukan</p>
+                  <p className="font-medium">Trusted Community</p>
+                  <p className="text-muted-foreground">Report lost and found vehicles</p>
                 </div>
               </div>
             </div>
 
-            <Button onClick={login} disabled={isLoggingIn} className="w-full" size="lg">
-              {isLoggingIn ? 'Menghubungkan...' : 'Masuk dengan Internet Identity'}
+            <Button onClick={login} disabled={isDisabled} className="w-full" size="lg">
+              {isInitializing ? 'Initializing...' : isLoggingIn ? 'Connecting...' : 'Sign in with Internet Identity'}
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              Dengan masuk, Anda menyetujui penggunaan Internet Identity untuk autentikasi yang aman dan terdesentralisasi
+              By signing in, you agree to use Internet Identity for secure and decentralized authentication
             </p>
           </CardContent>
         </Card>

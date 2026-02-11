@@ -99,6 +99,7 @@ export interface _SERVICE {
   'completeOnboarding' : ActorMethod<[string, UserProfile], undefined>,
   'generateInviteCode' : ActorMethod<[], string>,
   'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getInviteCodes' : ActorMethod<[], Array<InviteCode>>,
   'getInviteTokenReport' : ActorMethod<
@@ -129,6 +130,7 @@ export interface _SERVICE {
     string
   >,
   'reportVehicleFound' : ActorMethod<[string, string], undefined>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setupPIN' : ActorMethod<[string], undefined>,
   'submitRSVP' : ActorMethod<[string, boolean, string], undefined>,
   'updatePIN' : ActorMethod<[string, string], undefined>,

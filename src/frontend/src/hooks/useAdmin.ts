@@ -16,6 +16,9 @@ export function useIsCallerAdmin() {
     enabled: !!actor && !!identity && !isFetching,
     retry: 2,
     retryDelay: 1000,
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }
 

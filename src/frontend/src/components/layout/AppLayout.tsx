@@ -14,7 +14,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
 
   const isAuthenticated = !!identity;
-  const isOnboarded = userProfile?.onboarded ?? false;
+  const isOnboarded = userProfile !== null && userProfile?.onboarded;
 
   // Don't show header on onboarding screen
   const currentPath = window.location.hash.replace('#', '') || '/';

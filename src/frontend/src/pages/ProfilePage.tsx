@@ -1,20 +1,66 @@
+import { useState } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../hooks/useProfile';
+import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LogOut, User, Mail, MapPin, Globe, Info } from 'lucide-react';
+import { LogOut, User, Mail, MapPin, Globe, Info, Edit2, Save, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const { clear, identity } = useInternetIdentity();
   const { data: userProfile, isLoading } = useGetCallerUserProfile();
+  const saveProfile = useSaveCallerUserProfile();
   const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    city: '',
+    country: '',
+  });
 
   const handleLogout = async () => {
     await clear();
     queryClient.clear();
+  };
+
+  const handleEdit = () => {
+    if (userProfile) {
+      setFormData({
+        fullName: userProfile.fullName,
+        email: userProfile.email,
+        city: userProfile.city,
+        country: userProfile.country,
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setFormData({
+      fullName: '',
+      email: '',
+      city: '',
+      country: '',
+    });
+  };
+
+  const handleSave = async () => {
+    try {
+      await saveProfile.mutateAsync({
+        ...formData,
+        onboarded: true,
+      });
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    }
   };
 
   if (isLoading) {
@@ -40,26 +86,36 @@ export default function ProfilePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Your profile details from onboarding</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>Your profile details</CardDescription>
+              </div>
+              {!isEditing && userProfile && (
+                <Button onClick={handleEdit} variant="outline" size="sm">
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {userProfile ? (
               <>
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-sm">
-                    Your profile information was set during onboarding. Profile editing will be available in a future
-                    update when the backend methods are exposed in the TypeScript interface.
-                  </AlertDescription>
-                </Alert>
-
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     Full Name
                   </Label>
-                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
+                  {isEditing ? (
+                    <Input
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      placeholder="Enter your full name"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">{userProfile.fullName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -67,7 +123,16 @@ export default function ProfilePage() {
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
-                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
+                  {isEditing ? (
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="Enter your email"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">{userProfile.email || 'Not set'}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -75,7 +140,15 @@ export default function ProfilePage() {
                     <MapPin className="h-4 w-4" />
                     City
                   </Label>
-                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
+                  {isEditing ? (
+                    <Input
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder="Enter your city"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">{userProfile.city || 'Not set'}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -83,8 +156,29 @@ export default function ProfilePage() {
                     <Globe className="h-4 w-4" />
                     Country
                   </Label>
-                  <p className="text-sm font-medium text-muted-foreground">Set during onboarding</p>
+                  {isEditing ? (
+                    <Input
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      placeholder="Enter your country"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">{userProfile.country || 'Not set'}</p>
+                  )}
                 </div>
+
+                {isEditing && (
+                  <div className="flex gap-2 pt-4">
+                    <Button onClick={handleSave} disabled={saveProfile.isPending} className="flex-1">
+                      <Save className="h-4 w-4 mr-2" />
+                      {saveProfile.isPending ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                    <Button onClick={handleCancel} variant="outline" disabled={saveProfile.isPending}>
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </>
             ) : (
               <Alert>

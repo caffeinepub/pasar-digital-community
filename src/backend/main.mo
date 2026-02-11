@@ -15,17 +15,14 @@ import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 
 actor {
-  // Include Authorization (handles getCallerUserProfile & saveCallerUserProfile)
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // Storage for image/files
   include MixinStorage();
 
-  // Invite links component
   let inviteState = InviteLinksModule.initState();
 
-  // User profile type
+  // ---------------------- Core Types ----------------------
   public type UserProfile = {
     fullName : Text;
     email : Text;
@@ -34,12 +31,6 @@ actor {
     onboarded : Bool;
   };
 
-  let userProfiles = Map.empty<Principal, UserProfile>();
-
-  // PIN system
-  let userPINs = Map.empty<Principal, Text>();
-
-  // Notification system
   type Notification = {
     id : Text;
     recipient : Principal;
@@ -48,10 +39,7 @@ actor {
     read : Bool;
     vehicleId : Text;
   };
-  let notifications = Map.empty<Text, Notification>();
-  var notificationCounter : Nat = 0;
 
-  // Vehicle system
   type VehicleStatus = {
     #LOST : { reportNote : Text; timeReported : Time.Time };
     #FOUND : { finderReport : Text; timeReported : Time.Time; foundBy : Principal };
@@ -72,11 +60,16 @@ actor {
     transferCode : ?Text;
   };
 
+  // ---------------------- State Structures ----------------------
+  let userProfiles = Map.empty<Principal, UserProfile>();
+  let userPINs = Map.empty<Principal, Text>();
+  let notifications = Map.empty<Text, Notification>();
   let vehicleState = Map.empty<Text, Vehicle>();
   let usedInviteTokens = Map.empty<Text, Principal>();
 
-  //---------------------- Prefab Invite Links API (DO NOT REMOVE: router dependency) ----------------------
+  var notificationCounter : Nat = 0;
 
+  // ---------------------- Prefab Invite Links API (DO NOT REMOVE: router dependency) ----------------------
   public shared ({ caller }) func generateInviteCode() : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can generate invite codes");
@@ -84,7 +77,6 @@ actor {
 
     let blob = await Random.blob();
     let code = InviteLinksModule.generateUUID(blob);
-
     InviteLinksModule.generateInviteCode(inviteState, code);
     code;
   };
@@ -108,21 +100,30 @@ actor {
     InviteLinksModule.getInviteCodes(inviteState);
   };
 
-  // ---------------------- Onboarding ----------------------
+  // ---------------------- User Profile Management ----------------------
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can get their own profile");
+    };
+    userProfiles.get(caller);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save their own profile");
+    };
+    userProfiles.add(caller, profile);
+  };
 
   public shared ({ caller }) func completeOnboarding(inviteToken : Text, profile : UserProfile) : async () {
-    // Check if onboarding can be claimed (only when allowlist admin is not onboarded)
     let allowlistAdmin = Principal.fromText("dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae");
-
     let isAllowlistAdminNotOnboarded = switch (userProfiles.get(allowlistAdmin)) {
       case (?existing) { not existing.onboarded };
       case (null) { true };
     };
-
     let isClaimingFirstAdmin = caller == allowlistAdmin and isAllowlistAdminNotOnboarded;
 
     if (isClaimingFirstAdmin) {
-      // Save profile and assign admin role without invitation check
       let adminProfile = {
         fullName = profile.fullName;
         email = profile.email;
@@ -133,8 +134,6 @@ actor {
       userProfiles.add(caller, adminProfile);
       AccessControl.assignRole(accessControlState, caller, caller, #admin);
     } else {
-      // Regular onboarding flow for non-admin
-      // Validate invite code
       let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
       switch (inviteCodes.find(func(code) { code.code == inviteToken })) {
         case (null) { Runtime.trap("Invalid or expired invitation token") };
@@ -156,7 +155,6 @@ actor {
       };
 
       usedInviteTokens.add(inviteToken, caller);
-
       AccessControl.assignRole(accessControlState, caller, caller, #user);
 
       let onboardedProfile = {
@@ -171,7 +169,6 @@ actor {
   };
 
   // ---------------------- PIN Management ----------------------
-
   public shared ({ caller }) func setupPIN(pin : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can setup PIN");
@@ -202,7 +199,6 @@ actor {
   };
 
   // ---------------------- Vehicle Registration ----------------------
-
   public shared ({ caller }) func registerVehicle(
     engineNumber : Text,
     chassisNumber : Text,
@@ -256,8 +252,6 @@ actor {
       case (?vehicle) { vehicle };
     };
   };
-
-  // ---------------------- Lost/Found Vehicles ----------------------
 
   public query ({ caller }) func getLostVehicles() : async [Vehicle] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -345,7 +339,6 @@ actor {
   };
 
   // ---------------------- Notifications ----------------------
-
   public query ({ caller }) func getMyNotifications() : async [Notification] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view notifications");
@@ -379,7 +372,6 @@ actor {
   };
 
   // ---------------------- Transfer System ----------------------
-
   public shared ({ caller }) func initiateTransfer(vehicleId : Text, pin : Text) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can initiate transfers");
@@ -444,7 +436,6 @@ actor {
   };
 
   // ---------------------- Admin Functions ----------------------
-
   public query ({ caller }) func getRegisteredVehicles() : async [Vehicle] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view all vehicles");
@@ -534,11 +525,8 @@ actor {
   };
 
   // ---------------------- Is Onboarding Allowed ----------------------
-
   public query ({ caller }) func isOnboardingAllowed() : async Bool {
-    // Allowlist admin Principal only (first admin claim) => no need for additional authorization check
     let allowlistAdmin = Principal.fromText("dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae");
-
     let isAllowlistAdminNotOnboarded = switch (userProfiles.get(allowlistAdmin)) {
       case (?existing) { not existing.onboarded };
       case (null) { true };
@@ -547,3 +535,4 @@ actor {
     caller == allowlistAdmin and isAllowlistAdminNotOnboarded;
   };
 };
+

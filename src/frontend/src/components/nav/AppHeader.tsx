@@ -21,7 +21,7 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const { clear, identity } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
+  const { data: isAdmin, isLoading: adminLoading, isFetched: adminFetched } = useIsCallerAdmin();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -37,7 +37,8 @@ export default function AppHeader() {
     { label: 'Notifications', path: '/notifications', icon: Bell },
   ];
 
-  if (isAdmin && !adminLoading) {
+  // Show admin link when admin status is confirmed
+  if (adminFetched && isAdmin) {
     navItems.push({ label: 'Admin', path: '/admin', icon: Shield });
   }
 

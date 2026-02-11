@@ -109,6 +109,7 @@ export const idlService = IDL.Service({
   'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
   'generateInviteCode' : IDL.Func([], [IDL.Text], []),
   'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
   'getInviteTokenReport' : IDL.Func(
@@ -144,6 +145,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'reportVehicleFound' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'setupPIN' : IDL.Func([IDL.Text], [], []),
   'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
   'updatePIN' : IDL.Func([IDL.Text, IDL.Text], [], []),
@@ -253,6 +255,7 @@ export const idlFactory = ({ IDL }) => {
     'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
     'generateInviteCode' : IDL.Func([], [IDL.Text], []),
     'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
     'getInviteTokenReport' : IDL.Func(
@@ -296,6 +299,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'reportVehicleFound' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'setupPIN' : IDL.Func([IDL.Text], [], []),
     'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
     'updatePIN' : IDL.Func([IDL.Text, IDL.Text], [], []),

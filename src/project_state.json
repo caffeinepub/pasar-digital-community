@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 15,
+  "projectStateVersion": 25,
   "summary": "Aplikasi “Pasar Digital Community” untuk pencegahan pencurian kendaraan berbasis Principal ID (tanpa server tradisional), dengan registrasi kendaraan, pelepasan/transfer kepemilikan memakai PIN, sistem undangan berbayar via token/link sekali pakai yang dibuat admin (dengan tabel status pemakaian), modul laporan kendaraan hilang–ditemukan dan notifikasi, branding logo di splash/seluruh aplikasi, halaman “Tentang Aplikasi” berisi kontak admin, serta target responsif + PWA installable (Android/iOS).",
   "architectural_notes": [
     "Aplikasi ditargetkan berjalan tanpa server tradisional (mis. canister di Internet Computer); Principal ID digunakan sebagai identifier kriptografis pengguna.",
@@ -11,17 +11,20 @@
     "Halaman Profil perlu menampilkan Principal ID (Internet Identity) pengguna (read-only) sebagai identitas kriptografis yang bisa disalin/dirujuk.",
     "Sediakan aksi Logout di halaman Profil (selain/atau menggantikan lokasi logout lain) agar mudah ditemukan pengguna.",
     "Versi 4 mengalami risiko deadlock UI bila AuthGate/AppLayout bergantung pada userProfile.onboarded/role check sebelum data profil tersedia; perlu fallback render/login agar aplikasi tidak stuck di state initializing.",
-    "Tambahkan mekanisme admin permanen berbasis allowlist Principal ID (mis. set hardcoded/config) untuk memastikan admin tertentu selalu dikenali sebagai admin."
+    "Tambahkan mekanisme admin permanen berbasis allowlist Principal ID (mis. set hardcoded/config) untuk memastikan admin tertentu selalu dikenali sebagai admin.",
+    "Jika backend canister berstatus \"stopped\" dan Caffeine tidak menyediakan tombol manual untuk start, recovery yang tersedia bagi user adalah rebuild/redeploy versi baru agar canister otomatis restart."
   ],
   "known_issues": [
-    "Percobaan build sebelumnya gagal dengan pesan: 'AI couldn't process your request successfully. Try simplifying or rewording it.'",
     "Build/deploy gagal karena 'System configuration error. Please report this issue to the Caffeine team.'",
     "Menu Admin/Dashboard tidak muncul karena akun/Principal belum ditetapkan sebagai admin (bootstrap admin belum berjalan/terkonfigurasi).",
     "Menu/halaman Profil Pengguna tidak muncul di navigasi (belum ada entry point UI meski fitur profil direncanakan).",
     "Setelah deploy Version 3, menu Admin/Dashboard dan entry point Profil Pengguna masih belum muncul untuk pengguna; perlu perbaikan UI/role-check dan/atau reset flow klaim admin.",
     "Aplikasi stuck loading (layar hitam “Loading…”) saat membuka link awal setelah rilis Version 4; diduga terkait flow AuthGate/AppLayout + profile/role check yang menunggu data tidak pernah ter-resolve.",
     "Halaman Profil tidak menampilkan tombol/form Edit sehingga profil tidak bisa diisi/diupdate.",
-    "Flow klaim 'first admin' tidak muncul sama sekali di UI (bootstrap admin tidak tersedia untuk user)."
+    "Flow klaim 'first admin' tidak muncul sama sekali di UI (bootstrap admin tidak tersedia untuk user).",
+    "Dashboard Admin masih belum muncul dan fitur pengguna belum bisa digunakan meski sudah login (termasuk saat memakai Principal yang sudah diberikan/di-allowlist); terdapat error di browser console.",
+    "Aplikasi blank/error karena backend canister berstatus \"stopped\"; panggilan frontend (mis. `getCallerUserRole`) gagal dengan IC0508 (CallContextManager tidak ada).",
+    "Build attempt failed due to Caffeine internal error: “Unexpected AI error occurred. We're looking into it.” (not an app runtime error)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -304,6 +307,134 @@
         "REQ-38"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-fix-the-frontend-caller-profile-data-flow-to-stop-using-role-based-placeholder-profile-values-and-instead-fetch-the-real-stored-profile-from-the-backend-so-signed-in-users-reliably-see-usable-app-features-vehicles-lost-vehicles-notifications-security-settings-and-are-only-redirected-to-onboarding-when-the-backend-definitively-reports-that-no-onboarded-profile-exists",
+      "title": "Fix the frontend caller-profile data flow to stop using role-based placeholder profile values and instead fetch the real stored profile from the backend, so signed-in users reliably see usable app features (vehicles, lost vehicles, notifications, security settings) and are only redirected to onboarding when the backend definitively reports that no onboarded profile exists.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-allowlisted-principal-id-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-recognized-as-an-admin-immediately-after-sign-in-without-requiring-a-separate-onboarding-claim-step-and-that-the-frontend-admin-status-hook-reflects-this-reliably-so-the-admin-navigation-entry-appears-and-admin-routes-are-accessible",
+      "title": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is recognized as an admin immediately after sign-in (without requiring a separate onboarding/claim step) and that the frontend admin-status hook reflects this reliably so the Admin navigation entry appears and /admin routes are accessible.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-resolve-the-browser-console-error-about-invalid-failed-pwa-icon-downloads-by-ensuring-the-manifest-and-html-icon-links-point-to-real-valid-png-assets-available-at-runtime-and-that-those-files-exist-in-the-frontend-public-assets",
+      "title": "Resolve the browser console error about invalid/failed PWA icon downloads by ensuring the manifest and HTML icon links point to real, valid PNG assets available at runtime, and that those files exist in the frontend public assets.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-profile-bootstrap-error-screen-to-use-english-only-user-facing-copy-titles-descriptions-button-labels-helper-text-and-keep-showing-the-raw-technical-error-message-in-a-clearly-labeled-section",
+      "title": "Update the profile bootstrap error screen to use English-only user-facing copy (titles, descriptions, button labels, helper text) and keep showing the raw technical error message in a clearly labeled section.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-detect-the-specific-replica-rejection-case-shown-in-the-screenshot-where-the-backend-canister-is-stopped-e-g-error-contains-is-stopped-and-or-ic0508-and-or-callcontextmanager-and-display-a-dedicated-actionable-recovery-message-instead-of-generic-causes",
+      "title": "Detect the specific replica rejection case shown in the screenshot where the backend canister is stopped (e.g., error contains \"is stopped\" and/or \"IC0508\" and/or \"CallContextManager\") and display a dedicated, actionable recovery message instead of generic causes.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-copy-error-details-action-on-the-bootstrap-error-screen-that-copies-a-formatted-block-containing-at-minimum-the-visible-error-message-text-the-current-url-and-a-timestamp-so-the-user-can-paste-it-to-the-caffeine-team-when-build-deploy-is-locked",
+      "title": "Add a “Copy error details” action on the bootstrap error screen that copies a formatted block containing (at minimum) the visible error message text, the current URL, and a timestamp, so the user can paste it to the Caffeine team when Build/Deploy is locked.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-eliminate-the-recurring-console-warning-about-passing-both-agent-and-agentoptions-when-creating-the-backend-actor-by-updating-the-actor-creation-configuration-so-only-one-is-provided-consistently-and-verify-that-authenticated-actor-creation-uses-the-internet-identity-identity-correctly",
+      "title": "Eliminate the recurring console warning about passing both `agent` and `agentOptions` when creating the backend actor by updating the actor-creation configuration so only one is provided consistently, and verify that authenticated actor creation uses the Internet Identity identity correctly.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-prevent-the-app-from-getting-stuck-on-the-global-loading-screen-by-making-actor-initialization-resilient-if-actor-creation-and-or-initializeaccesscontrolwithsecret-fails-or-rejects-the-ui-must-exit-the-spinner-state-and-display-a-recoverable-error-screen-with-an-english-retry-action",
+      "title": "Prevent the app from getting stuck on the global \"Loading...\" screen by making actor initialization resilient: if actor creation and/or `_initializeAccessControlWithSecret(...)` fails or rejects, the UI must exit the spinner state and display a recoverable error screen with an English retry action.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-initializeaccesscontrolwithsecret-admintoken-cannot-trap-the-app-during-startup-when-the-url-parameter-caffeineadmintoken-is-missing-empty-invalid-backend-and-frontend-must-handle-this-case-gracefully-so-normal-users-can-still-load-the-app-and-proceed-to-onboarding-profile-flows",
+      "title": "Ensure `_initializeAccessControlWithSecret(adminToken)` cannot trap the app during startup when the URL parameter `caffeineAdminToken` is missing/empty/invalid; backend and frontend must handle this case gracefully so normal users can still load the app and proceed to onboarding/profile flows.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-pwa-icon-loading-failures-by-ensuring-the-icon-urls-referenced-by-frontend-index-html-and-frontend-public-manifest-webmanifest-point-to-real-valid-png-files-available-at-runtime-and-ensure-those-assets-are-served-correctly-so-the-browser-does-not-report-resource-isn-t-a-valid-image",
+      "title": "Fix PWA icon loading failures by ensuring the icon URLs referenced by `frontend/index.html` and `frontend/public/manifest.webmanifest` point to real, valid PNG files available at runtime, and ensure those assets are served correctly so the browser does not report \"resource isn't a valid image\".",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-app-never-renders-as-a-blank-dark-screen-on-initial-load-when-the-user-is-not-authenticated-the-ui-must-reliably-render-the-sign-in-screen-with-a-visible-sign-in-with-internet-identity-button-instead-of-a-blank-page",
+      "title": "Ensure the app never renders as a blank/dark screen on initial load: when the user is not authenticated, the UI must reliably render the Sign In screen (with a visible ‘Sign in with Internet Identity’ button) instead of a blank page.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-actor-bootstrap-error-detection-and-reporting-so-startup-failures-do-not-result-in-an-unrecoverable-blank-dark-screen-the-startup-bootstrap-error-screen-must-appear-when-actor-creation-or-access-control-initialization-fails-and-it-must-offer-a-working-retry-action",
+      "title": "Fix actor bootstrap error detection and reporting so startup failures do not result in an unrecoverable blank/dark screen. The startup bootstrap error screen must appear when actor creation or access-control initialization fails, and it must offer a working Retry action.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-harden-the-service-worker-caching-strategy-to-prevent-stale-cached-app-shells-from-causing-a-blank-screen-after-a-new-deploy-do-not-cache-the-html-shell-in-a-way-that-can-serve-outdated-js-bundles-after-an-update-ensure-a-new-deploy-reliably-loads-the-latest-frontend-assets",
+      "title": "Harden the Service Worker caching strategy to prevent stale cached app shells from causing a blank screen after a new deploy. Do not cache the HTML shell in a way that can serve outdated JS bundles after an update; ensure a new deploy reliably loads the latest frontend assets.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-top-level-recoverable-fallback-ui-for-unexpected-initialization-render-errors-e-g-router-render-exceptions-that-includes-english-only-user-facing-text-and-a-reload-app-action",
+      "title": "Add a top-level recoverable fallback UI for unexpected initialization/render errors (e.g., router/render exceptions) that includes English-only user-facing text and a ‘Reload app’ action.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-trigger-a-rebuild-and-redeploy-of-the-existing-application-no-functional-changes-required-to-restart-the-backend-canister-that-is-currently-stopped-and-causing-replica-rejection-errors-ic0508-during-startup",
+      "title": "Trigger a rebuild and redeploy of the existing application (no functional changes required) to restart the backend canister that is currently stopped and causing replica rejection errors (IC0508) during startup.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-after-redeploy-verify-that-the-startup-retry-flow-remains-functional-when-a-connection-error-occurs-the-retry-connection-action-must-attempt-actor-initialization-again-and-must-not-leave-the-ui-stuck-on-a-loading-spinner-indefinitely",
+      "title": "After redeploy, verify that the startup retry flow remains functional: when a connection error occurs, the 'Retry Connection' action must attempt actor initialization again and must not leave the UI stuck on a loading spinner indefinitely.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -430,6 +561,22 @@
       "summary": "Permanently grant admin access to Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` via a backend allowlist rule, and ensure all admin checks and admin-gated backend endpoints treat this Principal as admin immediately after sign-in.",
       "reqIds": [
         "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Expose explicit backend Candid methods for reading and updating the signed-in caller’s user profile (e.g., getCallerUserProfile and save/update equivalent) so the generated TypeScript actor interface includes them and the frontend can call them without workarounds.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Eliminate the recurring console warning about passing both `agent` and `agentOptions` when creating the backend actor by adjusting the actor creation configuration so only one of these is provided consistently.",
+      "reqIds": [
+        "REQ-43"
       ],
       "status": "pending"
     }

@@ -2,13 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-allowlisted-principal-id-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-treated-as-an-admin-immediately-after-sign-in-so-the-admin-navigation-entry-appears-and-admin-routes-are-accessible-for-this-principal",
-      "featureTitle": "Ensure the allowlisted Principal ID `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin immediately after sign-in, so the Admin navigation entry appears and admin routes are accessible for this Principal.",
+      "featureId": "feature-trigger-a-rebuild-and-redeploy-of-the-existing-application-no-functional-changes-required-to-restart-the-backend-canister-that-is-currently-stopped-and-causing-replica-rejection-errors-ic0508-during-startup",
+      "featureTitle": "Trigger a rebuild and redeploy of the existing application (no functional changes required) to restart the backend canister that is currently stopped and causing replica rejection errors (IC0508) during startup.",
       "files": [
-        "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/pages/admin/AdminDashboardPage.tsx",
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+        "frontend/index.html",
+        "frontend/src/components/auth/SignInScreen.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -21,17 +19,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-35"
+        "REQ-55"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-the-frontend-admin-status-data-flow-so-useiscalleradmin-accurately-reflects-backend-admin-status-including-the-allowlist-admin-and-updates-the-ui-reliably-after-authentication-and-after-any-admin-claim-action",
-      "featureTitle": "Fix the frontend admin-status data flow so `useIsCallerAdmin()` accurately reflects backend admin status (including the allowlist admin) and updates the UI reliably after authentication and after any admin-claim action.",
+      "featureId": "feature-after-redeploy-verify-that-the-startup-retry-flow-remains-functional-when-a-connection-error-occurs-the-retry-connection-action-must-attempt-actor-initialization-again-and-must-not-leave-the-ui-stuck-on-a-loading-spinner-indefinitely",
+      "featureTitle": "After redeploy, verify that the startup retry flow remains functional: when a connection error occurs, the 'Retry Connection' action must attempt actor initialization again and must not leave the UI stuck on a loading spinner indefinitely.",
       "files": [
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/pages/admin/AdminDashboardPage.tsx",
-        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/auth/StartupBootstrapError.tsx",
+        "frontend/src/hooks/useActorBootstrapStatus.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -44,50 +42,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-36"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-replace-the-placeholder-profile-hook-implementation-so-the-app-fetches-the-real-stored-profile-from-the-backend-and-can-persist-profile-edits-full-name-optional-email-city-country",
-      "featureTitle": "Replace the placeholder Profile hook implementation so the app fetches the real stored profile from the backend and can persist profile edits (full name, optional email, city, country).",
-      "files": [
-        "frontend/src/hooks/useProfile.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-37"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-profile-page-to-provide-an-editable-form-for-full-name-email-city-and-country-with-clear-english-user-facing-text-and-save-cancel-actions",
-      "featureTitle": "Update the Profile page to provide an editable form for full name, email, city, and country, with clear English user-facing text and Save/Cancel actions.",
-      "files": [
-        "frontend/src/hooks/useProfile.ts",
-        "frontend/src/pages/ProfilePage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-38"
+        "REQ-56"
       ],
       "confidence": "high"
     }
