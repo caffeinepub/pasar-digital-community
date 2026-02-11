@@ -1,10 +1,10 @@
 {
-  "frontend/src/hooks/useProfile.ts": "React Query hooks for user profile operations that check onboarding status via user role since backend profile methods are not exposed in the public interface yet.",
-  "frontend/src/App.tsx": "Main application component with authentication gate that properly handles profile fetching and onboarding redirection based on real backend data.",
-  "frontend/src/pages/ProfilePage.tsx": "Profile page displaying Principal ID and logout button with informational alert about profile management through onboarding system.",
+  "frontend/src/hooks/useProfile.ts": "React Query hooks for user profile operations using getCallerUserRole as a workaround to determine onboarding status since getCallerUserProfile is not exposed in the TypeScript backend interface.",
+  "frontend/src/App.tsx": "Main application component with refactored authentication gate that shows sign-in immediately for unauthenticated users, handles profile loading states properly, and includes error recovery with ProfileBootstrapError component.",
+  "frontend/src/pages/ProfilePage.tsx": "Profile page displaying fetched UserProfile fields (fullName, email, city, country) and Principal ID with proper loading states and informational alerts.",
   "frontend/src/components/brand/AppLogo.tsx": "Logo component that displays the Pasar Digital Community logo with configurable sizes and proper aspect ratio preservation.",
-  "frontend/src/components/nav/AppHeader.tsx": "Responsive header navigation with English labels and admin link that appears immediately after admin claim via query invalidation in both desktop and mobile menus.",
-  "frontend/src/components/layout/AppLayout.tsx": "Application layout wrapper with conditional header display, footer with About link and Caffeine attribution, and proper spacing for authenticated views.",
+  "frontend/src/components/nav/AppHeader.tsx": "Responsive header navigation displaying user information with admin link that appears for admin users, using the correct useIsCallerAdmin hook import.",
+  "frontend/src/components/layout/AppLayout.tsx": "Application layout wrapper that shows header for authenticated users (except on onboarding page) and always renders main content to prevent blank screens.",
   "frontend/src/components/auth/SignInScreen.tsx": "Sign-in screen with logo display, feature highlights, and Internet Identity authentication button.",
   "frontend/src/components/auth/AccessDeniedScreen.tsx": "Access denied screen with conditional \"Claim admin access\" button shown only when no admin exists, using English copy and proper error handling with navigation delay.",
   "frontend/src/pages/AboutPage.tsx": "About page displaying app description, features, and admin contact information (WhatsApp and email) with responsive layout.",
@@ -15,5 +15,6 @@
   "frontend/public/manifest.webmanifest": "PWA manifest with app metadata, icons, theme colors, and display configuration for Android and iOS installability.",
   "frontend/public/sw.js": "Service worker for PWA with basic caching strategy and safe update handling for offline support.",
   "frontend/src/backend.d.ts": "Updated TypeScript interface for backend with getCallerUserProfile and saveCallerUserProfile methods added to support real profile operations.",
-  "frontend/src/pages/admin/AdminDashboardPage.tsx": "Admin dashboard page with English labels and proper access control using the updated AccessDeniedScreen component."
+  "frontend/src/pages/admin/AdminDashboardPage.tsx": "Admin dashboard page with English labels and proper access control using the updated AccessDeniedScreen component.",
+  "frontend/src/components/auth/ProfileBootstrapError.tsx": "Error screen component for authenticated users when profile fetch fails, displaying error details and a retry button with proper styling."
 }

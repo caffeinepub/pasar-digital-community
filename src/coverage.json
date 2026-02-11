@@ -1,79 +1,71 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T00:29:54.182Z",
+  "generatedAt": "2026-02-11T00:44:55.383Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-21",
-        "summary": "Fix the user profile data flow so signed-in users are not incorrectly forced into onboarding, and so the Profile feature reliably appears and works after sign-in.",
+        "id": "REQ-26",
+        "summary": "Update the authentication gate so the app never blocks on profile/actor queries before the user has authenticated, and so an unauthenticated visitor always sees the Sign In screen instead of an infinite \"Loading...\" screen.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/backend.d.ts",
+          "frontend/src/App.tsx",
+          "frontend/src/hooks/useProfile.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/src/hooks/useProfile.ts"
+        ]
+      },
+      {
+        "id": "REQ-27",
+        "summary": "Fix the caller profile data flow to use the real backend profile API (not placeholder role-based data), and ensure onboarding redirects only happen after the profile fetch has definitively completed.",
+        "status": "implemented",
+        "plannedFiles": [
           "frontend/src/hooks/useProfile.ts",
           "frontend/src/App.tsx",
+          "frontend/src/components/nav/AppHeader.tsx",
           "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/backend.d.ts",
           "frontend/src/hooks/useProfile.ts",
+          "frontend/src/App.tsx",
+          "frontend/src/components/nav/AppHeader.tsx",
           "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
-        "id": "REQ-22",
-        "summary": "Add a Logout button inside the Profile page that logs the user out of Internet Identity and clears cached app state.",
+        "id": "REQ-28",
+        "summary": "Add resilient error handling for profile/role checks so transient backend errors do not cause an infinite loading state; show a recoverable UI state (e.g., Sign In if not authenticated, or an error message with a retry action if authenticated).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/components/auth/ProfileBootstrapError.tsx",
+          "frontend/src/hooks/useProfile.ts",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/components/auth/ProfileBootstrapError.tsx",
+          "frontend/src/hooks/useProfile.ts",
+          "frontend/src/App.tsx"
         ]
       },
       {
-        "id": "REQ-23",
-        "summary": "Ensure the Profile page displays the signed-in user’s Internet Identity Principal ID as read-only text so users can see their Internet ID.",
+        "id": "REQ-29",
+        "summary": "Ensure the main layout (AppLayout) does not hide all navigation/content in a way that appears like a broken app during onboarding and immediately after login; the header may be hidden on onboarding, but the page content must always render.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/components/layout/AppLayout.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-24",
-        "summary": "Implement a robust \"claim first admin\" bootstrap that works reliably so the current signed-in user can claim admin and then immediately see the Admin menu and access the Admin Dashboard.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/components/auth/AccessDeniedScreen.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/backend.d.ts",
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/components/auth/AccessDeniedScreen.tsx"
-        ]
-      },
-      {
-        "id": "REQ-25",
-        "summary": "Make the admin navigation entry reliably appear for admin users (desktop nav and mobile nav), based on the backend admin check, and ensure the Admin Dashboard route is reachable for admins.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/components/nav/AppHeader.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useAdmin.ts",
-          "frontend/src/components/nav/AppHeader.tsx"
+          "frontend/src/components/layout/AppLayout.tsx",
+          "frontend/src/App.tsx"
         ]
       }
     ]
@@ -83,10 +75,11 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
-    "frontend/src/components/auth/AccessDeniedScreen.tsx",
+    "frontend/src/components/auth/ProfileBootstrapError.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
     "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/hooks/useAdmin.ts",
     "frontend/src/hooks/useProfile.ts",
     "frontend/src/pages/ProfilePage.tsx",
     "project_state.json",

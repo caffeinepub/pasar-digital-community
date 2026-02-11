@@ -83,7 +83,6 @@ export interface backendInterface {
     completeOnboarding(inviteToken: string, profile: UserProfile): Promise<void>;
     generateInviteCode(): Promise<string>;
     getAllRSVPs(): Promise<Array<RSVP>>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getInviteCodes(): Promise<Array<InviteCode>>;
     getInviteTokenReport(): Promise<{
@@ -107,7 +106,6 @@ export interface backendInterface {
     markVehicleLost(vehicleId: string, reportNote: string): Promise<void>;
     registerVehicle(engineNumber: string, chassisNumber: string, brand: string, model: string, year: bigint, location: string, vehiclePhoto: ExternalBlob): Promise<string>;
     reportVehicleFound(vehicleId: string, finderReport: string): Promise<void>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setupPIN(pin: string): Promise<void>;
     submitRSVP(name: string, attending: boolean, inviteCode: string): Promise<void>;
     updatePIN(oldPin: string, newPin: string): Promise<void>;

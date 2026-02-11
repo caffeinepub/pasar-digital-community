@@ -16,9 +16,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const isAuthenticated = !!identity;
   const isOnboarded = userProfile?.onboarded ?? false;
 
-  // Don't show header on sign-in or onboarding screens
+  // Don't show header on onboarding screen
   const currentPath = window.location.hash.replace('#', '') || '/';
-  const showHeader = isAuthenticated && isOnboarded && currentPath !== '/onboarding';
+  const showHeader = isAuthenticated && currentPath !== '/onboarding';
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

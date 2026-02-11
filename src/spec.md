@@ -1,15 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure signed-in users can reliably access their profile (without incorrect onboarding redirects), provide a Profile logout action and Principal ID display, and make admin claiming/navigation work consistently so admins can see and access the Admin Dashboard.
+**Goal:** Fix the initial app-open infinite “Loading…” state by correcting the AuthGate/AppLayout bootstrap flow so unauthenticated users see Sign In quickly and authenticated users reliably resolve to onboarding or dashboard based on the real backend profile.
 
 **Planned changes:**
-- Fix caller profile loading so the frontend can fetch and display the signed-in user’s profile from the backend and only route to onboarding when the backend indicates no completed profile/onboarding exists.
-- Update the Profile page (`/profile`) to reliably render after sign-in and show profile fields (full name, email, city, country) sourced from the backend.
-- Add a clearly labeled "Logout" button to the Profile page that logs out of Internet Identity and clears cached app state (including React Query cache), returning the user to the signed-out experience.
-- Display the signed-in user’s Internet Identity Principal ID on the Profile page as read-only text with a safe fallback/loading state when unavailable.
-- Add backend support for robust “first admin” bootstrapping: an explicit capability check for whether first admin can be claimed, and a dedicated claim method that only succeeds when no admin exists.
-- Update the frontend access-denied/admin bootstrap flow to use the new backend capability check and claim method, and ensure the Admin menu item and `/admin` access update immediately after a successful claim without a full refresh.
-- Ensure admin navigation visibility (desktop and mobile) is driven by the backend admin check, and `/admin` renders for admins while non-admins see an access denied experience.
+- Update the authentication gate so profile/actor queries are not awaited before authentication is established, and unauthenticated visitors are routed to Sign In instead of staying on an indefinite loading screen.
+- Replace placeholder/role-based caller profile logic with the real backend caller-profile API, and ensure onboarding routing happens only after the profile fetch has definitively succeeded (redirect once, no loops).
+- Add resilient error handling for authenticated profile fetch failures (show an error state with a retry action rather than a permanent spinner).
+- Adjust AppLayout gating so onboarding and post-login pages always render content (header may be hidden on onboarding, but no full-screen blank/black “broken” state).
 
-**User-visible outcome:** After signing in, users can open `/profile` to see their stored profile details and their Principal ID, and can log out directly from the Profile page. Admin users reliably see an Admin navigation entry (desktop/mobile) and can access `/admin`; if no admin exists yet, an eligible user can claim first admin and immediately gain access.
+**User-visible outcome:** Opening the app without an existing session shows Sign In quickly; after login the app reliably loads the user’s real profile and routes to onboarding (if not onboarded) or the dashboard (if onboarded), with a retryable error UI instead of getting stuck on “Loading…”.

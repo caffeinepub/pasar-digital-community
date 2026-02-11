@@ -1,72 +1,68 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T00:29:54.179Z",
-  "summary": "The diff implements parts of the requested frontend UI (Profile page logout + Principal ID, and an admin-gated nav item + access denied screen) but does not fully meet the core requirements for real profile loading and the robust first-admin bootstrap. Several additional, unrelated changes appear to have been made (PWA, About page, branding, layout/footer), which were not requested.",
+  "generatedAt": "2026-02-11T00:44:55.379Z",
+  "summary": "Diff addresses the loading/auth bootstrap with a new AuthGate flow, adds an authenticated-profile error UI with retry, and adjusts layout/header rendering. However, the profile data flow still relies on a placeholder role-based workaround rather than the real backend caller profile API, and several unrelated features (PWA, About/Admin enhancements) were added beyond the stated scope.",
   "missing_requirements": [
     {
-      "id": "REQ-21",
-      "requirement": "Fix the user profile data flow so signed-in users are not incorrectly forced into onboarding, and so the Profile feature reliably appears and works after sign-in.",
-      "reason": "The hook does not fetch the caller profile from the backend; it returns a placeholder profile with empty fields based on role, and explicitly states the real profile is not retrievable. The Profile page also does not display full name, email, city, and country sourced from the backend.",
+      "id": "REQ-27",
+      "requirement": "Fix the caller profile data flow to use the real backend profile API (not placeholder role-based data), and ensure onboarding redirects only happen after the profile fetch has definitively completed.",
+      "reason": "The profile hook explicitly uses getCallerUserRole and returns a placeholder UserProfile (empty fields) to infer onboarding, stating that getCallerUserProfile is not exposed/used. The diff summary does not show corresponding backend/main.mo changes to expose a real getCallerUserProfile implementation, and the Profile/Header continue to consume this placeholder data.",
       "evidence": [
         "frontend/src/hooks/useProfile.ts",
-        "frontend/src/pages/ProfilePage.tsx"
-      ]
-    },
-    {
-      "id": "REQ-24",
-      "requirement": "Implement a robust \"claim first admin\" bootstrap with explicit backend capability check and dedicated claim method (not relying on unauthorized-error guessing).",
-      "reason": "The frontend capability check still relies on calling an admin-only API (getSystemStats) and inferring claimability from unauthorized errors, which violates the requirement for an explicit backend method. Also, the claim mutation calls assignCallerUserRole directly rather than a dedicated \"claim first admin\" backend method. No backend changes are shown in the diff summary.",
-      "evidence": [
-        "frontend/src/hooks/useAdmin.ts",
-        "frontend/src/components/auth/AccessDeniedScreen.tsx"
-      ]
-    },
-    {
-      "id": "REQ-25",
-      "requirement": "Make the admin navigation entry reliably appear for admin users in both desktop and mobile nav, and ensure the Admin Dashboard route is reachable for admins.",
-      "reason": "Desktop nav shows the Admin button when isAdmin is true, but the file is truncated before the mobile menu implementation, so it is not evidenced that the mobile menu also conditionally shows the Admin entry. Route reachability behavior for admin vs non-admin is not evidenced from the provided diff content.",
-      "evidence": [
-        "frontend/src/components/nav/AppHeader.tsx (truncated)"
+        "frontend/src/pages/ProfilePage.tsx",
+        "frontend/src/components/nav/AppHeader.tsx",
+        "frontend-file-summaries.txt"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "PWA installability and service worker/manifest changes (manifest reference, SW registration, caching).",
-      "reason": "Not requested by REQ-21..REQ-25 and represents additional scope.",
+      "description": "PWA installability support (manifest, service worker registration, caching/offline strategy, meta tags).",
+      "reason": "Not requested in BuildRequest; non-goals emphasize avoiding new product features beyond fixing loading/auth/profile flow.",
       "evidence": [
-        "frontend-file-summaries.txt (entries for frontend/index.html, frontend/src/main.tsx, frontend/public/manifest.webmanifest, frontend/public/sw.js)"
+        "frontend/index.html",
+        "frontend/src/main.tsx",
+        "frontend/public/manifest.webmanifest",
+        "frontend/public/sw.js",
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "Adding/updating an About page with admin contact info (WhatsApp/email).",
-      "reason": "Not part of requested requirements and adds a new/modified page beyond the described scope.",
+      "description": "About page with app description and admin contact information.",
+      "reason": "Not requested as part of fixing the loading/auth/profile/onboarding/admin-check flow.",
       "evidence": [
-        "frontend-file-summaries.txt (entry for frontend/src/pages/AboutPage.tsx)"
+        "frontend/src/pages/AboutPage.tsx",
+        "frontend/src/components/layout/AppLayout.tsx",
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "Branding/logo component and other layout/footer changes (e.g., About link, attribution).",
-      "reason": "Not requested by the BuildRequest and appears to be unrelated redesign/content work.",
+      "description": "First-admin bootstrap/claim admin access hooks and related access-denied UI changes.",
+      "reason": "BuildRequest only mentions fixing existing admin-check flow robustness, not adding new admin-claim/bootstrap capabilities.",
       "evidence": [
-        "frontend-file-summaries.txt (entries for frontend/src/components/brand/AppLogo.tsx, frontend/src/components/layout/AppLayout.tsx)"
+        "frontend/src/hooks/useAdmin.ts",
+        "frontend/src/components/auth/AccessDeniedScreen.tsx",
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "Admin invite token page UI changes (tables, copy link, responsive behavior).",
-      "reason": "Not requested (admin bootstrap/nav was requested, not invite-token management UI changes).",
+      "description": "Admin invite token page enhancements and other admin UI changes unrelated to the loading/auth bootstrap fix.",
+      "reason": "Not requested; outside the targeted scope.",
       "evidence": [
-        "frontend-file-summaries.txt (entry for frontend/src/pages/admin/AdminInviteTokensPage.tsx)"
+        "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+        "frontend/src/pages/admin/AdminDashboardPage.tsx",
+        "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.74,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/auth/AccessDeniedScreen.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/auth/ProfileBootstrapError.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
     "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/hooks/useAdmin.ts",
     "frontend/src/hooks/useProfile.ts",
     "frontend/src/pages/ProfilePage.tsx",
     "project_state.json"
