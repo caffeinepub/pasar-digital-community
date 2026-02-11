@@ -1,78 +1,67 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T11:15:22.296Z",
-  "summary": "Implements several change-control artifacts (policy, PR checklist, docs), adds frontend lint/format config and new smoke/regression tests, and introduces frontend version constants + footer version display. However, evidence for a complete frontend “gates” command wiring, any CI workflow integration, and the backend Candid/contract-check mechanism is missing from the provided diff summary; backend version exposure is also not evidenced.",
+  "generatedAt": "2026-02-11T15:26:31.975Z",
+  "summary": "Diff implements key pieces of one-click invite onboarding: admin page now copies `/#/onboarding?inviteToken=...` links with English toasts, root gate captures/persists inviteToken early, onboarding page loads token from session and submits `completeOnboarding(inviteToken, profile)` with English toasts/errors. However, due to truncation, it’s not fully verifiable that the invite token input is hidden when token exists, nor that the token is removed from the address bar after capture.",
   "missing_requirements": [
     {
       "id": "REQ-2",
-      "requirement": "Introduce automated “gates” that run locally and in CI: typecheck, lint, formatting check, and minimal test runner, with a single command to run them all and docs on running locally.",
-      "reason": "While docs and a CI helper script were added (mentioning `npm run gates`), the diff summary does not show the actual implementation/wiring of the single gates command (e.g., `frontend/package.json` scripts) nor any CI configuration/workflow that runs it.",
+      "requirement": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session.",
+      "reason": "The page still imports `Input`/`Label` and maintains `inviteToken` state with `setInviteToken`, but the diff is truncated before rendering logic; there is no visible evidence that the token input is conditionally hidden when a token exists.",
       "evidence": [
-        "frontend/ci-run-gates.sh",
-        "frontend/QUALITY_GATES.md",
-        "frontend/vitest.config.ts",
-        "frontend/.eslintrc.cjs",
-        "frontend/.prettierrc.json"
+        "frontend/src/pages/OnboardingInvitePage.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "If the invite token is missing from the URL and not available from session persistence, the page shows a clear English message instructing the user to use an invite link from an admin (and does not present a blank required token field).",
+      "reason": "There is evidence of an English toast on submit when `inviteToken` is empty, but the UI requirement is about what the page shows when no token is available (and specifically not presenting a blank required token field). The render portion is truncated, so this can’t be confirmed.",
+      "evidence": [
+        "frontend/src/pages/OnboardingInvitePage.tsx (truncated)"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "Add a backend API contract check (Candid surface) with a reproducible generate/verify command, failing CI when interface changes without explicit artifact update, and documented update steps.",
-      "reason": "No contract artifact (e.g., committed .did/.json/hash), no generate/verify script/command, and no CI check are shown in the diff summary. Only a migration module import/change is visible in the backend.",
+      "requirement": "After the token is read, the app removes the `inviteToken` parameter from the visible URL (hash/query) without reloading the page.",
+      "reason": "`RootRouteGate` calls `captureAndPersistInviteToken()`, and `urlParams.ts` contains helpers and a `clearParamFromHash` function, but the diff is truncated before showing `captureAndPersistInviteToken` implementation and whether it actually invokes URL replacement/removal for `inviteToken`. इसलिए the AC cannot be verified from provided evidence.",
       "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Backend exposes a simple version/build identifier via an existing or new query method, or document why frontend-only versioning is used.",
-      "reason": "Frontend versioning and changelog are present, but the diff summary provides no evidence of a backend version/build query method and no documentation excerpt stating an intentional frontend-only approach.",
-      "evidence": [
-        "frontend/src/version.ts",
-        "frontend/CHANGELOG.md",
-        "backend/main.mo"
+        "frontend/src/routes/RootRouteGate.tsx (truncated)",
+        "frontend/src/utils/urlParams.ts (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added a backend migration module and wired migration runner into the main actor.",
-      "reason": "The BuildRequest focuses on change-control guardrails (policy, gates, contract check, tests, versioning). A migration module is not requested, and the diff summary does not provide evidence that a stable-state schema change required it.",
+      "description": "Admin-detection behavior on onboarding page that redirects admins to `/admin` and blocks admins from completing invite-based onboarding.",
+      "reason": "BuildRequest focuses on invite token capture/persistence and UI changes; it does not request adding admin-specific redirects/blocks for onboarding.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
+        "frontend/src/pages/OnboardingInvitePage.tsx (truncated)"
       ]
     },
     {
-      "description": "Added/changed footer content with caffeine.ai attribution link and UTM tracking, plus an About button placement.",
-      "reason": "REQ-5 requests showing a version identifier in the frontend; it does not request adding external attribution/UTM tracking links or specific footer marketing content.",
+      "description": "Backend changes related to allowlist admin helpers and RSVP/invite-code validation logic shown in `backend/main.mo`.",
+      "reason": "REQ-5 explicitly says the frontend experience should change and backend invite-token validation semantics should not change; the diff shows backend modifications unrelated to one-click onboarding, which were not requested.",
       "evidence": [
-        "frontend/src/components/layout/AppLayout.tsx"
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "description": "RootRouteGate copy updates for various bootstrapping/auth status messages (English-only) beyond invite onboarding.",
+      "reason": "Only onboarding/admin invite pages’ English copy is required (REQ-2/REQ-4). Updating broader app gate messaging is not requested in the BuildRequest.",
+      "evidence": [
+        "frontend/src/routes/RootRouteGate.tsx (truncated)"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.56,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/.eslintrc.cjs",
-    "frontend/.prettierrc.json",
-    "frontend/CHANGELOG.md",
-    "frontend/CHANGE_CONTROL_POLICY.md",
-    "frontend/PR_CHECKLIST.md",
-    "frontend/QUALITY_GATES.md",
-    "frontend/README_CHANGE_CONTROL.md",
-    "frontend/README_VERSIONING.md",
-    "frontend/ci-run-gates.sh",
-    "frontend/src/__tests__/router-smoke.test.tsx",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
-    "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
-    "frontend/src/test/setup.ts",
-    "frontend/src/version.ts",
-    "frontend/vitest.config.ts",
+    "frontend/src/hooks/useOnboarding.ts",
+    "frontend/src/pages/OnboardingInvitePage.tsx",
+    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+    "frontend/src/routes/RootRouteGate.tsx",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]
 }

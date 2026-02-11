@@ -2,7 +2,6 @@ import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import AppHeader from '../nav/AppHeader';
 import { useGetCallerUserProfile } from '../../hooks/useProfile';
 import { useNavigate } from '@tanstack/react-router';
-import { Heart } from 'lucide-react';
 import { APP_VERSION } from '../../version';
 
 interface AppLayoutProps {
@@ -29,18 +28,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
                 <p className="text-center sm:text-left">
-                  © {new Date().getFullYear()} Pasar Digital Community. Built with{' '}
-                  <Heart className="inline h-4 w-4 text-destructive fill-destructive" /> using{' '}
-                  <a
-                    href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
-                      window.location.hostname
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    caffeine.ai
-                  </a>
+                  © {new Date().getFullYear()} Pasar Digital Community. Built by Lucky Zamaludin Malik
                 </p>
                 <span className="hidden sm:inline text-muted-foreground/50">•</span>
                 <span className="text-xs text-muted-foreground/70">v{APP_VERSION}</span>

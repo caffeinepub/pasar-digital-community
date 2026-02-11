@@ -1,15 +1,17 @@
 /**
- * Hook to monitor actor bootstrap status with bounded auto-retry and manual retry
- * Implements exponential backoff with max 3 attempts before showing stable error screen
+ * Hook to monitor actor bootstrap status with continuous retry for STOPPED-canister errors
+ * Implements exponential backoff with bounded retries for normal errors, but continuous retry for stopped canisters
  */
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useInternetIdentity } from './useInternetIdentity';
 import { getActorQueryKey } from '../utils/actorQueryKey';
 import { useState, useEffect, useRef } from 'react';
+import { classifyBootstrapError } from '../utils/bootstrapError';
 
 const MAX_AUTO_RETRY_ATTEMPTS = 3;
 const RETRY_DELAYS = [2000, 5000, 10000]; // 2s, 5s, 10s
+const CONTINUOUS_RETRY_DELAY = 15000; // 15s for continuous retries after max attempts
 
 export interface ActorBootstrapStatus {
   isLoading: boolean;
@@ -21,7 +23,9 @@ export interface ActorBootstrapStatus {
     attempt: number;
     maxAttempts: number;
     nextRetryIn?: number;
+    isContinuous?: boolean;
   };
+  cancelContinuousRetry?: () => void;
 }
 
 export function useActorBootstrapStatus(): ActorBootstrapStatus {
@@ -32,6 +36,8 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
   const [isManualRetrying, setIsManualRetrying] = useState(false);
   const [autoRetryAttempt, setAutoRetryAttempt] = useState(0);
   const [nextRetryIn, setNextRetryIn] = useState<number | undefined>(undefined);
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
+  const [isCancelled, setIsCancelled] = useState(false);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -55,13 +61,40 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
     };
   }, []);
 
-  // Auto-retry logic with bounded attempts
+  // Auto-retry logic with continuous mode for STOPPED-canister errors
   useEffect(() => {
-    if (!isError || !error || autoRetryAttempt >= MAX_AUTO_RETRY_ATTEMPTS) {
+    if (!isError || !error || isCancelled) {
       return;
     }
 
-    const delay = RETRY_DELAYS[autoRetryAttempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
+    // Classify the error to determine if it's a stopped canister
+    const classification = classifyBootstrapError(error);
+    const isStoppedCanister = classification.type === 'canister-stopped';
+
+    // Determine if we should continue retrying
+    const shouldContinueRetrying = 
+      autoRetryAttempt < MAX_AUTO_RETRY_ATTEMPTS || 
+      (isStoppedCanister && autoRetryAttempt >= MAX_AUTO_RETRY_ATTEMPTS);
+
+    if (!shouldContinueRetrying) {
+      return;
+    }
+
+    // Determine delay and mode
+    let delay: number;
+    let continuous = false;
+    
+    if (autoRetryAttempt < MAX_AUTO_RETRY_ATTEMPTS) {
+      // Bounded retry phase
+      delay = RETRY_DELAYS[autoRetryAttempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
+      continuous = false;
+    } else {
+      // Continuous retry phase (only for stopped canisters)
+      delay = CONTINUOUS_RETRY_DELAY;
+      continuous = true;
+    }
+
+    setIsContinuousMode(continuous);
     setNextRetryIn(delay);
 
     // Countdown timer
@@ -103,13 +136,15 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
         countdownIntervalRef.current = null;
       }
     };
-  }, [isError, error, autoRetryAttempt, actorQueryKey, queryClient]);
+  }, [isError, error, autoRetryAttempt, actorQueryKey, queryClient, isCancelled]);
 
   // Reset auto-retry counter when error clears
   useEffect(() => {
     if (!isError) {
       setAutoRetryAttempt(0);
       setNextRetryIn(undefined);
+      setIsContinuousMode(false);
+      setIsCancelled(false);
     }
   }, [isError]);
 
@@ -118,6 +153,8 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
     setIsManualRetrying(true);
     setAutoRetryAttempt(0); // Reset auto-retry counter
     setNextRetryIn(undefined);
+    setIsContinuousMode(false);
+    setIsCancelled(false);
     
     // Clear any pending auto-retries
     if (retryTimeoutRef.current) {
@@ -148,18 +185,39 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
     }
   };
 
-  const autoRetryStatus = (autoRetryAttempt > 0 && autoRetryAttempt < MAX_AUTO_RETRY_ATTEMPTS) ? {
+  // Cancel continuous retry function
+  const cancelContinuousRetry = () => {
+    setIsCancelled(true);
+    setIsContinuousMode(false);
+    setNextRetryIn(undefined);
+    
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+  };
+
+  // Determine if we should show auto-retry status
+  const shouldShowAutoRetry = autoRetryAttempt > 0 && !isCancelled;
+  
+  const autoRetryStatus = shouldShowAutoRetry ? {
     attempt: autoRetryAttempt,
-    maxAttempts: MAX_AUTO_RETRY_ATTEMPTS,
+    maxAttempts: isContinuousMode ? Infinity : MAX_AUTO_RETRY_ATTEMPTS,
     nextRetryIn: nextRetryIn,
+    isContinuous: isContinuousMode,
   } : undefined;
 
   return {
     isLoading,
-    isError: isError && autoRetryAttempt >= MAX_AUTO_RETRY_ATTEMPTS,
+    isError: isError && !shouldShowAutoRetry,
     error,
     retry,
     isRetrying: isManualRetrying,
     autoRetryStatus,
+    cancelContinuousRetry: isContinuousMode ? cancelContinuousRetry : undefined,
   };
 }

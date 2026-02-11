@@ -4,17 +4,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Car, AlertTriangle, CheckCircle } from 'lucide-react';
+import type { VehicleStatus } from '../backend';
 
 export default function VehiclesPage() {
   const navigate = useNavigate();
   const { data: vehicles, isLoading } = useGetUserVehicles();
 
-  const getStatusBadge = (status: any) => {
+  const getStatusBadge = (status: VehicleStatus) => {
+    if (status.__kind__ === 'STOLEN') {
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Stolen
+        </Badge>
+      );
+    }
+    if (status.__kind__ === 'PAWNED') {
+      return (
+        <Badge variant="destructive" className="gap-1 bg-orange-600">
+          <AlertTriangle className="h-3 w-3" />
+          Pawned
+        </Badge>
+      );
+    }
     if (status.__kind__ === 'LOST') {
       return (
         <Badge variant="destructive" className="gap-1">
           <AlertTriangle className="h-3 w-3" />
-          Hilang
+          Lost
         </Badge>
       );
     }
@@ -22,14 +39,14 @@ export default function VehiclesPage() {
       return (
         <Badge className="gap-1 bg-chart-2">
           <CheckCircle className="h-3 w-3" />
-          Ditemukan
+          Found
         </Badge>
       );
     }
     return (
       <Badge variant="secondary" className="gap-1">
         <CheckCircle className="h-3 w-3" />
-        Aktif
+        Active
       </Badge>
     );
   };
@@ -46,12 +63,12 @@ export default function VehiclesPage() {
     <div className="container mx-auto px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kendaraan Saya</h1>
-          <p className="text-muted-foreground">Kelola dan pantau kendaraan yang terdaftar</p>
+          <h1 className="text-3xl font-bold tracking-tight">My Vehicles</h1>
+          <p className="text-muted-foreground">Manage and monitor your registered vehicles</p>
         </div>
         <Button onClick={() => navigate({ to: '/vehicles/register' })} className="gap-2">
           <Plus className="h-4 w-4" />
-          Daftarkan Kendaraan
+          Register Vehicle
         </Button>
       </div>
 
@@ -59,11 +76,11 @@ export default function VehiclesPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Car className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Belum Ada Kendaraan</h3>
+            <h3 className="text-lg font-semibold mb-2">No Vehicles Yet</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Daftarkan kendaraan pertama Anda untuk mulai menggunakan sistem keamanan
+              Register your first vehicle to start using the security system
             </p>
-            <Button onClick={() => navigate({ to: '/vehicles/register' })}>Daftarkan Sekarang</Button>
+            <Button onClick={() => navigate({ to: '/vehicles/register' })}>Register Now</Button>
           </CardContent>
         </Card>
       ) : (
@@ -80,7 +97,7 @@ export default function VehiclesPage() {
                     <CardTitle className="text-lg">
                       {vehicle.brand} {vehicle.model}
                     </CardTitle>
-                    <CardDescription>Tahun {vehicle.year.toString()}</CardDescription>
+                    <CardDescription>Year {vehicle.year.toString()}</CardDescription>
                   </div>
                   {getStatusBadge(vehicle.status)}
                 </div>
@@ -95,10 +112,10 @@ export default function VehiclesPage() {
                 </div>
                 <div className="text-sm space-y-1">
                   <p className="text-muted-foreground">
-                    <span className="font-medium">No. Mesin:</span> {vehicle.engineNumber}
+                    <span className="font-medium">Engine No:</span> {vehicle.engineNumber}
                   </p>
                   <p className="text-muted-foreground">
-                    <span className="font-medium">Lokasi:</span> {vehicle.location}
+                    <span className="font-medium">Location:</span> {vehicle.location}
                   </p>
                 </div>
               </CardContent>

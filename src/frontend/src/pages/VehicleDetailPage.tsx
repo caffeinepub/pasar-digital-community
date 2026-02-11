@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import InitiateTransferPanel from '../components/transfer/InitiateTransferPanel';
 import MarkLostDialog from '../components/lost/MarkLostDialog';
 import { ArrowLeft, Calendar, MapPin, Hash, AlertTriangle, CheckCircle } from 'lucide-react';
+import type { VehicleStatus } from '../backend';
 
 export default function VehicleDetailPage() {
   const { vehicleId } = useParams({ from: '/vehicles/$vehicleId' });
@@ -30,9 +31,9 @@ export default function VehicleDetailPage() {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Kendaraan tidak ditemukan</p>
+            <p className="text-muted-foreground">Vehicle not found</p>
             <Button onClick={() => navigate({ to: '/vehicles' })} className="mt-4">
-              Kembali
+              Back
             </Button>
           </CardContent>
         </Card>
@@ -41,35 +42,113 @@ export default function VehicleDetailPage() {
   }
 
   const getStatusBadge = () => {
-    if (vehicle.status.__kind__ === 'LOST') {
+    const status = vehicle.status;
+    if (status.__kind__ === 'STOLEN') {
       return (
         <Badge variant="destructive" className="gap-1">
           <AlertTriangle className="h-3 w-3" />
-          Hilang
+          Stolen
         </Badge>
       );
     }
-    if (vehicle.status.__kind__ === 'FOUND') {
+    if (status.__kind__ === 'PAWNED') {
+      return (
+        <Badge variant="destructive" className="gap-1 bg-orange-600">
+          <AlertTriangle className="h-3 w-3" />
+          Pawned
+        </Badge>
+      );
+    }
+    if (status.__kind__ === 'LOST') {
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Lost
+        </Badge>
+      );
+    }
+    if (status.__kind__ === 'FOUND') {
       return (
         <Badge className="gap-1 bg-chart-2">
           <CheckCircle className="h-3 w-3" />
-          Ditemukan
+          Found
         </Badge>
       );
     }
     return (
       <Badge variant="secondary" className="gap-1">
         <CheckCircle className="h-3 w-3" />
-        Aktif
+        Active
       </Badge>
     );
+  };
+
+  const renderStatusDetails = () => {
+    const status = vehicle.status;
+    if (status.__kind__ === 'LOST') {
+      return (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Lost Report
+          </h3>
+          <p className="text-sm text-muted-foreground mb-2">{status.LOST.reportNote}</p>
+          <p className="text-xs text-muted-foreground">
+            Reported: {new Date(Number(status.LOST.timeReported / BigInt(1000000))).toLocaleString('en-US')}
+          </p>
+        </div>
+      );
+    }
+    if (status.__kind__ === 'STOLEN') {
+      return (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Stolen Report
+          </h3>
+          <p className="text-sm text-muted-foreground mb-2">{status.STOLEN.reportNote}</p>
+          <p className="text-xs text-muted-foreground">
+            Reported: {new Date(Number(status.STOLEN.timeReported / BigInt(1000000))).toLocaleString('en-US')}
+          </p>
+        </div>
+      );
+    }
+    if (status.__kind__ === 'PAWNED') {
+      return (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Pawned Report
+          </h3>
+          <p className="text-sm text-muted-foreground mb-2">{status.PAWNED.reportNote}</p>
+          <p className="text-xs text-muted-foreground">
+            Reported: {new Date(Number(status.PAWNED.timeReported / BigInt(1000000))).toLocaleString('en-US')}
+          </p>
+        </div>
+      );
+    }
+    if (status.__kind__ === 'FOUND') {
+      return (
+        <div className="bg-chart-2/10 border border-chart-2/20 rounded-lg p-4">
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Found Report
+          </h3>
+          <p className="text-sm text-muted-foreground mb-2">{status.FOUND.finderReport}</p>
+          <p className="text-xs text-muted-foreground">
+            Found: {new Date(Number(status.FOUND.timeReported / BigInt(1000000))).toLocaleString('en-US')}
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
       <Button variant="ghost" onClick={() => navigate({ to: '/vehicles' })} className="gap-2">
         <ArrowLeft className="h-4 w-4" />
-        Kembali
+        Back
       </Button>
 
       <Card>
@@ -79,7 +158,7 @@ export default function VehicleDetailPage() {
               <CardTitle className="text-2xl">
                 {vehicle.brand} {vehicle.model}
               </CardTitle>
-              <CardDescription>Tahun {vehicle.year.toString()}</CardDescription>
+              <CardDescription>Year {vehicle.year.toString()}</CardDescription>
             </div>
             {getStatusBadge()}
           </div>
@@ -97,7 +176,7 @@ export default function VehicleDetailPage() {
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Hash className="h-4 w-4" />
-                Nomor Mesin
+                Engine Number
               </p>
               <p className="font-medium">{vehicle.engineNumber}</p>
             </div>
@@ -105,7 +184,7 @@ export default function VehicleDetailPage() {
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Hash className="h-4 w-4" />
-                Nomor Rangka
+                Chassis Number
               </p>
               <p className="font-medium">{vehicle.chassisNumber}</p>
             </div>
@@ -113,7 +192,7 @@ export default function VehicleDetailPage() {
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Tahun Pembuatan
+                Year
               </p>
               <p className="font-medium">{vehicle.year.toString()}</p>
             </div>
@@ -121,43 +200,19 @@ export default function VehicleDetailPage() {
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                Lokasi
+                Location
               </p>
               <p className="font-medium">{vehicle.location}</p>
             </div>
           </div>
 
-          {vehicle.status.__kind__ === 'LOST' && (
-            <>
-              <Separator />
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                <h4 className="font-semibold text-destructive mb-2">Laporan Kehilangan</h4>
-                <p className="text-sm">{vehicle.status.LOST.reportNote}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Dilaporkan: {new Date(Number(vehicle.status.LOST.timeReported / BigInt(1000000))).toLocaleString('id-ID')}
-                </p>
-              </div>
-            </>
-          )}
-
-          {vehicle.status.__kind__ === 'FOUND' && (
-            <>
-              <Separator />
-              <div className="bg-chart-2/10 border border-chart-2/20 rounded-lg p-4">
-                <h4 className="font-semibold text-chart-2 mb-2">Laporan Penemuan</h4>
-                <p className="text-sm">{vehicle.status.FOUND.finderReport}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Ditemukan: {new Date(Number(vehicle.status.FOUND.timeReported / BigInt(1000000))).toLocaleString('id-ID')}
-                </p>
-              </div>
-            </>
-          )}
+          {renderStatusDetails()}
 
           {isOwner && vehicle.status.__kind__ === 'ACTIVE' && (
             <>
               <Separator />
               <div className="space-y-4">
-                <h3 className="font-semibold">Aksi Pemilik</h3>
+                <h3 className="font-semibold">Owner Actions</h3>
                 <div className="flex flex-wrap gap-2">
                   <MarkLostDialog vehicleId={vehicle.id} />
                   <InitiateTransferPanel vehicleId={vehicle.id} />

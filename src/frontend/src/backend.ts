@@ -109,15 +109,31 @@ export type VehicleStatus = {
         foundBy: Principal;
     };
 } | {
+    __kind__: "PAWNED";
+    PAWNED: {
+        timeReported: Time;
+        reportNote: string;
+    };
+} | {
+    __kind__: "STOLEN";
+    STOLEN: {
+        timeReported: Time;
+        reportNote: string;
+    };
+} | {
     __kind__: "ACTIVE";
     ACTIVE: null;
 };
+export interface VehicleCheckStatus {
+    statusNote: string;
+    vehicle: Vehicle;
+}
+export type Time = bigint;
 export interface InviteCode {
     created: Time;
     code: string;
     used: boolean;
 }
-export type Time = bigint;
 export interface _CaffeineStorageRefillInformation {
     proposed_top_up_amount?: bigint;
 }
@@ -146,6 +162,10 @@ export interface Vehicle {
     brand: string;
     location: string;
 }
+export interface _CaffeineStorageRefillResult {
+    success?: boolean;
+    topped_up_amount?: bigint;
+}
 export interface UserProfile {
     country: string;
     city: string;
@@ -153,14 +173,15 @@ export interface UserProfile {
     email: string;
     onboarded: boolean;
 }
-export interface _CaffeineStorageRefillResult {
-    success?: boolean;
-    topped_up_amount?: bigint;
-}
 export enum UserRole {
     admin = "admin",
     user = "user",
     guest = "guest"
+}
+export enum Variant_stolen_lost_pawned {
+    stolen = "stolen",
+    lost = "lost",
+    pawned = "pawned"
 }
 export interface backendInterface {
     _caffeineStorageBlobIsLive(hash: Uint8Array): Promise<boolean>;
@@ -173,6 +194,7 @@ export interface backendInterface {
     acceptTransfer(transferCode: string): Promise<void>;
     adminUpdateVehicleStatus(vehicleId: string, newStatus: VehicleStatus): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    checkVehicle(engineNumber: string): Promise<VehicleCheckStatus>;
     completeOnboarding(inviteToken: string, profile: UserProfile): Promise<void>;
     generateInviteCode(): Promise<string>;
     getAllRSVPs(): Promise<Array<RSVP>>;
@@ -192,8 +214,10 @@ export interface backendInterface {
     getRegisteredVehicles(): Promise<Array<Vehicle>>;
     getSystemStats(): Promise<{
         totalLostReports: bigint;
+        totalPawnedReports: bigint;
         totalVehicles: bigint;
         totalFoundReports: bigint;
+        totalStolenReports: bigint;
         totalUsers: bigint;
     }>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -204,7 +228,7 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isOnboardingAllowed(): Promise<boolean>;
     markNotificationRead(notificationId: string): Promise<void>;
-    markVehicleLost(vehicleId: string, reportNote: string): Promise<void>;
+    markVehicleAsLostStolenOrPawned(vehicleId: string, category: Variant_stolen_lost_pawned, reportNote: string): Promise<void>;
     registerVehicle(engineNumber: string, chassisNumber: string, brand: string, model: string, year: bigint, location: string, vehiclePhoto: ExternalBlob): Promise<string>;
     reportVehicleFound(vehicleId: string, finderReport: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
@@ -212,7 +236,7 @@ export interface backendInterface {
     submitRSVP(name: string, attending: boolean, inviteCode: string): Promise<void>;
     updatePIN(oldPin: string, newPin: string): Promise<void>;
 }
-import type { ExternalBlob as _ExternalBlob, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, Vehicle as _Vehicle, VehicleStatus as _VehicleStatus, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { ExternalBlob as _ExternalBlob, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, Vehicle as _Vehicle, VehicleCheckStatus as _VehicleCheckStatus, VehicleStatus as _VehicleStatus, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -355,6 +379,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async checkVehicle(arg0: string): Promise<VehicleCheckStatus> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.checkVehicle(arg0);
+                return from_candid_VehicleCheckStatus_n12(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.checkVehicle(arg0);
+            return from_candid_VehicleCheckStatus_n12(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async completeOnboarding(arg0: string, arg1: UserProfile): Promise<void> {
         if (this.processError) {
             try {
@@ -418,28 +456,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n13(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n21(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n13(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n21(this._uploadFile, this._downloadFile, result);
         }
     }
     async getInviteCodes(): Promise<Array<InviteCode>> {
@@ -477,14 +515,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getLostVehicles();
-                return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getLostVehicles();
-            return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
         }
     }
     async getMyNotifications(): Promise<Array<Notification>> {
@@ -505,20 +543,22 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getRegisteredVehicles();
-                return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getRegisteredVehicles();
-            return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
         }
     }
     async getSystemStats(): Promise<{
         totalLostReports: bigint;
+        totalPawnedReports: bigint;
         totalVehicles: bigint;
         totalFoundReports: bigint;
+        totalStolenReports: bigint;
         totalUsers: bigint;
     }> {
         if (this.processError) {
@@ -538,42 +578,42 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserVehicles(): Promise<Array<Vehicle>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserVehicles();
-                return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserVehicles();
-            return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
         }
     }
     async getVehicle(arg0: string): Promise<Vehicle> {
         if (this.processError) {
             try {
                 const result = await this.actor.getVehicle(arg0);
-                return from_candid_Vehicle_n16(this._uploadFile, this._downloadFile, result);
+                return from_candid_Vehicle_n14(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getVehicle(arg0);
-            return from_candid_Vehicle_n16(this._uploadFile, this._downloadFile, result);
+            return from_candid_Vehicle_n14(this._uploadFile, this._downloadFile, result);
         }
     }
     async initiateTransfer(arg0: string, arg1: string): Promise<string> {
@@ -646,31 +686,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async markVehicleLost(arg0: string, arg1: string): Promise<void> {
+    async markVehicleAsLostStolenOrPawned(arg0: string, arg1: Variant_stolen_lost_pawned, arg2: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.markVehicleLost(arg0, arg1);
+                const result = await this.actor.markVehicleAsLostStolenOrPawned(arg0, to_candid_variant_n24(this._uploadFile, this._downloadFile, arg1), arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.markVehicleLost(arg0, arg1);
+            const result = await this.actor.markVehicleAsLostStolenOrPawned(arg0, to_candid_variant_n24(this._uploadFile, this._downloadFile, arg1), arg2);
             return result;
         }
     }
     async registerVehicle(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: string, arg6: ExternalBlob): Promise<string> {
         if (this.processError) {
             try {
-                const result = await this.actor.registerVehicle(arg0, arg1, arg2, arg3, arg4, arg5, await to_candid_ExternalBlob_n22(this._uploadFile, this._downloadFile, arg6));
+                const result = await this.actor.registerVehicle(arg0, arg1, arg2, arg3, arg4, arg5, await to_candid_ExternalBlob_n25(this._uploadFile, this._downloadFile, arg6));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.registerVehicle(arg0, arg1, arg2, arg3, arg4, arg5, await to_candid_ExternalBlob_n22(this._uploadFile, this._downloadFile, arg6));
+            const result = await this.actor.registerVehicle(arg0, arg1, arg2, arg3, arg4, arg5, await to_candid_ExternalBlob_n25(this._uploadFile, this._downloadFile, arg6));
             return result;
         }
     }
@@ -745,25 +785,28 @@ export class Backend implements backendInterface {
         }
     }
 }
-async function from_candid_ExternalBlob_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
+async function from_candid_ExternalBlob_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
 }
-function from_candid_UserRole_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n14(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n22(_uploadFile, _downloadFile, value);
 }
-function from_candid_VehicleStatus_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _VehicleStatus): VehicleStatus {
-    return from_candid_variant_n19(_uploadFile, _downloadFile, value);
+async function from_candid_VehicleCheckStatus_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _VehicleCheckStatus): Promise<VehicleCheckStatus> {
+    return await from_candid_record_n13(_uploadFile, _downloadFile, value);
 }
-async function from_candid_Vehicle_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Vehicle): Promise<Vehicle> {
-    return await from_candid_record_n17(_uploadFile, _downloadFile, value);
+function from_candid_VehicleStatus_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _VehicleStatus): VehicleStatus {
+    return from_candid_variant_n17(_uploadFile, _downloadFile, value);
+}
+async function from_candid_Vehicle_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Vehicle): Promise<Vehicle> {
+    return await from_candid_record_n15(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+function from_candid_opt_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
@@ -772,7 +815,19 @@ function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
     return value.length === 0 ? null : value[0];
 }
-async function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    statusNote: string;
+    vehicle: _Vehicle;
+}): Promise<{
+    statusNote: string;
+    vehicle: Vehicle;
+}> {
+    return {
+        statusNote: value.statusNote,
+        vehicle: await from_candid_Vehicle_n14(_uploadFile, _downloadFile, value.vehicle)
+    };
+}
+async function from_candid_record_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     engineNumber: string;
     status: _VehicleStatus;
@@ -800,10 +855,10 @@ async function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promi
     return {
         id: value.id,
         engineNumber: value.engineNumber,
-        status: from_candid_VehicleStatus_n18(_uploadFile, _downloadFile, value.status),
+        status: from_candid_VehicleStatus_n16(_uploadFile, _downloadFile, value.status),
         model: value.model,
-        transferCode: record_opt_to_undefined(from_candid_opt_n20(_uploadFile, _downloadFile, value.transferCode)),
-        vehiclePhoto: await from_candid_ExternalBlob_n21(_uploadFile, _downloadFile, value.vehiclePhoto),
+        transferCode: record_opt_to_undefined(from_candid_opt_n18(_uploadFile, _downloadFile, value.transferCode)),
+        vehiclePhoto: await from_candid_ExternalBlob_n19(_uploadFile, _downloadFile, value.vehiclePhoto),
         owner: value.owner,
         year: value.year,
         chassisNumber: value.chassisNumber,
@@ -823,16 +878,7 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_variant_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    admin: null;
-} | {
-    user: null;
-} | {
-    guest: null;
-}): UserRole {
-    return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
-}
-function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     LOST: {
         timeReported: _Time;
         reportNote: string;
@@ -842,6 +888,16 @@ function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Ui
         finderReport: string;
         timeReported: _Time;
         foundBy: Principal;
+    };
+} | {
+    PAWNED: {
+        timeReported: _Time;
+        reportNote: string;
+    };
+} | {
+    STOLEN: {
+        timeReported: _Time;
+        reportNote: string;
     };
 } | {
     ACTIVE: null;
@@ -859,6 +915,18 @@ function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Ui
         foundBy: Principal;
     };
 } | {
+    __kind__: "PAWNED";
+    PAWNED: {
+        timeReported: Time;
+        reportNote: string;
+    };
+} | {
+    __kind__: "STOLEN";
+    STOLEN: {
+        timeReported: Time;
+        reportNote: string;
+    };
+} | {
     __kind__: "ACTIVE";
     ACTIVE: null;
 } {
@@ -868,15 +936,30 @@ function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Ui
     } : "FOUND" in value ? {
         __kind__: "FOUND",
         FOUND: value.FOUND
+    } : "PAWNED" in value ? {
+        __kind__: "PAWNED",
+        PAWNED: value.PAWNED
+    } : "STOLEN" in value ? {
+        __kind__: "STOLEN",
+        STOLEN: value.STOLEN
     } : "ACTIVE" in value ? {
         __kind__: "ACTIVE",
         ACTIVE: value.ACTIVE
     } : value;
 }
-async function from_candid_vec_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Vehicle>): Promise<Array<Vehicle>> {
-    return await Promise.all(value.map(async (x)=>await from_candid_Vehicle_n16(_uploadFile, _downloadFile, x)));
+function from_candid_variant_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    admin: null;
+} | {
+    user: null;
+} | {
+    guest: null;
+}): UserRole {
+    return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-async function to_candid_ExternalBlob_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
+async function from_candid_vec_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Vehicle>): Promise<Array<Vehicle>> {
+    return await Promise.all(value.map(async (x)=>await from_candid_Vehicle_n14(_uploadFile, _downloadFile, x)));
+}
+async function to_candid_ExternalBlob_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
 }
 function to_candid_UserRole_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
@@ -915,6 +998,21 @@ function to_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint
         guest: null
     } : value;
 }
+function to_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_stolen_lost_pawned): {
+    stolen: null;
+} | {
+    lost: null;
+} | {
+    pawned: null;
+} {
+    return value == Variant_stolen_lost_pawned.stolen ? {
+        stolen: null
+    } : value == Variant_stolen_lost_pawned.lost ? {
+        lost: null
+    } : value == Variant_stolen_lost_pawned.pawned ? {
+        pawned: null
+    } : value;
+}
 function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     __kind__: "LOST";
     LOST: {
@@ -927,6 +1025,18 @@ function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         finderReport: string;
         timeReported: Time;
         foundBy: Principal;
+    };
+} | {
+    __kind__: "PAWNED";
+    PAWNED: {
+        timeReported: Time;
+        reportNote: string;
+    };
+} | {
+    __kind__: "STOLEN";
+    STOLEN: {
+        timeReported: Time;
+        reportNote: string;
     };
 } | {
     __kind__: "ACTIVE";
@@ -943,12 +1053,26 @@ function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         foundBy: Principal;
     };
 } | {
+    PAWNED: {
+        timeReported: _Time;
+        reportNote: string;
+    };
+} | {
+    STOLEN: {
+        timeReported: _Time;
+        reportNote: string;
+    };
+} | {
     ACTIVE: null;
 } {
     return value.__kind__ === "LOST" ? {
         LOST: value.LOST
     } : value.__kind__ === "FOUND" ? {
         FOUND: value.FOUND
+    } : value.__kind__ === "PAWNED" ? {
+        PAWNED: value.PAWNED
+    } : value.__kind__ === "STOLEN" ? {
+        STOLEN: value.STOLEN
     } : value.__kind__ === "ACTIVE" ? {
         ACTIVE: value.ACTIVE
     } : value;

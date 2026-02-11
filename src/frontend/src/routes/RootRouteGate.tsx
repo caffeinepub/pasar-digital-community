@@ -1,5 +1,5 @@
 /**
- * Root route gate component that handles authentication and bootstrapping with auto-retry support
+ * Root route gate component that handles authentication and bootstrapping with continuous retry support
  * This component runs inside the router context with English-only status messaging
  */
 
@@ -13,15 +13,32 @@ import SignInScreen from '../components/auth/SignInScreen';
 import ProfileBootstrapError from '../components/auth/ProfileBootstrapError';
 import StartupBootstrapError from '../components/auth/StartupBootstrapError';
 import AppLayout from '../components/layout/AppLayout';
+import { captureAndPersistInviteToken } from '../utils/urlParams';
 
 export default function RootRouteGate() {
   const { identity, isInitializing } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading, isFetched, isError, error, refetch } = useGetCallerUserProfile();
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
-  const { isError: actorError, error: actorErrorObj, retry: retryActor, isRetrying, autoRetryStatus } = useActorBootstrapStatus();
+  const {
+    isError: actorError,
+    error: actorErrorObj,
+    retry: retryActor,
+    isRetrying,
+    autoRetryStatus,
+    cancelContinuousRetry,
+  } = useActorBootstrapStatus();
   const navigate = useNavigate();
   const hasRedirectedRef = useRef(false);
   const lastIdentityRef = useRef<string | null>(null);
+  const hasAttemptedTokenCaptureRef = useRef(false);
+
+  // Capture invite token from URL on mount (before sign-in)
+  useEffect(() => {
+    if (!hasAttemptedTokenCaptureRef.current) {
+      captureAndPersistInviteToken();
+      hasAttemptedTokenCaptureRef.current = true;
+    }
+  }, []);
 
   // Reset redirect flag when identity changes
   useEffect(() => {
@@ -43,27 +60,22 @@ export default function RootRouteGate() {
     }
   }, [identity, userProfile, isFetched, isAdmin, adminLoading, navigate]);
 
-  // Show actor bootstrap error if actor initialization failed and auto-retries exhausted
-  if (identity && actorError && actorErrorObj && !autoRetryStatus) {
+  // Show auto-retry status screen (including continuous retry mode)
+  if (identity && autoRetryStatus) {
     return (
-      <StartupBootstrapError 
-        error={actorErrorObj} 
-        onRetry={retryActor} 
-        isRetrying={isRetrying}
+      <StartupBootstrapError
+        error={actorErrorObj || new Error('Connection failed')}
+        onRetry={retryActor}
+        isRetrying={false}
+        autoRetryStatus={autoRetryStatus}
+        onCancelContinuousRetry={cancelContinuousRetry}
       />
     );
   }
 
-  // Show auto-retry status screen
-  if (identity && autoRetryStatus) {
-    return (
-      <StartupBootstrapError 
-        error={actorErrorObj || new Error('Connection failed')} 
-        onRetry={retryActor} 
-        isRetrying={false}
-        autoRetryStatus={autoRetryStatus}
-      />
-    );
+  // Show actor bootstrap error if actor initialization failed and auto-retries exhausted/cancelled
+  if (identity && actorError && actorErrorObj && !autoRetryStatus) {
+    return <StartupBootstrapError error={actorErrorObj} onRetry={retryActor} isRetrying={isRetrying} />;
   }
 
   // Show loading during manual retry

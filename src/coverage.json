@@ -1,120 +1,93 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T11:15:22.300Z",
+  "generatedAt": "2026-02-11T15:26:31.978Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 5,
-    "implemented": 4,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
+        "summary": "Update the invite-based onboarding flow so that when a user opens an invite link containing an invite token (e.g. `/#/onboarding?inviteToken=...`), the app automatically reads and applies the token and the user is not required to manually type/paste any invite token.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/CHANGE_CONTROL_POLICY.md",
-          "frontend/PR_CHECKLIST.md",
-          "frontend/README_CHANGE_CONTROL.md"
+          "frontend/src/pages/OnboardingInvitePage.tsx",
+          "frontend/src/routes/RootRouteGate.tsx",
+          "frontend/src/utils/urlParams.ts"
         ],
         "matchedFiles": [
-          "frontend/CHANGE_CONTROL_POLICY.md",
-          "frontend/PR_CHECKLIST.md",
-          "frontend/README_CHANGE_CONTROL.md"
+          "frontend/src/pages/OnboardingInvitePage.tsx",
+          "frontend/src/routes/RootRouteGate.tsx",
+          "frontend/src/utils/urlParams.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
+        "summary": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session; user-facing text on this page must be in English (replace existing Indonesian toasts/labels/messages).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/package.json",
-          "frontend/tsconfig.json",
-          "frontend/.eslintrc.cjs",
-          "frontend/.prettierrc.json",
-          "frontend/vitest.config.ts",
-          "frontend/src/test/setup.ts",
-          "frontend/QUALITY_GATES.md",
-          "frontend/ci-run-gates.sh"
+          "frontend/src/pages/OnboardingInvitePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/.eslintrc.cjs",
-          "frontend/.prettierrc.json",
-          "frontend/vitest.config.ts",
-          "frontend/src/test/setup.ts",
-          "frontend/QUALITY_GATES.md",
-          "frontend/ci-run-gates.sh"
+          "frontend/src/pages/OnboardingInvitePage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Add a backend API “contract check” that detects unintended changes to the canister’s public interface (Candid surface) and fails CI when the interface changes without an explicit acknowledgement/update step.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Ensure invite tokens passed in the URL are persisted for the session and removed from the address bar after being captured, so users can navigate/sign-in and return to onboarding without losing the token and without leaving the token visible in the URL.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/urlParams.ts",
+          "frontend/src/routes/RootRouteGate.tsx",
+          "frontend/src/pages/OnboardingInvitePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/urlParams.ts",
+          "frontend/src/routes/RootRouteGate.tsx",
+          "frontend/src/pages/OnboardingInvitePage.tsx"
+        ]
       },
       {
         "id": "REQ-4",
-        "summary": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+        "summary": "Keep the admin invite-token sharing UX aligned with the one-click onboarding flow by ensuring `frontend/src/pages/admin/AdminInviteTokensPage.tsx` copies an invite link that works with the new auto-apply onboarding behavior, and use English-only success/error toasts.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
-          "frontend/src/__tests__/router-smoke.test.tsx",
-          "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
-          "frontend/vitest.config.ts",
-          "frontend/package.json"
+          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
-          "frontend/src/__tests__/router-smoke.test.tsx",
-          "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
-          "frontend/vitest.config.ts"
+          "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
         ]
       },
       {
         "id": "REQ-5",
-        "summary": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+        "summary": "Do not change the backend invite-token validation semantics: onboarding must continue to enforce that the token exists and is unused, using the existing `completeOnboarding(inviteToken, profile)` backend API; only the frontend experience should change to make it one-click.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/CHANGELOG.md",
-          "frontend/src/version.ts",
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/README_VERSIONING.md"
+          "frontend/src/pages/OnboardingInvitePage.tsx",
+          "frontend/src/hooks/useOnboarding.ts"
         ],
         "matchedFiles": [
-          "frontend/CHANGELOG.md",
-          "frontend/src/version.ts",
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/README_VERSIONING.md"
+          "frontend/src/pages/OnboardingInvitePage.tsx",
+          "frontend/src/hooks/useOnboarding.ts"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/.eslintrc.cjs",
-    "frontend/.prettierrc.json",
-    "frontend/CHANGELOG.md",
-    "frontend/CHANGE_CONTROL_POLICY.md",
-    "frontend/PR_CHECKLIST.md",
-    "frontend/QUALITY_GATES.md",
-    "frontend/README_CHANGE_CONTROL.md",
-    "frontend/README_VERSIONING.md",
-    "frontend/ci-run-gates.sh",
-    "frontend/src/__tests__/router-smoke.test.tsx",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
-    "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
-    "frontend/src/test/setup.ts",
-    "frontend/src/version.ts",
-    "frontend/vitest.config.ts",
+    "frontend/src/hooks/useOnboarding.ts",
+    "frontend/src/pages/OnboardingInvitePage.tsx",
+    "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
+    "frontend/src/routes/RootRouteGate.tsx",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

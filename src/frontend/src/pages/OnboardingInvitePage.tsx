@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLogo from '../components/brand/AppLogo';
 import { toast } from 'sonner';
-import { AlertCircle, Shield } from 'lucide-react';
+import { AlertCircle, Shield, Info } from 'lucide-react';
+import { getPersistedInviteToken, clearPersistedInviteToken } from '../utils/urlParams';
 
 export default function OnboardingInvitePage() {
   const navigate = useNavigate();
@@ -20,6 +21,14 @@ export default function OnboardingInvitePage() {
   const [email, setEmail] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('Indonesia');
+
+  // Auto-load invite token from session on mount
+  useEffect(() => {
+    const persistedToken = getPersistedInviteToken();
+    if (persistedToken) {
+      setInviteToken(persistedToken);
+    }
+  }, []);
 
   // Redirect admins away from onboarding page
   useEffect(() => {
@@ -39,7 +48,7 @@ export default function OnboardingInvitePage() {
     }
 
     if (!inviteToken.trim()) {
-      toast.error('Token undangan harus diisi');
+      toast.error('Invite token is required. Please use an invite link from an admin.');
       return;
     }
 
@@ -55,10 +64,29 @@ export default function OnboardingInvitePage() {
         },
       });
 
-      toast.success('Selamat datang! Akun Anda berhasil dibuat');
+      // Clear the persisted token after successful onboarding
+      clearPersistedInviteToken();
+
+      toast.success('Welcome! Your account has been created successfully');
       navigate({ to: '/' });
     } catch (error: any) {
-      toast.error(error.message || 'Gagal menyelesaikan pendaftaran');
+      // Normalize backend error messages to English
+      let errorMessage = 'Failed to complete registration';
+
+      if (error.message) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('invalid') || msg.includes('expired')) {
+          errorMessage = 'Invalid or expired invitation token';
+        } else if (msg.includes('already used')) {
+          errorMessage = 'This invitation token has already been used';
+        } else if (msg.includes('already onboarded')) {
+          errorMessage = 'You have already completed onboarding';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast.error(errorMessage);
     }
   };
 
@@ -97,42 +125,44 @@ export default function OnboardingInvitePage() {
     );
   }
 
+  // Show missing token guidance if no token is available
+  const hasToken = inviteToken.trim().length > 0;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8 space-y-4">
           <AppLogo size="large" />
           <div>
-            <h1 className="text-2xl font-bold">Selamat Datang</h1>
-            <p className="text-muted-foreground">Lengkapi profil Anda untuk melanjutkan</p>
+            <h1 className="text-2xl font-bold">Welcome</h1>
+            <p className="text-muted-foreground">Complete your profile to continue</p>
           </div>
         </div>
 
         <Card className="border-2">
           <CardHeader>
-            <CardTitle>Pendaftaran Akun</CardTitle>
-            <CardDescription>Masukkan token undangan dan data diri Anda</CardDescription>
+            <CardTitle>Account Registration</CardTitle>
+            <CardDescription>Enter your details to create your account</CardDescription>
           </CardHeader>
           <CardContent>
+            {!hasToken && (
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  You need an invitation link from an admin to register. Please contact an admin to get your invite
+                  link.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="inviteToken">Token Undangan *</Label>
-                <Input
-                  id="inviteToken"
-                  value={inviteToken}
-                  onChange={(e) => setInviteToken(e.target.value)}
-                  placeholder="Masukkan token undangan"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nama Lengkap *</Label>
+                <Label htmlFor="fullName">Full Name *</Label>
                 <Input
                   id="fullName"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Nama lengkap Anda"
+                  placeholder="Your full name"
                   required
                 />
               </div>
@@ -150,23 +180,23 @@ export default function OnboardingInvitePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="city">Kota *</Label>
+                <Label htmlFor="city">City *</Label>
                 <Input
                   id="city"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  placeholder="Kota tempat tinggal"
+                  placeholder="Your city"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="country">Negara *</Label>
+                <Label htmlFor="country">Country *</Label>
                 <Input
                   id="country"
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  placeholder="Negara"
+                  placeholder="Country"
                   required
                 />
               </div>
@@ -174,12 +204,14 @@ export default function OnboardingInvitePage() {
               {completeOnboarding.isError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{completeOnboarding.error?.message || 'Terjadi kesalahan'}</AlertDescription>
+                  <AlertDescription>
+                    {completeOnboarding.error?.message || 'An error occurred during registration'}
+                  </AlertDescription>
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={completeOnboarding.isPending}>
-                {completeOnboarding.isPending ? 'Memproses...' : 'Daftar'}
+              <Button type="submit" className="w-full" disabled={completeOnboarding.isPending || !hasToken}>
+                {completeOnboarding.isPending ? 'Processing...' : 'Register'}
               </Button>
             </form>
           </CardContent>

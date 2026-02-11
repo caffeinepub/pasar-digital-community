@@ -25,8 +25,8 @@ export default function PinPromptDialog({
   open,
   onOpenChange,
   onSubmit,
-  title = 'Masukkan PIN',
-  description = 'PIN diperlukan untuk melanjutkan',
+  title = 'Enter PIN',
+  description = 'PIN is required to continue',
 }: PinPromptDialogProps) {
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,14 +35,21 @@ export default function PinPromptDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Client-side validation
+    if (!pin || pin.trim().length === 0) {
+      setError('PIN cannot be empty');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await onSubmit(pin);
+      await onSubmit(pin.trim());
       setPin('');
       onOpenChange(false);
     } catch (err: any) {
-      setError(err.message || 'PIN salah atau terjadi kesalahan');
+      setError(err.message || 'Incorrect PIN or an error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -65,7 +72,7 @@ export default function PinPromptDialog({
                 type="password"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
-                placeholder="Masukkan PIN Anda"
+                placeholder="Enter your PIN"
                 required
                 autoFocus
               />
@@ -81,10 +88,10 @@ export default function PinPromptDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-              Batal
+              Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Memverifikasi...' : 'Lanjutkan'}
+            <Button type="submit" disabled={isSubmitting || !pin.trim()}>
+              {isSubmitting ? 'Verifying...' : 'Continue'}
             </Button>
           </DialogFooter>
         </form>

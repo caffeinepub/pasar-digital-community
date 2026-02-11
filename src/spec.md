@@ -1,14 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add repository guardrails to prevent unintended code changes during feature additions by introducing explicit change-control policy, automated quality gates, contract checks, minimal regression tests, and lightweight versioning.
+**Goal:** Make invite links provide one-click onboarding by automatically capturing and applying the invite token (no manual token entry), with English-only UI messaging.
 
 **Planned changes:**
-- Add an in-repo change-control policy (markdown) defining protected/stable contracts (backend public API/Candid surface, auth bootstrap flow, routing) plus a mandatory review checklist and verification steps.
-- Add or update a PR template (or equivalent contributor checklist) that references the change-control policy so it is consistently followed.
-- Introduce automated frontend quality gates (local + CI) covering TypeScript typecheck, lint, formatting check, and a minimal test runner, with a single command to run them all.
-- Add a backend API contract check command and CI gate that detects unintended Candid/public interface changes unless an explicit artifact update/acknowledgement is made.
-- Add minimal frontend smoke/regression tests for key existing flows (auth/bootstrap gate, core route rendering, one representative data-fetch flow) and include them in the quality-gates command.
-- Add lightweight release/versioning discipline: a CHANGELOG file, a frontend-visible version string from a single canonical source, and a backend version/build identifier (or documented rationale for frontend-only versioning).
+- Update onboarding invite flow to read `inviteToken` from the onboarding URL, auto-apply it, and hide any required invite-token input when a token is available.
+- Persist the captured invite token for the session and remove the `inviteToken` parameter from the address bar after capture (without a page reload), so sign-in/navigation doesn’t lose the token.
+- Update `OnboardingInvitePage.tsx` to use English-only labels/toasts/errors, including clear English messaging when no token is available and when token validation fails (invalid/expired/used).
+- Update `AdminInviteTokensPage.tsx` “Copy Link” (and post-generate auto-copy) to copy an invite link that works with the new auto-apply onboarding behavior, and ensure related toasts are English-only.
+- Keep backend validation semantics unchanged; frontend continues calling `completeOnboarding(inviteToken, profile)` using the token sourced from URL/session.
 
-**User-visible outcome:** The app behavior remains stable during feature work; contributors follow a clear checklist, CI/local commands catch type/lint/format/test issues, unintended backend API changes are blocked unless explicitly updated, and users can see an app version while changes are tracked in a changelog.
+**User-visible outcome:** Users can click an admin-provided invite link and go straight to the registration form with the token applied automatically; they only fill in profile details. If the token is missing or invalid, they see clear English guidance/errors.

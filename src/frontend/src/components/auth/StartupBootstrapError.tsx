@@ -1,15 +1,17 @@
 /**
- * Startup bootstrap error screen with STOPPED-canister detection and retry functionality
+ * Startup bootstrap error screen with STOPPED-canister detection, continuous retry, and backend health diagnostics
  * Displays when actor initialization fails during app startup with English-only messaging
  */
 
-import { AlertCircle, RefreshCw, Copy, CheckCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw, Copy, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { classifyBootstrapError, formatErrorForClipboard } from '../../utils/bootstrapError';
+import { useBackendHealth } from '../../hooks/useBackendHealth';
 import AppLogo from '../brand/AppLogo';
 
 interface StartupBootstrapErrorProps {
@@ -20,12 +22,23 @@ interface StartupBootstrapErrorProps {
     attempt: number;
     maxAttempts: number;
     nextRetryIn?: number;
+    isContinuous?: boolean;
   };
+  onCancelContinuousRetry?: () => void;
 }
 
-export default function StartupBootstrapError({ error, onRetry, isRetrying, autoRetryStatus }: StartupBootstrapErrorProps) {
+export default function StartupBootstrapError({ 
+  error, 
+  onRetry, 
+  isRetrying, 
+  autoRetryStatus,
+  onCancelContinuousRetry 
+}: StartupBootstrapErrorProps) {
   const [copied, setCopied] = useState(false);
-  const classification = classifyBootstrapError(error);
+  const { isLoading: healthLoading, isReachable, build } = useBackendHealth();
+  
+  const healthHint = healthLoading ? undefined : { isReachable };
+  const classification = classifyBootstrapError(error, healthHint);
 
   const handleCopyError = async () => {
     try {
@@ -43,6 +56,7 @@ export default function StartupBootstrapError({ error, onRetry, isRetrying, auto
   // Show auto-retry status if currently retrying
   if (autoRetryStatus) {
     const secondsRemaining = autoRetryStatus.nextRetryIn ? Math.ceil(autoRetryStatus.nextRetryIn / 1000) : 0;
+    const isContinuous = autoRetryStatus.isContinuous || false;
     
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-accent/5 to-background">
@@ -62,15 +76,29 @@ export default function StartupBootstrapError({ error, onRetry, isRetrying, auto
                 <div className="p-2 rounded-full bg-primary/10">
                   <RefreshCw className="h-6 w-6 text-primary animate-spin" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <CardTitle>Retrying Connection</CardTitle>
                   <CardDescription>
-                    Attempt {autoRetryStatus.attempt} of {autoRetryStatus.maxAttempts}
+                    {isContinuous ? (
+                      <>Continuous retry mode - Attempt {autoRetryStatus.attempt}</>
+                    ) : (
+                      <>Attempt {autoRetryStatus.attempt} of {autoRetryStatus.maxAttempts}</>
+                    )}
                   </CardDescription>
                 </div>
+                {isContinuous && onCancelContinuousRetry && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={onCancelContinuousRetry}
+                    className="flex-shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
                   Next retry in {secondsRemaining} second{secondsRemaining !== 1 ? 's' : ''}...
@@ -79,12 +107,53 @@ export default function StartupBootstrapError({ error, onRetry, isRetrying, auto
                   <div 
                     className="bg-primary h-full transition-all duration-100"
                     style={{ 
-                      width: `${((autoRetryStatus.maxAttempts - autoRetryStatus.attempt) / autoRetryStatus.maxAttempts) * 100}%` 
+                      width: isContinuous 
+                        ? `${((CONTINUOUS_RETRY_DELAY - (autoRetryStatus.nextRetryIn || 0)) / CONTINUOUS_RETRY_DELAY) * 100}%`
+                        : `${((autoRetryStatus.maxAttempts - autoRetryStatus.attempt) / autoRetryStatus.maxAttempts) * 100}%` 
                     }}
                   />
                 </div>
               </div>
+
+              {/* Backend health status */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                <span className="text-sm font-medium">Backend status:</span>
+                {healthLoading ? (
+                  <Badge variant="outline">Checking...</Badge>
+                ) : isReachable ? (
+                  <Badge variant="default" className="bg-green-500">Reachable</Badge>
+                ) : (
+                  <Badge variant="destructive">Unreachable</Badge>
+                )}
+              </div>
+
+              {build && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Backend version: {build}
+                </p>
+              )}
+
+              {isContinuous && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Continuous Retry Active</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    The system will keep trying to connect. You can manually retry or cancel at any time.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
+            <CardFooter className="flex gap-2">
+              <Button onClick={onRetry} variant="outline" className="flex-1">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry Now
+              </Button>
+              {isContinuous && onCancelContinuousRetry && (
+                <Button onClick={onCancelContinuousRetry} variant="secondary" className="flex-1">
+                  Cancel Auto-Retry
+                </Button>
+              )}
+            </CardFooter>
           </Card>
         </div>
       </div>
@@ -125,6 +194,24 @@ export default function StartupBootstrapError({ error, onRetry, isRetrying, auto
                 {classification.message}
               </AlertDescription>
             </Alert>
+
+            {/* Backend health status */}
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+              <span className="text-sm font-medium">Backend status:</span>
+              {healthLoading ? (
+                <Badge variant="outline">Checking...</Badge>
+              ) : isReachable ? (
+                <Badge variant="default" className="bg-green-500">Reachable</Badge>
+              ) : (
+                <Badge variant="destructive">Unreachable</Badge>
+              )}
+            </div>
+
+            {build && isReachable && (
+              <p className="text-xs text-center text-muted-foreground">
+                Backend version: {build}
+              </p>
+            )}
 
             <div className="text-sm space-y-2">
               <p className="font-medium text-foreground">
@@ -169,3 +256,6 @@ export default function StartupBootstrapError({ error, onRetry, isRetrying, auto
     </div>
   );
 }
+
+// Constant for progress bar calculation
+const CONTINUOUS_RETRY_DELAY = 15000;

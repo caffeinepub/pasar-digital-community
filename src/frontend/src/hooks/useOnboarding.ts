@@ -9,6 +9,9 @@ export function useCompleteOnboarding() {
   return useMutation({
     mutationFn: async ({ inviteToken, profile }: { inviteToken: string; profile: UserProfile }) => {
       if (!actor) throw new Error('Actor not available');
+      if (!inviteToken || inviteToken.trim().length === 0) {
+        throw new Error('Invite token is required');
+      }
       await actor.completeOnboarding(inviteToken, profile);
     },
     onSuccess: () => {

@@ -16,13 +16,17 @@ export default function InitiateTransferPanel({ vehicleId }: InitiateTransferPan
   const [transferCode, setTransferCode] = useState<string | null>(null);
 
   const handleInitiate = async (pin: string) => {
+    if (!pin || pin.trim().length === 0) {
+      throw new Error('PIN is required');
+    }
+
     try {
-      const code = await initiateTransfer.mutateAsync({ vehicleId, pin });
+      const code = await initiateTransfer.mutateAsync({ vehicleId, pin: pin.trim() });
       setTransferCode(code);
       setShowPinDialog(false);
-      toast.success('Transfer berhasil diinisiasi');
+      toast.success('Transfer initiated successfully');
     } catch (error: any) {
-      toast.error(error.message || 'Gagal menginisiasi transfer');
+      toast.error(error.message || 'Failed to initiate transfer');
       throw error;
     }
   };
@@ -31,7 +35,7 @@ export default function InitiateTransferPanel({ vehicleId }: InitiateTransferPan
     if (transferCode) {
       const link = `${window.location.origin}#/accept-transfer?code=${transferCode}`;
       navigator.clipboard.writeText(link);
-      toast.success('Link transfer disalin ke clipboard');
+      toast.success('Transfer link copied to clipboard');
     }
   };
 
@@ -41,17 +45,17 @@ export default function InitiateTransferPanel({ vehicleId }: InitiateTransferPan
         <CheckCircle className="h-4 w-4 text-primary" />
         <AlertDescription>
           <div className="space-y-3">
-            <p className="font-medium">Transfer berhasil diinisiasi!</p>
+            <p className="font-medium">Transfer initiated successfully!</p>
             <div className="space-y-2">
-              <p className="text-sm">Kode Transfer:</p>
+              <p className="text-sm">Transfer Code:</p>
               <div className="p-2 bg-muted rounded font-mono text-sm break-all">{transferCode}</div>
             </div>
             <Button onClick={handleCopyLink} variant="outline" size="sm" className="gap-2">
               <Copy className="h-4 w-4" />
-              Salin Link Transfer
+              Copy Transfer Link
             </Button>
             <p className="text-xs text-muted-foreground">
-              Bagikan link ini kepada penerima untuk menyelesaikan transfer kepemilikan
+              Share this link with the recipient to complete the ownership transfer
             </p>
           </div>
         </AlertDescription>
@@ -63,15 +67,15 @@ export default function InitiateTransferPanel({ vehicleId }: InitiateTransferPan
     <>
       <Button onClick={() => setShowPinDialog(true)} variant="default" className="gap-2">
         <ArrowRightLeft className="h-4 w-4" />
-        Transfer Kepemilikan
+        Transfer Ownership
       </Button>
 
       <PinPromptDialog
         open={showPinDialog}
         onOpenChange={setShowPinDialog}
         onSubmit={handleInitiate}
-        title="Verifikasi PIN"
-        description="Masukkan PIN Anda untuk melanjutkan transfer kepemilikan kendaraan"
+        title="Verify PIN"
+        description="Enter your PIN to continue with the vehicle ownership transfer"
       />
     </>
   );

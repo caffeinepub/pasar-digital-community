@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import type { Vehicle } from '../backend';
+import { Variant_stolen_lost_pawned } from '../backend';
 
 export function useGetLostVehicles() {
   const { actor, isFetching } = useActor();
@@ -20,9 +21,17 @@ export function useMarkVehicleLost() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ vehicleId, reportNote }: { vehicleId: string; reportNote: string }) => {
+    mutationFn: async ({
+      vehicleId,
+      category,
+      reportNote,
+    }: {
+      vehicleId: string;
+      category: Variant_stolen_lost_pawned;
+      reportNote: string;
+    }) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.markVehicleLost(vehicleId, reportNote);
+      await actor.markVehicleAsLostStolenOrPawned(vehicleId, category, reportNote);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['vehicle', variables.vehicleId] });
@@ -41,8 +50,12 @@ export function useReportVehicleFound() {
       if (!actor) throw new Error('Actor not available');
       await actor.reportVehicleFound(vehicleId, finderReport);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['lostVehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['userVehicles'] });
+      if (variables.vehicleId) {
+        queryClient.invalidateQueries({ queryKey: ['vehicle', variables.vehicleId] });
+      }
     },
   });
 }

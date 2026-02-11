@@ -1,149 +1,107 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend-only change-control guardrails (policy, quality gates, smoke tests, and visible versioning)",
+  "title": "One-click invite link onboarding with session-persisted token capture",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Document a repo change-control policy and checklist that protect stable frontend interfaces (routing/auth bootstrap) and reference backend public API as a protected contract.",
+      "summary": "Auto-read invite token from the invite link and apply it to onboarding so users only enter profile details.",
       "acceptanceCriteria": [
-        "A written policy exists in-repo (markdown) describing change-control rules and a mandatory checklist.",
-        "The policy explicitly calls out the backend public API (actor methods) and frontend route structure as protected/stable interfaces.",
-        "The policy is referenced by a PR template or equivalent contributor checklist file so it is hard to miss."
+        "Opening `/#/onboarding?inviteToken=<token>` pre-fills the onboarding flow with `<token>` without any user action.",
+        "The onboarding form submission succeeds using the URL-provided token and only requires the user profile fields (e.g., name, email, city, country).",
+        "If the invite token is missing from the URL and not available from session persistence, the page shows a clear English message instructing the user to use an invite link from an admin (and does not present a blank required token field)."
       ],
       "file_operations": [
         {
-          "path": "frontend/CHANGE_CONTROL_POLICY.md",
-          "operation": "create",
-          "description": "Add a change-control policy describing protected/stable contracts (frontend route tree in frontend/src/App.tsx, auth/bootstrap flow in frontend/src/routes/RootRouteGate.tsx + related hooks, and the backend actor method surface as represented by frontend/src/backend.d.ts), required review checklist (behavior changes, affected routes, affected backend functions, state/schema impact), and required verification steps before merge (run gates from REQ-2). All newly introduced text must be in English."
+          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
+          "operation": "modify",
+          "description": "Update onboarding to source inviteToken from URL/session automatically, prefill internal state, and avoid requiring manual token entry; show an English missing-token guidance state when no token is available. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/PR_CHECKLIST.md",
-          "operation": "create",
-          "description": "Create a contributor/PR checklist that links to frontend/CHANGE_CONTROL_POLICY.md and provides a copy-paste checklist covering routes/auth bootstrap impacts and backend API impacts. This serves as the “equivalent contributor checklist file” reference required by the policy."
+          "path": "frontend/src/routes/RootRouteGate.tsx",
+          "operation": "modify",
+          "description": "Capture and persist `inviteToken` from the current URL early (before/while showing sign-in) so the token is available once the user returns to onboarding after Internet Identity sign-in. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/README_CHANGE_CONTROL.md",
-          "operation": "create",
-          "description": "Add short documentation explaining where to find the change-control policy and how to use the PR checklist during feature work; include the exact local command from REQ-2 to run before shipping. All newly introduced text must be in English."
+          "path": "frontend/src/utils/urlParams.ts",
+          "operation": "modify",
+          "description": "Add/extend helpers to (1) read inviteToken from hash/query, (2) persist to sessionStorage, and (3) support explicit clearing of `inviteToken` from the visible URL after capture. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add automated frontend quality gates (typecheck, lint, format check, tests) runnable via one command and suitable for CI.",
+      "summary": "Hide the token field when token is available and ensure onboarding page strings/toasts are English with understandable errors.",
       "acceptanceCriteria": [
-        "There is a single command (e.g., a script) that runs all frontend quality gates in one go (typecheck + lint + format check + tests).",
-        "The gates fail the build when there are TypeScript errors, lint errors, or formatting drift.",
-        "Documentation explains how to run the gates locally before shipping changes."
+        "When an invite token is available (from URL/session), the UI does not ask the user to enter an invite token.",
+        "All visible strings and toast messages on the onboarding page are English-only (e.g., errors, headings, button labels).",
+        "If the backend returns an invalid/expired/used-token error, the UI displays the error in English in a user-comprehensible way (may include the backend message, but must not be Indonesian)."
       ],
       "file_operations": [
         {
-          "path": "frontend/package.json",
-          "operation": "create",
-          "description": "Define frontend scripts for quality gates: typecheck, lint, format:check, test, and a single aggregated command (e.g., \"gates\") that runs all four and fails on errors/drift. Ensure scripts are documented and can be used in CI by calling the same command."
+          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
+          "operation": "modify",
+          "description": "Revise UI to conditionally render the invite token input only when no token is available, replace Indonesian headings/labels/button text/toasts with English, and add an error-normalization mapping so token-related backend failures are shown in English. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Persist invite tokens for the session and remove them from the address bar after capture without reloading.",
+      "acceptanceCriteria": [
+        "If the user opens an invite link and then navigates within the app (or completes Internet Identity sign-in), the invite token remains available for onboarding completion without re-copying the link.",
+        "After the token is read, the app removes the `inviteToken` parameter from the visible URL (hash/query) without reloading the page."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/urlParams.ts",
+          "operation": "modify",
+          "description": "Implement an exported helper to capture `inviteToken` into sessionStorage and then remove it from the current hash/query via history.replaceState (no page reload), covering hash-based routing (`/#/onboarding?inviteToken=...`) and any non-hash query usage. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/tsconfig.json",
-          "operation": "create",
-          "description": "Add a TypeScript configuration suitable for running a dedicated typecheck gate (no emit) for the frontend codebase."
+          "path": "frontend/src/routes/RootRouteGate.tsx",
+          "operation": "modify",
+          "description": "Call the new capture+clear helper on initial mount so the token is persisted even if the user must sign in first, and ensure this does not trigger navigation loops. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/.eslintrc.cjs",
-          "operation": "create",
-          "description": "Add ESLint configuration for TypeScript + React to support the lint gate (failing on lint errors)."
-        },
-        {
-          "path": "frontend/.prettierrc.json",
-          "operation": "create",
-          "description": "Add Prettier configuration and ensure the format check gate can detect formatting drift (without auto-writing in CI)."
-        },
-        {
-          "path": "frontend/vitest.config.ts",
-          "operation": "create",
-          "description": "Add Vitest configuration to run frontend unit/smoke tests headlessly in CI (jsdom where appropriate) and to include the test files added in REQ-4."
-        },
-        {
-          "path": "frontend/src/test/setup.ts",
-          "operation": "create",
-          "description": "Add a shared test setup file for the frontend test runner (e.g., Testing Library setup, global mocks needed for router/auth bootstrapping tests)."
-        },
-        {
-          "path": "frontend/QUALITY_GATES.md",
-          "operation": "create",
-          "description": "Document how to run the single gates command locally, what it checks (typecheck/lint/format/test), and how CI should invoke it. All newly introduced text must be in English."
-        },
-        {
-          "path": "frontend/ci-run-gates.sh",
-          "operation": "create",
-          "description": "Add a simple POSIX shell script that runs the single frontend gates command. This provides an easy drop-in for CI without requiring external SaaS dependencies."
+          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
+          "operation": "modify",
+          "description": "Use the persisted session token as the source of truth for onboarding completion; do not rely on the address bar after initial capture. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Add smoke/regression tests for auth/bootstrap gate, router mounting, and one representative data-fetch flow to reduce regressions.",
+      "summary": "Ensure admin invite token sharing copies a link compatible with auto-apply onboarding and uses English-only toasts.",
       "acceptanceCriteria": [
-        "At least one automated test covers the RootRouteGate bootstrap behavior at a high level (no blank screen / renders expected state for loading vs error).",
-        "At least one automated test ensures the router mounts and core routes render without crashing (e.g., Dashboard + Vehicles).",
-        "Tests can run headlessly in CI and are included in the quality-gates command from REQ-2."
+        "Clicking “Copy Link” (and the post-generate auto-copy) copies an invite link that sends users directly to the onboarding registration form with the token auto-applied.",
+        "Admin page toasts related to invite link creation/copying are English-only."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
-          "operation": "create",
-          "description": "Add a high-level test suite for RootRouteGate covering: unauthenticated shows SignInScreen; authenticated+loading shows loading UI; authenticated+profile error shows ProfileBootstrapError; authenticated+actor bootstrap error shows StartupBootstrapError. Mock dependencies (useInternetIdentity/useGetCallerUserProfile/useActorBootstrapStatus/useIsCallerAdmin) to avoid real network/actor calls."
-        },
-        {
-          "path": "frontend/src/__tests__/router-smoke.test.tsx",
-          "operation": "create",
-          "description": "Add a smoke test that mounts the router (via the same route tree as frontend/src/App.tsx) and verifies core routes render without crashing, including at least Dashboard and Vehicles. Use controlled mocks for data-fetch hooks used by these pages to represent a representative data-fetch flow."
-        },
-        {
-          "path": "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
-          "operation": "create",
-          "description": "Add a focused regression test for one representative data-fetch flow (e.g., Vehicles list) to ensure the page renders a stable state for loading vs loaded data, without throwing. Mock useGetUserVehicles to simulate loading and success states."
-        },
-        {
-          "path": "frontend/vitest.config.ts",
+          "path": "frontend/src/pages/admin/AdminInviteTokensPage.tsx",
           "operation": "modify",
-          "description": "Wire the new test files into the Vitest configuration (include patterns, setup file reference) so they run headlessly in CI and locally as part of the REQ-2 gates command."
-        },
-        {
-          "path": "frontend/package.json",
-          "operation": "modify",
-          "description": "Ensure the aggregated gates command from REQ-2 includes running the test suite so REQ-4 tests execute as part of gates."
+          "description": "Confirm/adjust copied invite link format to `/#/onboarding?inviteToken=<code>` (matching the auto-capture behavior) and ensure all invite copy/generate success/error toasts are English-only and consistent. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Add lightweight release/versioning discipline via a changelog and a visible frontend version string sourced from a single canonical location.",
+      "summary": "Keep invite token validation enforced by the existing backend API while sourcing the token from URL/session instead of manual entry.",
       "acceptanceCriteria": [
-        "A CHANGELOG file exists and is updated as part of feature work.",
-        "The frontend shows a version identifier somewhere appropriate (e.g., About page/footer) sourced from a single canonical location.",
-        "The backend exposes a simple version/build identifier via an existing or new query method, or the project documents why frontend-only versioning is used."
+        "Backend continues to reject invalid/expired/used tokens as it does today.",
+        "Frontend continues to call `completeOnboarding(inviteToken, profile)` with a token value, but the token value comes from the invite link/session rather than manual user entry."
       ],
       "file_operations": [
         {
-          "path": "frontend/CHANGELOG.md",
-          "operation": "create",
-          "description": "Create a changelog with an initial entry for these change-control guardrails and a simple convention for future entries per version. All newly introduced text must be in English."
-        },
-        {
-          "path": "frontend/src/version.ts",
-          "operation": "create",
-          "description": "Create a single canonical frontend version export (e.g., APP_VERSION) to be displayed in the UI and referenced by docs/scripts."
-        },
-        {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
           "operation": "modify",
-          "description": "Display the app version string in the authenticated footer (English label), sourced from frontend/src/version.ts. Keep existing layout and do not edit files under frontend/src/components/ui."
+          "description": "Ensure form submit continues to call `useCompleteOnboarding` with a non-empty inviteToken value sourced from URL/session capture (never from a required blank input), while keeping profile fields as the only user-entered data. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/README_VERSIONING.md",
-          "operation": "create",
-          "description": "Document the versioning discipline: where the version is defined (frontend/src/version.ts), where it is displayed, and how to update CHANGELOG.md per feature. Clarify that this repo uses frontend-visible versioning (frontend-only plan) and that backend versioning is out of scope here. All newly introduced text must be in English."
+          "path": "frontend/src/hooks/useOnboarding.ts",
+          "operation": "modify",
+          "description": "Keep the mutation contract aligned with `completeOnboarding(inviteToken, profile)` while improving frontend-side error surfacing if needed (no backend behavior changes), ensuring token is always provided from captured state when onboarding is attempted. Verify the component's usage instructions before implementing."
         }
       ]
     }

@@ -11,38 +11,44 @@ export interface BootstrapErrorClassification {
   guidance: string[];
 }
 
+export interface BackendHealthHint {
+  isReachable: boolean;
+}
+
 /**
- * Detects if an error is a canister-stopped error
- * Matches various replica rejection patterns including IC0508, "is stopped", etc.
+ * Detects if an error is a canister-stopped error using generic replica rejection patterns
+ * Does NOT rely on any specific canister principal text
  */
 function isCanisterStoppedError(errorMessage: string): boolean {
   const lowerMessage = errorMessage.toLowerCase();
   
-  // Primary indicators
-  const primaryPatterns = [
-    'is stopped',
-    'canister is stopped',
-    'canister rmc52-maaaa-aaaab-aendq-cai is stopped',
-  ];
+  // Check for IC0508 error code (canister stopped)
+  const hasIC0508 = lowerMessage.includes('ic0508');
   
-  // Secondary indicators (error codes, rejection types)
-  const secondaryPatterns = [
-    'ic0508',
-    'non_replicated_rejection',
-    'reject_code": 5',
-    'reject_code: 5',
-  ];
+  // Check for reject code 5 (canister error)
+  const hasRejectCode5 = 
+    lowerMessage.includes('reject_code": 5') || 
+    lowerMessage.includes('reject_code: 5') ||
+    lowerMessage.includes('reject code 5');
   
-  // Check if message contains primary pattern
-  const hasPrimary = primaryPatterns.some(pattern => lowerMessage.includes(pattern));
+  // Check for non_replicated_rejection
+  const hasNonReplicatedRejection = lowerMessage.includes('non_replicated_rejection');
   
-  // Check if message contains secondary pattern
-  const hasSecondary = secondaryPatterns.some(pattern => lowerMessage.includes(pattern));
-  
-  // Also check for "canister" + "stopped" appearing together
+  // Check for "canister" and "stopped" appearing together
   const hasCanisterAndStopped = lowerMessage.includes('canister') && lowerMessage.includes('stopped');
   
-  return hasPrimary || (hasSecondary && hasCanisterAndStopped);
+  // Check for "is stopped" pattern
+  const hasIsStoppedPattern = lowerMessage.includes('is stopped');
+  
+  // Classify as stopped if:
+  // 1. IC0508 is present (definitive stopped error code), OR
+  // 2. Reject code 5 AND canister+stopped co-occur, OR
+  // 3. Non-replicated rejection AND canister+stopped co-occur, OR
+  // 4. "is stopped" pattern appears with canister context
+  return hasIC0508 || 
+         (hasRejectCode5 && hasCanisterAndStopped) ||
+         (hasNonReplicatedRejection && hasCanisterAndStopped) ||
+         (hasIsStoppedPattern && lowerMessage.includes('canister'));
 }
 
 /**
@@ -77,11 +83,18 @@ const STOPPED_CANISTER_GUIDANCE = [
 
 /**
  * Classifies a bootstrap error and returns appropriate messaging with guidance
+ * Optionally accepts a backend health hint to avoid misclassifying errors when backend is reachable
  */
-export function classifyBootstrapError(error: unknown): BootstrapErrorClassification {
+export function classifyBootstrapError(
+  error: unknown, 
+  healthHint?: BackendHealthHint
+): BootstrapErrorClassification {
   const technicalDetails = extractTechnicalError(error);
 
-  if (isCanisterStoppedError(technicalDetails)) {
+  // If backend is reachable, don't classify as canister-stopped
+  const shouldCheckStopped = !healthHint || !healthHint.isReachable;
+  
+  if (shouldCheckStopped && isCanisterStoppedError(technicalDetails)) {
     return {
       type: 'canister-stopped',
       message: 'The backend canister is currently stopped and cannot process requests.',

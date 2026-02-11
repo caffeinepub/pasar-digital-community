@@ -29,17 +29,17 @@ export default function ReportFoundDialog({ vehicleId, vehicleName }: ReportFoun
     e.preventDefault();
 
     if (!finderReport.trim()) {
-      toast.error('Laporan penemuan harus diisi');
+      toast.error('Finder report is required');
       return;
     }
 
     try {
       await reportFound.mutateAsync({ vehicleId, finderReport: finderReport.trim() });
-      toast.success('Laporan penemuan berhasil dikirim');
+      toast.success('Found report submitted successfully');
       setOpen(false);
       setFinderReport('');
     } catch (error: any) {
-      toast.error(error.message || 'Gagal mengirim laporan');
+      toast.error(error.message || 'Failed to submit report');
     }
   };
 
@@ -48,26 +48,26 @@ export default function ReportFoundDialog({ vehicleId, vehicleName }: ReportFoun
       <DialogTrigger asChild>
         <Button variant="default" className="w-full gap-2">
           <CheckCircle className="h-4 w-4" />
-          Laporkan Ditemukan
+          Report Found
         </Button>
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Laporkan Kendaraan Ditemukan</DialogTitle>
+            <DialogTitle>Report Vehicle Found</DialogTitle>
             <DialogDescription>
-              Anda akan melaporkan bahwa kendaraan <strong>{vehicleName}</strong> telah ditemukan
+              You are reporting that vehicle <strong>{vehicleName}</strong> has been found
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="finderReport">Laporan Penemuan *</Label>
+              <Label htmlFor="finderReport">Finder Report *</Label>
               <Textarea
                 id="finderReport"
                 value={finderReport}
                 onChange={(e) => setFinderReport(e.target.value)}
-                placeholder="Jelaskan di mana dan bagaimana Anda menemukan kendaraan ini..."
+                placeholder="Describe where and how you found this vehicle..."
                 rows={4}
                 required
               />
@@ -76,10 +76,10 @@ export default function ReportFoundDialog({ vehicleId, vehicleName }: ReportFoun
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Batal
+              Cancel
             </Button>
             <Button type="submit" disabled={reportFound.isPending}>
-              {reportFound.isPending ? 'Mengirim...' : 'Kirim Laporan'}
+              {reportFound.isPending ? 'Submitting...' : 'Submit Report'}
             </Button>
           </DialogFooter>
         </form>

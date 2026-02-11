@@ -1,42 +1,50 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "Build/deployed app includes an invite-token based registration flow; user requests simplifying invitation so clicking the invite link auto-applies the token and goes directly to account registration without manual token entry.",
   "architectural_notes": [
-    "Add change-control safeguards (e.g., protected main branch, PR reviews, CI checks/tests) to reduce regressions during feature additions."
+    "Invitation/registration flow should accept invite token via link (e.g., embedded in URL) and not require manual token input on the UI."
   ],
   "known_issues": [
-    "Unintended code changes/regressions occurring during feature additions; needs stronger change-control process."
+    "Current invite flow requires users to manually input an invite token after receiving it from admin; UX is confusing and should be one-click from invite link."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-add-a-repository-level-change-control-policy-that-defines-1-which-files-areas-are-considered-stable-contracts-e-g-backend-public-methods-candid-surface-auth-bootstrap-flow-routing-2-the-required-review-checklist-for-any-feature-change-expected-behavior-changes-affected-routes-affected-backend-methods-state-schema-impact-and-3-the-required-verification-steps-before-merging-typecheck-lint-tests",
-      "title": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
+      "id": "feature-update-the-invite-based-onboarding-flow-so-that-when-a-user-opens-an-invite-link-containing-an-invite-token-e-g-onboarding-invitetoken-the-app-automatically-reads-and-applies-the-token-and-the-user-is-not-required-to-manually-type-paste-any-invite-token",
+      "title": "Update the invite-based onboarding flow so that when a user opens an invite link containing an invite token (e.g. `/#/onboarding?inviteToken=...`), the app automatically reads and applies the token and the user is not required to manually type/paste any invite token.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-introduce-automated-gates-that-run-locally-and-in-ci-to-prevent-silent-regressions-typescript-typecheck-linting-formatting-check-and-a-minimal-test-suite-runner-for-the-frontend",
-      "title": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
+      "id": "feature-revise-frontend-src-pages-onboardinginvitepage-tsx-ui-so-the-invite-token-is-not-shown-as-a-required-input-field-when-it-is-present-via-url-session-user-facing-text-on-this-page-must-be-in-english-replace-existing-indonesian-toasts-labels-messages",
+      "title": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session; user-facing text on this page must be in English (replace existing Indonesian toasts/labels/messages).",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-smoke-regression-tests-for-the-most-failure-prone-user-flows-already-present-in-the-app-authentication-gate-actor-bootstrap-dashboard-route-rendering-one-representative-data-fetch-flow-to-reduce-regressions-when-new-features-are-added",
-      "title": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+      "id": "feature-ensure-invite-tokens-passed-in-the-url-are-persisted-for-the-session-and-removed-from-the-address-bar-after-being-captured-so-users-can-navigate-sign-in-and-return-to-onboarding-without-losing-the-token-and-without-leaving-the-token-visible-in-the-url",
+      "title": "Ensure invite tokens passed in the URL are persisted for the session and removed from the address bar after being captured, so users can navigate/sign-in and return to onboarding without losing the token and without leaving the token visible in the URL.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-keep-the-admin-invite-token-sharing-ux-aligned-with-the-one-click-onboarding-flow-by-ensuring-frontend-src-pages-admin-admininvitetokenspage-tsx-copies-an-invite-link-that-works-with-the-new-auto-apply-onboarding-behavior-and-use-english-only-success-error-toasts",
+      "title": "Keep the admin invite-token sharing UX aligned with the one-click onboarding flow by ensuring `frontend/src/pages/admin/AdminInviteTokensPage.tsx` copies an invite link that works with the new auto-apply onboarding behavior, and use English-only success/error toasts.",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-create-a-lightweight-release-versioning-discipline-inside-the-repo-so-changes-are-easier-to-track-and-disputes-about-what-changed-are-minimized-e-g-changelog-entries-per-version-and-a-visible-app-version-string",
-      "title": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+      "id": "feature-do-not-change-the-backend-invite-token-validation-semantics-onboarding-must-continue-to-enforce-that-the-token-exists-and-is-unused-using-the-existing-completeonboarding-invitetoken-profile-backend-api-only-the-frontend-experience-should-change-to-make-it-one-click",
+      "title": "Do not change the backend invite-token validation semantics: onboarding must continue to enforce that the token exists and is unused, using the existing `completeOnboarding(inviteToken, profile)` backend API; only the frontend experience should change to make it one-click.",
       "reqIds": [
         "REQ-5"
       ],
@@ -46,20 +54,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Introduce code change controls to prevent unintended modifications when adding features (e.g., branch protection/code freeze, versioning, automated tests/CI)",
+      "summary": "Simplify invitation onboarding: invite link should auto-apply token and open registration form without requiring users to manually enter an invite token",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add a backend API “contract check” that detects unintended changes to the canister’s public interface (Candid surface) and fails CI when the interface changes without an explicit acknowledgement/update step.",
-      "reqIds": [
-        "REQ-3"
-      ],
       "status": "pending"
     }
   ],
-  "projectName": "Introduce change-control guardrails to prevent unintended code changes during feature additions",
+  "projectName": "Make invite links one-click onboarding (auto-apply invite token; no manual token input)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

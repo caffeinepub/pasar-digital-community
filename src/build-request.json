@@ -1,119 +1,109 @@
 {
   "kind": "build_request",
-  "title": "Introduce change-control guardrails to prevent unintended code changes during feature additions",
+  "title": "Make invite links one-click onboarding (auto-apply invite token; no manual token input)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
-      "target": "both",
+      "text": "Update the invite-based onboarding flow so that when a user opens an invite link containing an invite token (e.g. `/#/onboarding?inviteToken=...`), the app automatically reads and applies the token and the user is not required to manually type/paste any invite token.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "COBA ANDA KUNCI CODING NYA BIAR TIDAK BERUBAH-UBAH KETIKA PENAMBAHAN FITUR. KARENA SAYA CAPEK RIBUT DENGAN ANDA"
+          "Seharusnya ketika klik link, harus nya sudah otomatis masuk dan pengguna hanya memasukan data pengguna saja seperti nama dan lain-lain.",
+          "Buat simpel saja, sekali klik langung masuk ke fitur pendaftaran akun tanpa memasukan Token Undangan"
         ]
       },
       "acceptanceCriteria": [
-        "A written policy exists in-repo (markdown) describing change-control rules and a mandatory checklist.",
-        "The policy explicitly calls out the backend public API (actor methods) and frontend route structure as protected/stable interfaces.",
-        "The policy is referenced by a PR template or equivalent contributor checklist file so it is hard to miss."
+        "Opening `/#/onboarding?inviteToken=<token>` pre-fills the onboarding flow with `<token>` without any user action.",
+        "The onboarding form submission succeeds using the URL-provided token and only requires the user profile fields (e.g., name, email, city, country).",
+        "If the invite token is missing from the URL and not available from session persistence, the page shows a clear English message instructing the user to use an invite link from an admin (and does not present a blank required token field)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
+      "text": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session; user-facing text on this page must be in English (replace existing Indonesian toasts/labels/messages).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "KUNCI CODING NYA BIAR TIDAK BERUBAH-UBAH KETIKA PENAMBAHAN FITUR"
+          "Kalau masukin Token Undangan, pengguna mana tahu Token Undangan nya"
         ]
       },
       "acceptanceCriteria": [
-        "There is a single command (e.g., a script) that runs all frontend quality gates in one go (typecheck + lint + format check + tests).",
-        "The gates fail the build when there are TypeScript errors, lint errors, or formatting drift.",
-        "Documentation explains how to run the gates locally before shipping changes."
+        "When an invite token is available (from URL/session), the UI does not ask the user to enter an invite token.",
+        "All visible strings and toast messages on the onboarding page are English-only (e.g., errors, headings, button labels).",
+        "If the backend returns an invalid/expired/used-token error, the UI displays the error in English in a user-comprehensible way (may include the backend message, but must not be Indonesian)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add a backend API “contract check” that detects unintended changes to the canister’s public interface (Candid surface) and fails CI when the interface changes without an explicit acknowledgement/update step.",
-      "target": "backend",
+      "text": "Ensure invite tokens passed in the URL are persisted for the session and removed from the address bar after being captured, so users can navigate/sign-in and return to onboarding without losing the token and without leaving the token visible in the URL.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "BIAR TIDAK BERUBAH-UBAH KETIKA PENAMBAHAN FITUR"
+          "Seharusnya ketika klik link, harus nya sudah otomatis masuk"
         ]
       },
       "acceptanceCriteria": [
-        "A reproducible command exists to generate/verify the backend interface signature (e.g., compare a committed interface artifact or hash).",
-        "CI fails when the backend interface changes and the committed contract artifact is not updated.",
-        "Documentation states the exact steps to intentionally update the contract artifact when a deliberate API change is made."
+        "If the user opens an invite link and then navigates within the app (or completes Internet Identity sign-in), the invite token remains available for onboarding completion without re-copying the link.",
+        "After the token is read, the app removes the `inviteToken` parameter from the visible URL (hash/query) without reloading the page."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+      "text": "Keep the admin invite-token sharing UX aligned with the one-click onboarding flow by ensuring `frontend/src/pages/admin/AdminInviteTokensPage.tsx` copies an invite link that works with the new auto-apply onboarding behavior, and use English-only success/error toasts.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
+        ],
+        "quotes": [
+          "ini kenapa admin share token undangan ke pengguna"
         ]
       },
       "acceptanceCriteria": [
-        "At least one automated test covers the RootRouteGate bootstrap behavior at a high level (no blank screen / renders expected state for loading vs error).",
-        "At least one automated test ensures the router mounts and core routes render without crashing (e.g., Dashboard + Vehicles).",
-        "Tests can run headlessly in CI and are included in the quality-gates command from REQ-2."
+        "Clicking “Copy Link” (and the post-generate auto-copy) copies an invite link that sends users directly to the onboarding registration form with the token auto-applied.",
+        "Admin page toasts related to invite link creation/copying are English-only."
       ]
     },
     {
       "id": "REQ-5",
-      "text": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+      "text": "Do not change the backend invite-token validation semantics: onboarding must continue to enforce that the token exists and is unused, using the existing `completeOnboarding(inviteToken, profile)` backend API; only the frontend experience should change to make it one-click.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "KARENA SAYA CAPEK RIBUT DENGAN ANDA"
+          "Seharusnya ketika klik link, harus nya sudah otomatis masuk ... tanpa memasukan Token Undangan"
         ]
       },
       "acceptanceCriteria": [
-        "A CHANGELOG file exists and is updated as part of feature work.",
-        "The frontend shows a version identifier somewhere appropriate (e.g., About page/footer) sourced from a single canonical location.",
-        "The backend exposes a simple version/build identifier via an existing or new query method, or the project documents why frontend-only versioning is used."
+        "Backend continues to reject invalid/expired/used tokens as it does today.",
+        "Frontend continues to call `completeOnboarding(inviteToken, profile)` with a token value, but the token value comes from the invite link/session rather than manual user entry."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (compose them instead).",
-    "Do not modify any frontend files listed as immutable in SYSTEM_CONTEXT.",
-    "Backend must remain a single Motoko actor (all logic in backend/main.mo); only add migration code if a stable-state schema change requires it.",
-    "All user-facing text introduced by these changes must be in English."
+    "Do not edit files under `frontend/src/components/ui` (compose existing shadcn components instead).",
+    "Do not edit immutable hook files listed in SYSTEM_CONTEXT (e.g., `frontend/src/hooks/useInternetIdentity.ts(x)`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`).",
+    "Backend must remain a single Motoko actor in `backend/main.mo`; only add `backend/migration.mo` if state schema changes are required (not expected for this request)."
   ],
   "nonGoals": [
-    "Implementing third-party CI providers beyond standard repository configuration (no external SaaS dependencies required to run tests locally).",
-    "Adding new product features unrelated to change-control (e.g., new pages, new vehicle functionality).",
-    "Re-architecting the backend into multiple canisters/services."
+    "Changing invite token generation rules or adding a new backend invite-link endpoint.",
+    "Adding third-party auth or any non-Internet-Identity authentication.",
+    "Redesigning unrelated pages (dashboard/vehicles/etc.)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

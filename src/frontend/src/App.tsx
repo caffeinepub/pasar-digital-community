@@ -8,6 +8,7 @@ import VehiclesPage from './pages/VehiclesPage';
 import RegisterVehiclePage from './pages/RegisterVehiclePage';
 import VehicleDetailPage from './pages/VehicleDetailPage';
 import LostVehiclesPage from './pages/LostVehiclesPage';
+import VehicleCheckPage from './pages/VehicleCheckPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import SecuritySettingsPage from './pages/SecuritySettingsPage';
@@ -51,6 +52,12 @@ const lostVehiclesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lost-vehicles',
   component: LostVehiclesPage,
+});
+
+const vehicleCheckRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/vehicle-check',
+  component: VehicleCheckPage,
 });
 
 const notificationsRoute = createRoute({
@@ -108,6 +115,7 @@ const routeTree = rootRoute.addChildren([
   registerVehicleRoute,
   vehicleDetailRoute,
   lostVehiclesRoute,
+  vehicleCheckRoute,
   notificationsRoute,
   profileRoute,
   securityRoute,

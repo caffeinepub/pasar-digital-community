@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, User, LogOut, Shield, Bell, Car, Home, Search, Settings } from 'lucide-react';
+import { Menu, User, LogOut, Shield, Bell, Car, Home, Search, Settings, FileSearch } from 'lucide-react';
 import AppLogo from '../brand/AppLogo';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -34,16 +34,17 @@ export default function AppHeader() {
     { label: 'Dashboard', path: '/', icon: Home },
     { label: 'My Vehicles', path: '/vehicles', icon: Car },
     { label: 'Lost Vehicles', path: '/lost-vehicles', icon: Search },
+    { label: 'Vehicle Check', path: '/vehicle-check', icon: FileSearch },
     { label: 'Notifications', path: '/notifications', icon: Bell },
   ];
 
   // Show admin link based on admin status (not profile presence)
   // Admin status is determined by backend checks including allowlisted admin
   if ((adminFetched && isAdmin) || (adminError && !adminLoading)) {
-    navItems.push({ 
-      label: adminError ? 'Admin (Retry)' : 'Admin', 
-      path: '/admin', 
-      icon: Shield 
+    navItems.push({
+      label: adminError ? 'Admin (Retry)' : 'Admin',
+      path: '/admin',
+      icon: Shield,
     });
   }
 
@@ -82,9 +83,7 @@ export default function AppHeader() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {userProfile?.fullName || 'User'}
-                  </p>
+                  <p className="text-sm font-medium leading-none">{userProfile?.fullName || 'User'}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {userProfile?.email || identity?.getPrincipal().toString().slice(0, 20) + '...'}
                   </p>
@@ -116,9 +115,7 @@ export default function AppHeader() {
             <SheetContent side="right" className="w-64">
               <div className="flex flex-col gap-4 mt-8">
                 <div className="flex flex-col space-y-1 pb-4 border-b">
-                  <p className="text-sm font-medium">
-                    {userProfile?.fullName || 'User'}
-                  </p>
+                  <p className="text-sm font-medium">{userProfile?.fullName || 'User'}</p>
                   <p className="text-xs text-muted-foreground">
                     {userProfile?.email || identity?.getPrincipal().toString().slice(0, 20) + '...'}
                   </p>
@@ -166,7 +163,7 @@ export default function AppHeader() {
                   </Button>
                   <Button
                     variant="ghost"
-                    className="justify-start gap-2 text-destructive hover:text-destructive"
+                    className="justify-start gap-2 text-destructive"
                     onClick={() => {
                       handleLogout();
                       setMobileMenuOpen(false);

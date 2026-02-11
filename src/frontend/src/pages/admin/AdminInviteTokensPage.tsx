@@ -50,13 +50,7 @@ export default function AdminInviteTokensPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>Failed to verify admin status. Please try again.</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => refetchAdmin()} 
-                className="ml-4"
-                disabled={adminLoading}
-              >
+              <Button variant="outline" size="sm" onClick={() => refetchAdmin()} className="ml-4" disabled={adminLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${adminLoading ? 'animate-spin' : ''}`} />
                 Retry
               </Button>
@@ -119,12 +113,7 @@ export default function AdminInviteTokensPage() {
                         Created: {new Date(Number(code.created / BigInt(1000000))).toLocaleDateString()}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyLink(code.code)}
-                      className="ml-2 shrink-0"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleCopyLink(code.code)} className="ml-2 shrink-0">
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
@@ -154,10 +143,7 @@ export default function AdminInviteTokensPage() {
             ) : (
               <div className="space-y-2">
                 {usedCodes.map((code) => (
-                  <div
-                    key={code.code}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
-                  >
+                  <div key={code.code} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
                     <div className="flex-1 min-w-0">
                       <code className="text-sm font-mono block truncate opacity-60">{code.code}</code>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -215,18 +201,11 @@ export default function AdminInviteTokensPage() {
                         })}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={code.used ? 'secondary' : 'default'}>
-                          {code.used ? 'Used' : 'Available'}
-                        </Badge>
+                        <Badge variant={code.used ? 'secondary' : 'default'}>{code.used ? 'Used' : 'Available'}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         {!code.used && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopyLink(code.code)}
-                            className="gap-2"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleCopyLink(code.code)} className="gap-2">
                             <Copy className="h-4 w-4" />
                             Copy Link
                           </Button>

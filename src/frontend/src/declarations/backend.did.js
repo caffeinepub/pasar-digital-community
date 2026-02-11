@@ -27,12 +27,32 @@ export const VehicleStatus = IDL.Variant({
     'timeReported' : Time,
     'foundBy' : IDL.Principal,
   }),
+  'PAWNED' : IDL.Record({ 'timeReported' : Time, 'reportNote' : IDL.Text }),
+  'STOLEN' : IDL.Record({ 'timeReported' : Time, 'reportNote' : IDL.Text }),
   'ACTIVE' : IDL.Null,
 });
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
+});
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const Vehicle = IDL.Record({
+  'id' : IDL.Text,
+  'engineNumber' : IDL.Text,
+  'status' : VehicleStatus,
+  'model' : IDL.Text,
+  'transferCode' : IDL.Opt(IDL.Text),
+  'vehiclePhoto' : ExternalBlob,
+  'owner' : IDL.Principal,
+  'year' : IDL.Nat,
+  'chassisNumber' : IDL.Text,
+  'brand' : IDL.Text,
+  'location' : IDL.Text,
+});
+export const VehicleCheckStatus = IDL.Record({
+  'statusNote' : IDL.Text,
+  'vehicle' : Vehicle,
 });
 export const UserProfile = IDL.Record({
   'country' : IDL.Text,
@@ -51,20 +71,6 @@ export const InviteCode = IDL.Record({
   'created' : Time,
   'code' : IDL.Text,
   'used' : IDL.Bool,
-});
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
-export const Vehicle = IDL.Record({
-  'id' : IDL.Text,
-  'engineNumber' : IDL.Text,
-  'status' : VehicleStatus,
-  'model' : IDL.Text,
-  'transferCode' : IDL.Opt(IDL.Text),
-  'vehiclePhoto' : ExternalBlob,
-  'owner' : IDL.Principal,
-  'year' : IDL.Nat,
-  'chassisNumber' : IDL.Text,
-  'brand' : IDL.Text,
-  'location' : IDL.Text,
 });
 export const Notification = IDL.Record({
   'id' : IDL.Text,
@@ -106,6 +112,7 @@ export const idlService = IDL.Service({
   'acceptTransfer' : IDL.Func([IDL.Text], [], []),
   'adminUpdateVehicleStatus' : IDL.Func([IDL.Text, VehicleStatus], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'checkVehicle' : IDL.Func([IDL.Text], [VehicleCheckStatus], ['query']),
   'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
   'generateInviteCode' : IDL.Func([], [IDL.Text], []),
   'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
@@ -130,8 +137,10 @@ export const idlService = IDL.Service({
       [
         IDL.Record({
           'totalLostReports' : IDL.Nat,
+          'totalPawnedReports' : IDL.Nat,
           'totalVehicles' : IDL.Nat,
           'totalFoundReports' : IDL.Nat,
+          'totalStolenReports' : IDL.Nat,
           'totalUsers' : IDL.Nat,
         }),
       ],
@@ -149,7 +158,19 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isOnboardingAllowed' : IDL.Func([], [IDL.Bool], ['query']),
   'markNotificationRead' : IDL.Func([IDL.Text], [], []),
-  'markVehicleLost' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'markVehicleAsLostStolenOrPawned' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Variant({
+          'stolen' : IDL.Null,
+          'lost' : IDL.Null,
+          'pawned' : IDL.Null,
+        }),
+        IDL.Text,
+      ],
+      [],
+      [],
+    ),
   'registerVehicle' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
       [IDL.Text],
@@ -184,12 +205,32 @@ export const idlFactory = ({ IDL }) => {
       'timeReported' : Time,
       'foundBy' : IDL.Principal,
     }),
+    'PAWNED' : IDL.Record({ 'timeReported' : Time, 'reportNote' : IDL.Text }),
+    'STOLEN' : IDL.Record({ 'timeReported' : Time, 'reportNote' : IDL.Text }),
     'ACTIVE' : IDL.Null,
   });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
+  });
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const Vehicle = IDL.Record({
+    'id' : IDL.Text,
+    'engineNumber' : IDL.Text,
+    'status' : VehicleStatus,
+    'model' : IDL.Text,
+    'transferCode' : IDL.Opt(IDL.Text),
+    'vehiclePhoto' : ExternalBlob,
+    'owner' : IDL.Principal,
+    'year' : IDL.Nat,
+    'chassisNumber' : IDL.Text,
+    'brand' : IDL.Text,
+    'location' : IDL.Text,
+  });
+  const VehicleCheckStatus = IDL.Record({
+    'statusNote' : IDL.Text,
+    'vehicle' : Vehicle,
   });
   const UserProfile = IDL.Record({
     'country' : IDL.Text,
@@ -208,20 +249,6 @@ export const idlFactory = ({ IDL }) => {
     'created' : Time,
     'code' : IDL.Text,
     'used' : IDL.Bool,
-  });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
-  const Vehicle = IDL.Record({
-    'id' : IDL.Text,
-    'engineNumber' : IDL.Text,
-    'status' : VehicleStatus,
-    'model' : IDL.Text,
-    'transferCode' : IDL.Opt(IDL.Text),
-    'vehiclePhoto' : ExternalBlob,
-    'owner' : IDL.Principal,
-    'year' : IDL.Nat,
-    'chassisNumber' : IDL.Text,
-    'brand' : IDL.Text,
-    'location' : IDL.Text,
   });
   const Notification = IDL.Record({
     'id' : IDL.Text,
@@ -263,6 +290,7 @@ export const idlFactory = ({ IDL }) => {
     'acceptTransfer' : IDL.Func([IDL.Text], [], []),
     'adminUpdateVehicleStatus' : IDL.Func([IDL.Text, VehicleStatus], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'checkVehicle' : IDL.Func([IDL.Text], [VehicleCheckStatus], ['query']),
     'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
     'generateInviteCode' : IDL.Func([], [IDL.Text], []),
     'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
@@ -287,8 +315,10 @@ export const idlFactory = ({ IDL }) => {
         [
           IDL.Record({
             'totalLostReports' : IDL.Nat,
+            'totalPawnedReports' : IDL.Nat,
             'totalVehicles' : IDL.Nat,
             'totalFoundReports' : IDL.Nat,
+            'totalStolenReports' : IDL.Nat,
             'totalUsers' : IDL.Nat,
           }),
         ],
@@ -306,7 +336,19 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isOnboardingAllowed' : IDL.Func([], [IDL.Bool], ['query']),
     'markNotificationRead' : IDL.Func([IDL.Text], [], []),
-    'markVehicleLost' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'markVehicleAsLostStolenOrPawned' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Variant({
+            'stolen' : IDL.Null,
+            'lost' : IDL.Null,
+            'pawned' : IDL.Null,
+          }),
+          IDL.Text,
+        ],
+        [],
+        [],
+      ),
     'registerVehicle' : IDL.Func(
         [
           IDL.Text,

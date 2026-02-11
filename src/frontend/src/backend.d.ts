@@ -34,15 +34,31 @@ export type VehicleStatus = {
         foundBy: Principal;
     };
 } | {
+    __kind__: "PAWNED";
+    PAWNED: {
+        timeReported: Time;
+        reportNote: string;
+    };
+} | {
+    __kind__: "STOLEN";
+    STOLEN: {
+        timeReported: Time;
+        reportNote: string;
+    };
+} | {
     __kind__: "ACTIVE";
     ACTIVE: null;
 };
+export interface VehicleCheckStatus {
+    statusNote: string;
+    vehicle: Vehicle;
+}
+export type Time = bigint;
 export interface InviteCode {
     created: Time;
     code: string;
     used: boolean;
 }
-export type Time = bigint;
 export interface Notification {
     id: string;
     read: boolean;
@@ -76,10 +92,16 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export enum Variant_stolen_lost_pawned {
+    stolen = "stolen",
+    lost = "lost",
+    pawned = "pawned"
+}
 export interface backendInterface {
     acceptTransfer(transferCode: string): Promise<void>;
     adminUpdateVehicleStatus(vehicleId: string, newStatus: VehicleStatus): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    checkVehicle(engineNumber: string): Promise<VehicleCheckStatus>;
     completeOnboarding(inviteToken: string, profile: UserProfile): Promise<void>;
     generateInviteCode(): Promise<string>;
     getAllRSVPs(): Promise<Array<RSVP>>;
@@ -99,8 +121,10 @@ export interface backendInterface {
     getRegisteredVehicles(): Promise<Array<Vehicle>>;
     getSystemStats(): Promise<{
         totalLostReports: bigint;
+        totalPawnedReports: bigint;
         totalVehicles: bigint;
         totalFoundReports: bigint;
+        totalStolenReports: bigint;
         totalUsers: bigint;
     }>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -111,7 +135,7 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isOnboardingAllowed(): Promise<boolean>;
     markNotificationRead(notificationId: string): Promise<void>;
-    markVehicleLost(vehicleId: string, reportNote: string): Promise<void>;
+    markVehicleAsLostStolenOrPawned(vehicleId: string, category: Variant_stolen_lost_pawned, reportNote: string): Promise<void>;
     registerVehicle(engineNumber: string, chassisNumber: string, brand: string, model: string, year: bigint, location: string, vehiclePhoto: ExternalBlob): Promise<string>;
     reportVehicleFound(vehicleId: string, finderReport: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;

@@ -2,12 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-repository-level-change-control-policy-that-defines-1-which-files-areas-are-considered-stable-contracts-e-g-backend-public-methods-candid-surface-auth-bootstrap-flow-routing-2-the-required-review-checklist-for-any-feature-change-expected-behavior-changes-affected-routes-affected-backend-methods-state-schema-impact-and-3-the-required-verification-steps-before-merging-typecheck-lint-tests",
-      "featureTitle": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
+      "featureId": "feature-update-the-invite-based-onboarding-flow-so-that-when-a-user-opens-an-invite-link-containing-an-invite-token-e-g-onboarding-invitetoken-the-app-automatically-reads-and-applies-the-token-and-the-user-is-not-required-to-manually-type-paste-any-invite-token",
+      "featureTitle": "Update the invite-based onboarding flow so that when a user opens an invite link containing an invite token (e.g. `/#/onboarding?inviteToken=...`), the app automatically reads and applies the token and the user is not required to manually type/paste any invite token.",
       "files": [
-        "frontend/CHANGE_CONTROL_POLICY.md",
-        "frontend/PR_CHECKLIST.md",
-        "frontend/README_CHANGE_CONTROL.md"
+        "frontend/src/pages/OnboardingInvitePage.tsx",
+        "frontend/src/routes/RootRouteGate.tsx",
+        "frontend/src/utils/urlParams.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -25,15 +25,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-introduce-automated-gates-that-run-locally-and-in-ci-to-prevent-silent-regressions-typescript-typecheck-linting-formatting-check-and-a-minimal-test-suite-runner-for-the-frontend",
-      "featureTitle": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
+      "featureId": "feature-revise-frontend-src-pages-onboardinginvitepage-tsx-ui-so-the-invite-token-is-not-shown-as-a-required-input-field-when-it-is-present-via-url-session-user-facing-text-on-this-page-must-be-in-english-replace-existing-indonesian-toasts-labels-messages",
+      "featureTitle": "Revise `frontend/src/pages/OnboardingInvitePage.tsx` UI so the invite token is not shown as a required input field when it is present via URL/session; user-facing text on this page must be in English (replace existing Indonesian toasts/labels/messages).",
       "files": [
-        "frontend/.eslintrc.cjs",
-        "frontend/.prettierrc.json",
-        "frontend/QUALITY_GATES.md",
-        "frontend/ci-run-gates.sh",
-        "frontend/src/test/setup.ts",
-        "frontend/vitest.config.ts"
+        "frontend/src/pages/OnboardingInvitePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -51,13 +46,33 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-smoke-regression-tests-for-the-most-failure-prone-user-flows-already-present-in-the-app-authentication-gate-actor-bootstrap-dashboard-route-rendering-one-representative-data-fetch-flow-to-reduce-regressions-when-new-features-are-added",
-      "featureTitle": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+      "featureId": "feature-ensure-invite-tokens-passed-in-the-url-are-persisted-for-the-session-and-removed-from-the-address-bar-after-being-captured-so-users-can-navigate-sign-in-and-return-to-onboarding-without-losing-the-token-and-without-leaving-the-token-visible-in-the-url",
+      "featureTitle": "Ensure invite tokens passed in the URL are persisted for the session and removed from the address bar after being captured, so users can navigate/sign-in and return to onboarding without losing the token and without leaving the token visible in the URL.",
       "files": [
-        "frontend/src/__tests__/router-smoke.test.tsx",
-        "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
-        "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
-        "frontend/vitest.config.ts"
+        "frontend/src/pages/OnboardingInvitePage.tsx",
+        "frontend/src/routes/RootRouteGate.tsx",
+        "frontend/src/utils/urlParams.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-keep-the-admin-invite-token-sharing-ux-aligned-with-the-one-click-onboarding-flow-by-ensuring-frontend-src-pages-admin-admininvitetokenspage-tsx-copies-an-invite-link-that-works-with-the-new-auto-apply-onboarding-behavior-and-use-english-only-success-error-toasts",
+      "featureTitle": "Keep the admin invite-token sharing UX aligned with the one-click onboarding flow by ensuring `frontend/src/pages/admin/AdminInviteTokensPage.tsx` copies an invite link that works with the new auto-apply onboarding behavior, and use English-only success/error toasts.",
+      "files": [
+        "frontend/src/pages/admin/AdminInviteTokensPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -75,13 +90,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-create-a-lightweight-release-versioning-discipline-inside-the-repo-so-changes-are-easier-to-track-and-disputes-about-what-changed-are-minimized-e-g-changelog-entries-per-version-and-a-visible-app-version-string",
-      "featureTitle": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+      "featureId": "feature-do-not-change-the-backend-invite-token-validation-semantics-onboarding-must-continue-to-enforce-that-the-token-exists-and-is-unused-using-the-existing-completeonboarding-invitetoken-profile-backend-api-only-the-frontend-experience-should-change-to-make-it-one-click",
+      "featureTitle": "Do not change the backend invite-token validation semantics: onboarding must continue to enforce that the token exists and is unused, using the existing `completeOnboarding(inviteToken, profile)` backend API; only the frontend experience should change to make it one-click.",
       "files": [
-        "frontend/CHANGELOG.md",
-        "frontend/README_VERSIONING.md",
-        "frontend/src/components/layout/AppLayout.tsx",
-        "frontend/src/version.ts"
+        "frontend/src/hooks/useOnboarding.ts",
+        "frontend/src/pages/OnboardingInvitePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",

@@ -54,6 +54,10 @@ export interface Vehicle {
   'brand' : string,
   'location' : string,
 }
+export interface VehicleCheckStatus {
+  'statusNote' : string,
+  'vehicle' : Vehicle,
+}
 export type VehicleStatus = {
     'LOST' : { 'timeReported' : Time, 'reportNote' : string }
   } |
@@ -64,6 +68,8 @@ export type VehicleStatus = {
       'foundBy' : Principal,
     }
   } |
+  { 'PAWNED' : { 'timeReported' : Time, 'reportNote' : string } } |
+  { 'STOLEN' : { 'timeReported' : Time, 'reportNote' : string } } |
   { 'ACTIVE' : null };
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
@@ -96,6 +102,7 @@ export interface _SERVICE {
   'acceptTransfer' : ActorMethod<[string], undefined>,
   'adminUpdateVehicleStatus' : ActorMethod<[string, VehicleStatus], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'checkVehicle' : ActorMethod<[string], VehicleCheckStatus>,
   'completeOnboarding' : ActorMethod<[string, UserProfile], undefined>,
   'generateInviteCode' : ActorMethod<[], string>,
   'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
@@ -117,8 +124,10 @@ export interface _SERVICE {
     [],
     {
       'totalLostReports' : bigint,
+      'totalPawnedReports' : bigint,
       'totalVehicles' : bigint,
       'totalFoundReports' : bigint,
+      'totalStolenReports' : bigint,
       'totalUsers' : bigint,
     }
   >,
@@ -130,7 +139,16 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isOnboardingAllowed' : ActorMethod<[], boolean>,
   'markNotificationRead' : ActorMethod<[string], undefined>,
-  'markVehicleLost' : ActorMethod<[string, string], undefined>,
+  'markVehicleAsLostStolenOrPawned' : ActorMethod<
+    [
+      string,
+      { 'stolen' : null } |
+        { 'lost' : null } |
+        { 'pawned' : null },
+      string,
+    ],
+    undefined
+  >,
   'registerVehicle' : ActorMethod<
     [string, string, string, string, bigint, string, ExternalBlob],
     string

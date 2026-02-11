@@ -5,7 +5,7 @@ import { useIsCallerAdmin } from '../hooks/useAdmin';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Car, AlertTriangle, Bell, Plus, Shield } from 'lucide-react';
+import { Car, AlertTriangle, Bell, Plus, Shield, FileSearch } from 'lucide-react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -18,26 +18,26 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      title: 'Kendaraan Saya',
+      title: 'My Vehicles',
       value: vehicles?.length || 0,
       icon: Car,
-      description: 'Total kendaraan terdaftar',
+      description: 'Total registered vehicles',
       action: () => navigate({ to: '/vehicles' }),
       color: 'text-primary',
     },
     {
-      title: 'Kendaraan Hilang',
+      title: 'Reported Vehicles',
       value: lostVehicles?.length || 0,
       icon: AlertTriangle,
-      description: 'Laporan kendaraan hilang',
+      description: 'Lost/stolen/pawned reports',
       action: () => navigate({ to: '/lost-vehicles' }),
       color: 'text-destructive',
     },
     {
-      title: 'Notifikasi',
+      title: 'Notifications',
       value: unreadNotifications,
       icon: Bell,
-      description: 'Notifikasi belum dibaca',
+      description: 'Unread notifications',
       action: () => navigate({ to: '/notifications' }),
       color: 'text-chart-2',
     },
@@ -47,7 +47,7 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Selamat datang di Pasar Digital Community</p>
+        <p className="text-muted-foreground">Welcome to Pasar Digital Community</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -68,21 +68,25 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Aksi Cepat</CardTitle>
-            <CardDescription>Kelola kendaraan dan keamanan Anda</CardDescription>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Manage your vehicles and security</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <Button onClick={() => navigate({ to: '/vehicles/register' })} className="w-full justify-start gap-2">
               <Plus className="h-4 w-4" />
-              Daftarkan Kendaraan Baru
+              Register New Vehicle
+            </Button>
+            <Button onClick={() => navigate({ to: '/vehicles' })} variant="outline" className="w-full justify-start gap-2">
+              <Car className="h-4 w-4" />
+              View My Vehicles
             </Button>
             <Button
-              onClick={() => navigate({ to: '/vehicles' })}
+              onClick={() => navigate({ to: '/vehicle-check' })}
               variant="outline"
               className="w-full justify-start gap-2"
             >
-              <Car className="h-4 w-4" />
-              Lihat Kendaraan Saya
+              <FileSearch className="h-4 w-4" />
+              Check Vehicle Status
             </Button>
             <Button
               onClick={() => navigate({ to: '/lost-vehicles' })}
@@ -90,32 +94,32 @@ export default function DashboardPage() {
               className="w-full justify-start gap-2"
             >
               <AlertTriangle className="h-4 w-4" />
-              Cek Kendaraan Hilang
+              View Reported Vehicles
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Informasi Sistem</CardTitle>
-            <CardDescription>Status dan keamanan akun Anda</CardDescription>
+            <CardTitle>System Information</CardTitle>
+            <CardDescription>Your account status and security</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm">Status Akun</span>
-              <span className="text-sm font-medium text-primary">Aktif</span>
+              <span className="text-sm">Account Status</span>
+              <span className="text-sm font-medium text-primary">Active</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">Keamanan PIN</span>
+              <span className="text-sm">PIN Security</span>
               <Button variant="link" size="sm" onClick={() => navigate({ to: '/security' })} className="h-auto p-0">
-                Kelola
+                Manage
               </Button>
             </div>
             {isAdmin && (
               <div className="pt-2 border-t">
                 <Button onClick={() => navigate({ to: '/admin' })} variant="secondary" className="w-full gap-2">
                   <Shield className="h-4 w-4" />
-                  Panel Admin
+                  Admin Panel
                 </Button>
               </div>
             )}
