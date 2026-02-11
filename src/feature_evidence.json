@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-client-side-admin-allowlist-so-the-user-s-internet-identity-principal-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-treated-as-an-admin-for-onboarding-bypass-checks-and-structure-the-allowlist-so-it-can-support-more-than-one-principal-without-code-churn",
-      "featureTitle": "Update the client-side admin allowlist so the user’s Internet Identity principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin for onboarding-bypass checks (and structure the allowlist so it can support more than one principal without code churn).",
+      "featureId": "feature-add-a-repository-level-change-control-policy-that-defines-1-which-files-areas-are-considered-stable-contracts-e-g-backend-public-methods-candid-surface-auth-bootstrap-flow-routing-2-the-required-review-checklist-for-any-feature-change-expected-behavior-changes-affected-routes-affected-backend-methods-state-schema-impact-and-3-the-required-verification-steps-before-merging-typecheck-lint-tests",
+      "featureTitle": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
       "files": [
-        "frontend/src/utils/adminAllowlist.ts"
+        "frontend/CHANGE_CONTROL_POLICY.md",
+        "frontend/PR_CHECKLIST.md",
+        "frontend/README_CHANGE_CONTROL.md"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,12 +25,15 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-change-routing-bootstrap-behavior-so-an-admin-user-is-never-forced-into-the-onboarding-registration-flow-specifically-when-the-authenticated-principal-is-admin-including-the-allowlisted-admin-do-not-redirect-to-onboarding-even-if-getcalleruserprofile-returns-null-and-ensure-the-app-lands-on-a-usable-authenticated-route-e-g-or-admin-without-showing-the-onboarding-form",
-      "featureTitle": "Change routing/bootstrap behavior so an admin user is never forced into the onboarding/registration flow. Specifically: when the authenticated principal is admin (including the allowlisted admin), do not redirect to `/onboarding` even if `getCallerUserProfile()` returns `null`, and ensure the app lands on a usable authenticated route (e.g., `/` or `/admin`) without showing the onboarding form.",
+      "featureId": "feature-introduce-automated-gates-that-run-locally-and-in-ci-to-prevent-silent-regressions-typescript-typecheck-linting-formatting-check-and-a-minimal-test-suite-runner-for-the-frontend",
+      "featureTitle": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
       "files": [
-        "frontend/src/components/nav/AppHeader.tsx",
-        "frontend/src/pages/OnboardingInvitePage.tsx",
-        "frontend/src/routes/RootRouteGate.tsx"
+        "frontend/.eslintrc.cjs",
+        "frontend/.prettierrc.json",
+        "frontend/QUALITY_GATES.md",
+        "frontend/ci-run-gates.sh",
+        "frontend/src/test/setup.ts",
+        "frontend/vitest.config.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -42,6 +47,54 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-smoke-regression-tests-for-the-most-failure-prone-user-flows-already-present-in-the-app-authentication-gate-actor-bootstrap-dashboard-route-rendering-one-representative-data-fetch-flow-to-reduce-regressions-when-new-features-are-added",
+      "featureTitle": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+      "files": [
+        "frontend/src/__tests__/router-smoke.test.tsx",
+        "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
+        "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
+        "frontend/vitest.config.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-lightweight-release-versioning-discipline-inside-the-repo-so-changes-are-easier-to-track-and-disputes-about-what-changed-are-minimized-e-g-changelog-entries-per-version-and-a-visible-app-version-string",
+      "featureTitle": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+      "files": [
+        "frontend/CHANGELOG.md",
+        "frontend/README_VERSIONING.md",
+        "frontend/src/components/layout/AppLayout.tsx",
+        "frontend/src/version.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
       ],
       "confidence": "high"
     }

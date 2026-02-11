@@ -1,3 +1,8 @@
+/**
+ * Profile bootstrap error screen with STOPPED-canister detection and English-only messaging
+ * Displayed when profile fetch fails for authenticated users
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -29,55 +34,6 @@ export default function ProfileBootstrapError({ error, onRetry }: ProfileBootstr
     }
   };
 
-  const renderNextSteps = () => {
-    switch (classification.type) {
-      case 'canister-stopped':
-        return (
-          <div className="space-y-2 text-sm">
-            <p className="font-medium text-foreground">Next steps:</p>
-            <ol className="list-decimal list-inside space-y-1 ml-2 text-muted-foreground">
-              <li>Run "Build & Deploy" in Caffeine to restart the canister</li>
-              <li>Wait for the deployment to complete</li>
-              <li>Refresh this page or click "Retry" below</li>
-            </ol>
-          </div>
-        );
-      case 'network':
-        return (
-          <div className="space-y-2 text-sm">
-            <p className="font-medium text-foreground">Possible causes:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2 text-muted-foreground">
-              <li>Unstable internet connection</li>
-              <li>Network timeout</li>
-              <li>Server temporarily unavailable</li>
-            </ul>
-          </div>
-        );
-      case 'auth':
-        return (
-          <div className="space-y-2 text-sm">
-            <p className="font-medium text-foreground">Possible causes:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2 text-muted-foreground">
-              <li>Authentication session expired</li>
-              <li>Identity verification failed</li>
-              <li>Authorization error</li>
-            </ul>
-          </div>
-        );
-      default:
-        return (
-          <div className="space-y-2 text-sm">
-            <p className="font-medium text-foreground">Possible causes:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2 text-muted-foreground">
-              <li>Temporary server issue</li>
-              <li>Network connectivity problem</li>
-              <li>Authentication session issue</li>
-            </ul>
-          </div>
-        );
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
       <div className="w-full max-w-md space-y-8">
@@ -101,13 +57,24 @@ export default function ProfileBootstrapError({ error, onRetry }: ProfileBootstr
           <CardContent className="space-y-4">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Technical details</AlertTitle>
+              <AlertTitle>
+                {classification.type === 'canister-stopped' ? 'Backend Canister Stopped' : 'Error Details'}
+              </AlertTitle>
               <AlertDescription className="mt-2 text-xs font-mono break-all max-h-32 overflow-y-auto">
                 {classification.technicalDetails}
               </AlertDescription>
             </Alert>
 
-            {renderNextSteps()}
+            <div className="text-sm space-y-2">
+              <p className="font-medium text-foreground">
+                {classification.type === 'canister-stopped' ? 'Required actions:' : 'What you can try:'}
+              </p>
+              <ol className={`${classification.type === 'canister-stopped' ? 'list-decimal' : 'list-disc'} list-inside space-y-1 ml-2 text-muted-foreground`}>
+                {classification.guidance.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
+            </div>
 
             <div className="flex gap-2">
               <Button onClick={onRetry} className="flex-1" size="lg">

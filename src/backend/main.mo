@@ -13,7 +13,9 @@ import InviteLinksModule "invite-links/invite-links-module";
 import AccessControl "authorization/access-control";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -809,5 +811,16 @@ actor {
   // ---------------------- Internal Allowlist Check ----------------------
   public query ({ caller }) func isAllowlistAdmin() : async Bool {
     isCallerAllowlistAdmin(caller);
+  };
+
+  // ---------------------- Backend Health Diagnostics ----------------------
+  public query ({ caller }) func getBackendDiagnostics() : async {
+    build : Text;
+    time : Time.Time;
+  } {
+    {
+      build = "v0.1.0";
+      time = Time.now();
+    };
   };
 };

@@ -1,60 +1,120 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T10:28:05.029Z",
+  "generatedAt": "2026-02-11T11:15:22.300Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 5,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the client-side admin allowlist so the user’s Internet Identity principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin for onboarding-bypass checks (and structure the allowlist so it can support more than one principal without code churn).",
+        "summary": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/adminAllowlist.ts"
+          "frontend/CHANGE_CONTROL_POLICY.md",
+          "frontend/PR_CHECKLIST.md",
+          "frontend/README_CHANGE_CONTROL.md"
         ],
         "matchedFiles": [
-          "frontend/src/utils/adminAllowlist.ts"
+          "frontend/CHANGE_CONTROL_POLICY.md",
+          "frontend/PR_CHECKLIST.md",
+          "frontend/README_CHANGE_CONTROL.md"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Change routing/bootstrap behavior so an admin user is never forced into the onboarding/registration flow. Specifically: when the authenticated principal is admin (including the allowlisted admin), do not redirect to `/onboarding` even if `getCallerUserProfile()` returns `null`, and ensure the app lands on a usable authenticated route (e.g., `/` or `/admin`) without showing the onboarding form.",
+        "summary": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/routes/RootRouteGate.tsx",
-          "frontend/src/pages/OnboardingInvitePage.tsx",
-          "frontend/src/components/nav/AppHeader.tsx"
+          "frontend/package.json",
+          "frontend/tsconfig.json",
+          "frontend/.eslintrc.cjs",
+          "frontend/.prettierrc.json",
+          "frontend/vitest.config.ts",
+          "frontend/src/test/setup.ts",
+          "frontend/QUALITY_GATES.md",
+          "frontend/ci-run-gates.sh"
         ],
         "matchedFiles": [
-          "frontend/src/routes/RootRouteGate.tsx",
-          "frontend/src/pages/OnboardingInvitePage.tsx",
-          "frontend/src/components/nav/AppHeader.tsx"
+          "frontend/.eslintrc.cjs",
+          "frontend/.prettierrc.json",
+          "frontend/vitest.config.ts",
+          "frontend/src/test/setup.ts",
+          "frontend/QUALITY_GATES.md",
+          "frontend/ci-run-gates.sh"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Update backend authorization so the allowlisted admin principal can be treated as an admin immediately (without requiring onboarding/profile completion), enabling admin APIs that currently rely on `hasAdminPermission` and preventing the ‘admin must register’ dead-end after a reinstall. Keep the allowlisted admin principal value exactly as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
+        "summary": "Add a backend API “contract check” that detects unintended changes to the canister’s public interface (Candid surface) and fails CI when the interface changes without an explicit acknowledgement/update step.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
+          "frontend/src/__tests__/router-smoke.test.tsx",
+          "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
+          "frontend/vitest.config.ts",
+          "frontend/package.json"
+        ],
+        "matchedFiles": [
+          "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
+          "frontend/src/__tests__/router-smoke.test.tsx",
+          "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
+          "frontend/vitest.config.ts"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/CHANGELOG.md",
+          "frontend/src/version.ts",
+          "frontend/src/components/layout/AppLayout.tsx",
+          "frontend/README_VERSIONING.md"
+        ],
+        "matchedFiles": [
+          "frontend/CHANGELOG.md",
+          "frontend/src/version.ts",
+          "frontend/src/components/layout/AppLayout.tsx",
+          "frontend/README_VERSIONING.md"
+        ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/pages/OnboardingInvitePage.tsx",
-    "frontend/src/routes/RootRouteGate.tsx",
-    "frontend/src/utils/adminAllowlist.ts",
+    "frontend/.eslintrc.cjs",
+    "frontend/.prettierrc.json",
+    "frontend/CHANGELOG.md",
+    "frontend/CHANGE_CONTROL_POLICY.md",
+    "frontend/PR_CHECKLIST.md",
+    "frontend/QUALITY_GATES.md",
+    "frontend/README_CHANGE_CONTROL.md",
+    "frontend/README_VERSIONING.md",
+    "frontend/ci-run-gates.sh",
+    "frontend/src/__tests__/router-smoke.test.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
+    "frontend/src/routes/__tests__/RootRouteGate.test.tsx",
+    "frontend/src/test/setup.ts",
+    "frontend/src/version.ts",
+    "frontend/vitest.config.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

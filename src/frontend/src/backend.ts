@@ -176,6 +176,10 @@ export interface backendInterface {
     completeOnboarding(inviteToken: string, profile: UserProfile): Promise<void>;
     generateInviteCode(): Promise<string>;
     getAllRSVPs(): Promise<Array<RSVP>>;
+    getBackendDiagnostics(): Promise<{
+        time: Time;
+        build: string;
+    }>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getInviteCodes(): Promise<Array<InviteCode>>;
@@ -390,6 +394,23 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getAllRSVPs();
+            return result;
+        }
+    }
+    async getBackendDiagnostics(): Promise<{
+        time: Time;
+        build: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getBackendDiagnostics();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getBackendDiagnostics();
             return result;
         }
     }

@@ -1,30 +1,44 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "IC canister-deployed app experiencing production backend canister stoppage (IC0508) requiring force redeploy/reinstall, and an admin access/onboarding issue caused by a hardcoded frontend admin principal allowlist; user wants their current principal to be recognized as admin and bypass onboarding.",
+  "summary": "New project",
   "architectural_notes": [
-    "Frontend admin bypass/onboarding is controlled by a hardcoded principal allowlist in `frontend/src/utils/adminAllowlist.ts` (currently only one principal is treated as admin).",
-    "IC deployment context: separate frontend and backend canisters; backend stoppage (IC0508) breaks the app regardless of frontend/browser state."
+    "Add change-control safeguards (e.g., protected main branch, PR reviews, CI checks/tests) to reduce regressions during feature additions."
   ],
   "known_issues": [
-    "Production backend canister can become STOPPED (IC0508), requiring forced start or full reinstall/redeploy; potential cycles exhaustion mentioned as a cause.",
-    "Admin users may be redirected to onboarding/registration if their principal does not match the hardcoded frontend admin allowlist."
+    "Unintended code changes/regressions occurring during feature additions; needs stronger change-control process."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-client-side-admin-allowlist-so-the-user-s-internet-identity-principal-dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae-is-treated-as-an-admin-for-onboarding-bypass-checks-and-structure-the-allowlist-so-it-can-support-more-than-one-principal-without-code-churn",
-      "title": "Update the client-side admin allowlist so the user’s Internet Identity principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin for onboarding-bypass checks (and structure the allowlist so it can support more than one principal without code churn).",
+      "id": "feature-add-a-repository-level-change-control-policy-that-defines-1-which-files-areas-are-considered-stable-contracts-e-g-backend-public-methods-candid-surface-auth-bootstrap-flow-routing-2-the-required-review-checklist-for-any-feature-change-expected-behavior-changes-affected-routes-affected-backend-methods-state-schema-impact-and-3-the-required-verification-steps-before-merging-typecheck-lint-tests",
+      "title": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-change-routing-bootstrap-behavior-so-an-admin-user-is-never-forced-into-the-onboarding-registration-flow-specifically-when-the-authenticated-principal-is-admin-including-the-allowlisted-admin-do-not-redirect-to-onboarding-even-if-getcalleruserprofile-returns-null-and-ensure-the-app-lands-on-a-usable-authenticated-route-e-g-or-admin-without-showing-the-onboarding-form",
-      "title": "Change routing/bootstrap behavior so an admin user is never forced into the onboarding/registration flow. Specifically: when the authenticated principal is admin (including the allowlisted admin), do not redirect to `/onboarding` even if `getCallerUserProfile()` returns `null`, and ensure the app lands on a usable authenticated route (e.g., `/` or `/admin`) without showing the onboarding form.",
+      "id": "feature-introduce-automated-gates-that-run-locally-and-in-ci-to-prevent-silent-regressions-typescript-typecheck-linting-formatting-check-and-a-minimal-test-suite-runner-for-the-frontend",
+      "title": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-smoke-regression-tests-for-the-most-failure-prone-user-flows-already-present-in-the-app-authentication-gate-actor-bootstrap-dashboard-route-rendering-one-representative-data-fetch-flow-to-reduce-regressions-when-new-features-are-added",
+      "title": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-lightweight-release-versioning-discipline-inside-the-repo-so-changes-are-easier-to-track-and-disputes-about-what-changed-are-minimized-e-g-changelog-entries-per-version-and-a-visible-app-version-string",
+      "title": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+      "reqIds": [
+        "REQ-5"
       ],
       "version": 1
     }
@@ -32,26 +46,20 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update admin authorization so the user's current Internet Identity principal is recognized as admin (e.g., add principal to frontend admin allowlist to bypass onboarding).",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Remove/replace hardcoded frontend admin allowlist so admin status is determined by backend roles instead of a single hardcoded principal.",
+      "summary": "Introduce code change controls to prevent unintended modifications when adding features (e.g., branch protection/code freeze, versioning, automated tests/CI)",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-5",
-      "summary": "Update backend authorization so the allowlisted admin principal can be treated as an admin immediately (without requiring onboarding/profile completion), enabling admin APIs that currently rely on `hasAdminPermission` and preventing the ‘admin must register’ dead-end after a reinstall. Keep the allowlisted admin principal value exactly as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
+      "id": "AR-4",
+      "summary": "Add a backend API “contract check” that detects unintended changes to the canister’s public interface (Candid surface) and fails CI when the interface changes without an explicit acknowledgement/update step.",
       "reqIds": [
         "REQ-3"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "Make the current Internet Identity principal an admin and bypass onboarding/registration",
+  "projectName": "Introduce change-control guardrails to prevent unintended code changes during feature additions",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

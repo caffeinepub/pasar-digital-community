@@ -1,3 +1,8 @@
+/**
+ * Root route gate component that handles authentication and bootstrapping with auto-retry support
+ * This component runs inside the router context with English-only status messaging
+ */
+
 import { useEffect, useRef } from 'react';
 import { Outlet, useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
@@ -9,15 +14,11 @@ import ProfileBootstrapError from '../components/auth/ProfileBootstrapError';
 import StartupBootstrapError from '../components/auth/StartupBootstrapError';
 import AppLayout from '../components/layout/AppLayout';
 
-/**
- * Root route gate component that handles authentication and bootstrapping
- * This component runs inside the router context, so it can safely use useNavigate()
- */
 export default function RootRouteGate() {
   const { identity, isInitializing } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading, isFetched, isError, error, refetch } = useGetCallerUserProfile();
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
-  const { isError: actorError, error: actorErrorObj, retry: retryActor, isLoading: actorLoading, isRetrying } = useActorBootstrapStatus();
+  const { isError: actorError, error: actorErrorObj, retry: retryActor, isRetrying, autoRetryStatus } = useActorBootstrapStatus();
   const navigate = useNavigate();
   const hasRedirectedRef = useRef(false);
   const lastIdentityRef = useRef<string | null>(null);
@@ -36,22 +37,36 @@ export default function RootRouteGate() {
   useEffect(() => {
     if (!identity || !isFetched || hasRedirectedRef.current || adminLoading) return;
 
-    // Only redirect to onboarding if:
-    // 1. User has no profile (userProfile === null)
-    // 2. AND user is NOT an admin (including allowlisted admin)
     if (userProfile === null && !isAdmin) {
       hasRedirectedRef.current = true;
       navigate({ to: '/onboarding' });
     }
   }, [identity, userProfile, isFetched, isAdmin, adminLoading, navigate]);
 
-  // Show actor bootstrap error if actor initialization failed (for authenticated users)
-  // But not if we're currently retrying
-  if (identity && actorError && actorErrorObj && !isRetrying) {
-    return <StartupBootstrapError error={actorErrorObj} onRetry={retryActor} isRetrying={false} />;
+  // Show actor bootstrap error if actor initialization failed and auto-retries exhausted
+  if (identity && actorError && actorErrorObj && !autoRetryStatus) {
+    return (
+      <StartupBootstrapError 
+        error={actorErrorObj} 
+        onRetry={retryActor} 
+        isRetrying={isRetrying}
+      />
+    );
   }
 
-  // Show loading during retry
+  // Show auto-retry status screen
+  if (identity && autoRetryStatus) {
+    return (
+      <StartupBootstrapError 
+        error={actorErrorObj || new Error('Connection failed')} 
+        onRetry={retryActor} 
+        isRetrying={false}
+        autoRetryStatus={autoRetryStatus}
+      />
+    );
+  }
+
+  // Show loading during manual retry
   if (identity && isRetrying) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -63,7 +78,7 @@ export default function RootRouteGate() {
     );
   }
 
-  // Show sign-in screen immediately for unauthenticated users (no loading gate)
+  // Show sign-in screen immediately for unauthenticated users
   if (!identity && !isInitializing) {
     return <SignInScreen />;
   }
@@ -98,7 +113,6 @@ export default function RootRouteGate() {
   }
 
   // Render app layout with outlet for authenticated users
-  // Admins can proceed even without a profile
   return (
     <AppLayout>
       <Outlet />

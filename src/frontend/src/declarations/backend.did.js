@@ -109,6 +109,11 @@ export const idlService = IDL.Service({
   'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
   'generateInviteCode' : IDL.Func([], [IDL.Text], []),
   'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
+  'getBackendDiagnostics' : IDL.Func(
+      [],
+      [IDL.Record({ 'time' : Time, 'build' : IDL.Text })],
+      ['query'],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
@@ -261,6 +266,11 @@ export const idlFactory = ({ IDL }) => {
     'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
     'generateInviteCode' : IDL.Func([], [IDL.Text], []),
     'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
+    'getBackendDiagnostics' : IDL.Func(
+        [],
+        [IDL.Record({ 'time' : Time, 'build' : IDL.Text })],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),

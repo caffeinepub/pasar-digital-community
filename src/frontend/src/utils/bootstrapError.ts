@@ -1,5 +1,5 @@
 /**
- * Utilities for handling and formatting bootstrap errors
+ * Utilities for handling and formatting bootstrap errors with STOPPED-canister detection
  */
 
 export type BootstrapErrorType = 'canister-stopped' | 'network' | 'auth' | 'unknown';
@@ -8,22 +8,41 @@ export interface BootstrapErrorClassification {
   type: BootstrapErrorType;
   message: string;
   technicalDetails: string;
+  guidance: string[];
 }
 
 /**
  * Detects if an error is a canister-stopped error
+ * Matches various replica rejection patterns including IC0508, "is stopped", etc.
  */
 function isCanisterStoppedError(errorMessage: string): boolean {
-  const patterns = [
-    'is stopped',
-    'IC0508',
-    'CallContextManager',
-    'canister is stopped',
-    'does not have a CallContextManager',
-  ];
-
   const lowerMessage = errorMessage.toLowerCase();
-  return patterns.some((pattern) => lowerMessage.includes(pattern.toLowerCase()));
+  
+  // Primary indicators
+  const primaryPatterns = [
+    'is stopped',
+    'canister is stopped',
+    'canister rmc52-maaaa-aaaab-aendq-cai is stopped',
+  ];
+  
+  // Secondary indicators (error codes, rejection types)
+  const secondaryPatterns = [
+    'ic0508',
+    'non_replicated_rejection',
+    'reject_code": 5',
+    'reject_code: 5',
+  ];
+  
+  // Check if message contains primary pattern
+  const hasPrimary = primaryPatterns.some(pattern => lowerMessage.includes(pattern));
+  
+  // Check if message contains secondary pattern
+  const hasSecondary = secondaryPatterns.some(pattern => lowerMessage.includes(pattern));
+  
+  // Also check for "canister" + "stopped" appearing together
+  const hasCanisterAndStopped = lowerMessage.includes('canister') && lowerMessage.includes('stopped');
+  
+  return hasPrimary || (hasSecondary && hasCanisterAndStopped);
 }
 
 /**
@@ -41,14 +60,23 @@ export function extractTechnicalError(error: unknown): string {
   }
 
   try {
-    return JSON.stringify(error);
+    return JSON.stringify(error, null, 2);
   } catch {
     return String(error);
   }
 }
 
 /**
- * Classifies a bootstrap error and returns appropriate messaging
+ * Shared STOPPED-canister guidance steps (English only)
+ */
+const STOPPED_CANISTER_GUIDANCE = [
+  'The backend canister must be restarted by running "Build & Deploy" in Caffeine',
+  'Wait for the deployment to complete successfully',
+  'Then click "Retry" below or refresh this page',
+];
+
+/**
+ * Classifies a bootstrap error and returns appropriate messaging with guidance
  */
 export function classifyBootstrapError(error: unknown): BootstrapErrorClassification {
   const technicalDetails = extractTechnicalError(error);
@@ -56,9 +84,9 @@ export function classifyBootstrapError(error: unknown): BootstrapErrorClassifica
   if (isCanisterStoppedError(technicalDetails)) {
     return {
       type: 'canister-stopped',
-      message:
-        'The backend canister is currently stopped and cannot process requests. The application cannot load until the canister is restarted.',
+      message: 'The backend canister is currently stopped and cannot process requests.',
       technicalDetails,
+      guidance: STOPPED_CANISTER_GUIDANCE,
     };
   }
 
@@ -69,8 +97,14 @@ export function classifyBootstrapError(error: unknown): BootstrapErrorClassifica
   ) {
     return {
       type: 'network',
-      message: 'A network error occurred while loading your profile. Please check your connection and try again.',
+      message: 'A network error occurred while connecting to the application.',
       technicalDetails,
+      guidance: [
+        'Check your internet connection',
+        'Verify the application is running',
+        'Try refreshing the page',
+        'Clear your browser cache if the problem persists',
+      ],
     };
   }
 
@@ -81,32 +115,51 @@ export function classifyBootstrapError(error: unknown): BootstrapErrorClassifica
   ) {
     return {
       type: 'auth',
-      message: 'An authentication error occurred. Please try logging out and logging in again.',
+      message: 'An authentication error occurred.',
       technicalDetails,
+      guidance: [
+        'Try logging out and logging in again',
+        'Clear your browser cache',
+        'Verify your Internet Identity is working',
+      ],
     };
   }
 
   return {
     type: 'unknown',
-    message: 'An unexpected error occurred while loading your profile.',
+    message: 'An unexpected error occurred while connecting to the application.',
     technicalDetails,
+    guidance: [
+      'Check your internet connection',
+      'Try refreshing the page',
+      'Clear your browser cache',
+      'If the problem persists, contact support',
+    ],
   };
 }
 
 /**
- * Formats error details for clipboard copy
+ * Formats error details for clipboard copy with structured information
  */
 export function formatErrorForClipboard(error: unknown): string {
-  const technicalDetails = extractTechnicalError(error);
+  const classification = classifyBootstrapError(error);
   const timestamp = new Date().toISOString();
   const url = window.location.href;
+  const userAgent = navigator.userAgent;
 
-  return `Error Report
+  return `Pasar Digital Community - Error Report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Timestamp: ${timestamp}
 URL: ${url}
+User Agent: ${userAgent}
 
-Error Details:
-${technicalDetails}
+Error Type: ${classification.type}
+Message: ${classification.message}
+
+Technical Details:
+${classification.technicalDetails}
+
+Recommended Actions:
+${classification.guidance.map((step, i) => `${i + 1}. ${step}`).join('\n')}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }

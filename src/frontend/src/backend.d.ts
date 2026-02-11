@@ -83,6 +83,10 @@ export interface backendInterface {
     completeOnboarding(inviteToken: string, profile: UserProfile): Promise<void>;
     generateInviteCode(): Promise<string>;
     getAllRSVPs(): Promise<Array<RSVP>>;
+    getBackendDiagnostics(): Promise<{
+        time: Time;
+        build: string;
+    }>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getInviteCodes(): Promise<Array<InviteCode>>;

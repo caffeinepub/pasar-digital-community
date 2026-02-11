@@ -99,6 +99,10 @@ export interface _SERVICE {
   'completeOnboarding' : ActorMethod<[string, UserProfile], undefined>,
   'generateInviteCode' : ActorMethod<[], string>,
   'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
+  'getBackendDiagnostics' : ActorMethod<
+    [],
+    { 'time' : Time, 'build' : string }
+  >,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getInviteCodes' : ActorMethod<[], Array<InviteCode>>,

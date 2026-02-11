@@ -1,76 +1,119 @@
 {
   "kind": "build_request",
-  "title": "Make the current Internet Identity principal an admin and bypass onboarding/registration",
-  "priority": "high",
+  "title": "Introduce change-control guardrails to prevent unintended code changes during feature additions",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the client-side admin allowlist so the user’s Internet Identity principal `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae` is treated as an admin for onboarding-bypass checks (and structure the allowlist so it can support more than one principal without code churn).",
-      "target": "frontend",
+      "text": "Add a repository-level change-control policy that defines: (1) which files/areas are considered stable contracts (e.g., backend public methods/Candid surface, auth bootstrap flow, routing), (2) the required review checklist for any feature change (expected behavior changes, affected routes, affected backend methods, state schema impact), and (3) the required verification steps before merging (typecheck, lint, tests).",
+      "target": "both",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "LANJUT DEOLOY"
+          "COBA ANDA KUNCI CODING NYA BIAR TIDAK BERUBAH-UBAH KETIKA PENAMBAHAN FITUR. KARENA SAYA CAPEK RIBUT DENGAN ANDA"
         ]
       },
       "acceptanceCriteria": [
-        "`isAllowlistedAdmin(...)` returns true for `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
-        "Allowlist logic is not limited to a single hardcoded string (e.g., uses a list/array/set internally)."
+        "A written policy exists in-repo (markdown) describing change-control rules and a mandatory checklist.",
+        "The policy explicitly calls out the backend public API (actor methods) and frontend route structure as protected/stable interfaces.",
+        "The policy is referenced by a PR template or equivalent contributor checklist file so it is hard to miss."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Change routing/bootstrap behavior so an admin user is never forced into the onboarding/registration flow. Specifically: when the authenticated principal is admin (including the allowlisted admin), do not redirect to `/onboarding` even if `getCallerUserProfile()` returns `null`, and ensure the app lands on a usable authenticated route (e.g., `/` or `/admin`) without showing the onboarding form.",
+      "text": "Introduce automated “gates” that run locally and in CI to prevent silent regressions: TypeScript typecheck, linting, formatting check, and a minimal test suite runner for the frontend.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "SAYA INI KAN ADMIN JADI TIDAK PERLU DAFTAR",
-          "LANJUT DEOLOY"
+          "KUNCI CODING NYA BIAR TIDAK BERUBAH-UBAH KETIKA PENAMBAHAN FITUR"
         ]
       },
       "acceptanceCriteria": [
-        "When logged in as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`, the app does not navigate to `/onboarding` automatically.",
-        "If the user manually visits `/onboarding` while already recognized as admin, the app prevents completing the invite-based onboarding flow and instead routes them back to a main page (e.g., dashboard/admin).",
-        "Admin navigation (e.g., the Admin link) is accessible for the allowlisted/admin principal without completing onboarding."
+        "There is a single command (e.g., a script) that runs all frontend quality gates in one go (typecheck + lint + format check + tests).",
+        "The gates fail the build when there are TypeScript errors, lint errors, or formatting drift.",
+        "Documentation explains how to run the gates locally before shipping changes."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update backend authorization so the allowlisted admin principal can be treated as an admin immediately (without requiring onboarding/profile completion), enabling admin APIs that currently rely on `hasAdminPermission` and preventing the ‘admin must register’ dead-end after a reinstall. Keep the allowlisted admin principal value exactly as `dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae`.",
+      "text": "Add a backend API “contract check” that detects unintended changes to the canister’s public interface (Candid surface) and fails CI when the interface changes without an explicit acknowledgement/update step.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "SAYA INI KAN ADMIN JADI TIDAK PERLU DAFTAR",
-          "force-redeploy full (install_code mode reinstall)"
+          "BIAR TIDAK BERUBAH-UBAH KETIKA PENAMBAHAN FITUR"
         ]
       },
       "acceptanceCriteria": [
-        "After a reinstall (state reset), calls that require admin permission (e.g., generating invite codes, viewing invite codes) succeed for the allowlisted admin principal without requiring `completeOnboarding(...)` first.",
-        "Backend admin checks used by the frontend (e.g., `isCallerAdmin()` and/or `isAllowlistAdmin()`/`isAllowlistAdmin`-style checks if present) return admin=true for the allowlisted admin principal immediately after deploy.",
-        "No backend schema/state migration is required to support this change (behavior-only change)."
+        "A reproducible command exists to generate/verify the backend interface signature (e.g., compare a committed interface artifact or hash).",
+        "CI fails when the backend interface changes and the committed contract artifact is not updated.",
+        "Documentation states the exact steps to intentionally update the contract artifact when a deliberate API change is made."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add smoke/regression tests for the most failure-prone user flows already present in the app (authentication gate + actor bootstrap; dashboard route rendering; one representative data-fetch flow) to reduce regressions when new features are added.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ]
+      },
+      "acceptanceCriteria": [
+        "At least one automated test covers the RootRouteGate bootstrap behavior at a high level (no blank screen / renders expected state for loading vs error).",
+        "At least one automated test ensures the router mounts and core routes render without crashing (e.g., Dashboard + Vehicles).",
+        "Tests can run headlessly in CI and are included in the quality-gates command from REQ-2."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Create a lightweight release/versioning discipline inside the repo so changes are easier to track and disputes about “what changed” are minimized (e.g., changelog entries per version and a visible app version string).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "KARENA SAYA CAPEK RIBUT DENGAN ANDA"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A CHANGELOG file exists and is updated as part of feature work.",
+        "The frontend shows a version identifier somewhere appropriate (e.g., About page/footer) sourced from a single canonical location.",
+        "The backend exposes a simple version/build identifier via an existing or new query method, or the project documents why frontend-only versioning is used."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
-    "Do not edit any files under `frontend/src/components/ui` or the immutable hook entrypoints listed in SYSTEM_CONTEXT.",
-    "Use English for any new/modified user-facing UI strings introduced as part of these changes."
+    "Do not edit files under frontend/src/components/ui (compose them instead).",
+    "Do not modify any frontend files listed as immutable in SYSTEM_CONTEXT.",
+    "Backend must remain a single Motoko actor (all logic in backend/main.mo); only add migration code if a stable-state schema change requires it.",
+    "All user-facing text introduced by these changes must be in English."
   ],
   "nonGoals": [
-    "Adding third-party authentication providers (only Internet Identity).",
-    "Implementing a new database or external storage.",
-    "Changing unrelated UI copy across the entire app (only update text where required by the admin/onboarding fix)."
+    "Implementing third-party CI providers beyond standard repository configuration (no external SaaS dependencies required to run tests locally).",
+    "Adding new product features unrelated to change-control (e.g., new pages, new vehicle functionality).",
+    "Re-architecting the backend into multiple canisters/services."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }
