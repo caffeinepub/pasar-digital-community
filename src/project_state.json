@@ -1,20 +1,32 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "User onboarding/registration flow: users can register without an invite token; registering a vehicle requires admin activation. Current issue: registration is failing and appears not to send the completeOnboarding request to the backend, making debugging difficult.",
   "architectural_notes": [
-    "User signup/onboarding flow should not require admin authorization for normal end-users (only for admin-specific actions/roles)."
+    "Onboarding: inviteToken is not required (send empty string / backend ignores it).",
+    "Access control: vehicle registration is gated by admin activation of the user account.",
+    "Onboarding supports first-admin claim path (canClaimFirstAdmin -> isFirstAdminClaim) with redirect to /admin, otherwise redirect to /."
   ],
   "known_issues": [
-    "User account onboarding still prompts for admin authorization even though registration should be simplified."
+    "Registration failing during onboarding; Network tab shows no completeOnboarding request being sent when clicking Register (likely frontend submit/handler issue).",
+    "Frontend (useCompleteOnboarding/useOnboarding hook) may normalize/mask backend errors into a generic 'Registration failed' message, reducing observability."
   ],
   "isFixRequest": true,
+  "imageRequirements": "## Required Images\n- Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_192x192.png, 192x192)\n- Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_512x512.png, 512x512)\n- Square maskable app icon with safe padding and centered emblem (pwa-maskable.dim_512x512.png, 512x512)\n- Apple touch icon with centered emblem and balanced margins (apple-touch-icon.dim_180x180.png, 180x180)",
   "existing_features": [
     {
-      "id": "feature-update-the-frontend-onboarding-error-handling-so-that-if-the-backend-still-returns-an-authorization-related-onboarding-failure-the-onboarding-ui-shows-a-clear-english-message-explaining-registration-could-not-be-completed-without-mentioning-admin-role-assignment-and-does-not-display-the-raw-backend-error-string-to-end-users",
-      "title": "Update the frontend onboarding error handling so that if the backend still returns an authorization-related onboarding failure, the onboarding UI shows a clear English message explaining registration could not be completed (without mentioning admin role assignment), and does not display the raw backend error string to end users.",
+      "id": "feature-improve-frontend-onboarding-error-handling-to-avoid-masking-the-underlying-backend-error-preserve-the-raw-backend-error-message-for-debugging-at-least-in-console-logs-and-show-a-more-specific-ui-message-when-available-instead-of-always-showing-the-generic-registration-failed-please-contact-an-admin-for-assistance",
+      "title": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-onboarding-submission-reliably-triggers-a-backend-call-and-is-debuggable-from-devtools-network-add-lightweight-request-tracing-start-finish-around-the-submit-flow-so-it-is-obvious-when-the-mutation-is-invoked-and-whether-it-reached-the-actor-call",
+      "title": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
@@ -22,20 +34,22 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Permudah pendaftaran akun pengguna: hilangkan/skip permintaan authorize ke admin saat user signup/onboarding",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with the error `Unauthorized: Only admins can assign user roles`. Keep the existing behavior for the allowlisted first-admin claim (allowlisted principal can complete onboarding with an empty token).",
+      "summary": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping the special case where the allowlist admin can claim the first admin role.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Fix PWA icon assets so the manifest icons load as valid PNG images without console warnings. Regenerate the PWA icon files referenced by index.html and manifest.webmanifest and ensure they are placed at the expected paths under frontend/public/assets/generated.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
     }
   ],
-  "projectName": "Fix user onboarding so registration does not require admin authorization",
+  "projectName": "Fix onboarding registration failure and improve error observability",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

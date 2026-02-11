@@ -1,130 +1,157 @@
-import { useGetUserVehicles } from '../hooks/useVehicles';
-import { useGetLostVehicles } from '../hooks/useLostVehicles';
-import { useGetMyNotifications } from '../hooks/useNotifications';
-import { useIsCallerAdmin } from '../hooks/useAdmin';
 import { useNavigate } from '@tanstack/react-router';
+import { useGetUserVehicles } from '../hooks/useVehicles';
+import { useGetMyNotifications } from '../hooks/useNotifications';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Car, AlertTriangle, Bell, Plus, Shield, FileSearch } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Car, Bell, Search, Plus, AlertTriangle, FileSearch } from 'lucide-react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { data: vehicles, isLoading: vehiclesLoading } = useGetUserVehicles();
-  const { data: lostVehicles, isLoading: lostLoading } = useGetLostVehicles();
   const { data: notifications, isLoading: notificationsLoading } = useGetMyNotifications();
-  const { data: isAdmin } = useIsCallerAdmin();
 
   const unreadNotifications = notifications?.filter((n) => !n.read).length || 0;
+  const reportedVehicles =
+    vehicles?.filter((v) => {
+      if (v.status.__kind__ === 'LOST' || v.status.__kind__ === 'STOLEN' || v.status.__kind__ === 'PAWNED') {
+        return true;
+      }
+      return false;
+    }).length || 0;
 
-  const stats = [
+  const quickActions = [
     {
-      title: 'My Vehicles',
-      value: vehicles?.length || 0,
-      icon: Car,
-      description: 'Total registered vehicles',
-      action: () => navigate({ to: '/vehicles' }),
-      color: 'text-primary',
+      title: 'Register Vehicle',
+      description: 'Add a new vehicle to your account',
+      icon: Plus,
+      action: () => navigate({ to: '/vehicles/register' }),
+      variant: 'default' as const,
     },
     {
-      title: 'Reported Vehicles',
-      value: lostVehicles?.length || 0,
-      icon: AlertTriangle,
-      description: 'Lost/stolen/pawned reports',
+      title: 'Vehicle Check',
+      description: 'Check vehicle status by engine number',
+      icon: FileSearch,
+      action: () => navigate({ to: '/vehicle-check' }),
+      variant: 'secondary' as const,
+    },
+    {
+      title: 'View Lost Vehicles',
+      description: 'Browse reported vehicles in the community',
+      icon: Search,
       action: () => navigate({ to: '/lost-vehicles' }),
-      color: 'text-destructive',
-    },
-    {
-      title: 'Notifications',
-      value: unreadNotifications,
-      icon: Bell,
-      description: 'Unread notifications',
-      action: () => navigate({ to: '/notifications' }),
-      color: 'text-chart-2',
+      variant: 'outline' as const,
     },
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome to Pasar Digital Community</p>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Welcome to your vehicle security hub</p>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="cursor-pointer hover:border-primary transition-colors" onClick={stat.action}>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <CardTitle className="text-sm font-medium">My Vehicles</CardTitle>
+              <Car className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
+              <div className="text-2xl font-bold">{vehiclesLoading ? '...' : vehicles?.length || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">Registered vehicles</p>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Manage your vehicles and security</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button onClick={() => navigate({ to: '/vehicles/register' })} className="w-full justify-start gap-2">
-              <Plus className="h-4 w-4" />
-              Register New Vehicle
-            </Button>
-            <Button onClick={() => navigate({ to: '/vehicles' })} variant="outline" className="w-full justify-start gap-2">
-              <Car className="h-4 w-4" />
-              View My Vehicles
-            </Button>
-            <Button
-              onClick={() => navigate({ to: '/vehicle-check' })}
-              variant="outline"
-              className="w-full justify-start gap-2"
-            >
-              <FileSearch className="h-4 w-4" />
-              Check Vehicle Status
-            </Button>
-            <Button
-              onClick={() => navigate({ to: '/lost-vehicles' })}
-              variant="outline"
-              className="w-full justify-start gap-2"
-            >
-              <AlertTriangle className="h-4 w-4" />
-              View Reported Vehicles
-            </Button>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Notifications</CardTitle>
+              <Bell className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{notificationsLoading ? '...' : unreadNotifications}</div>
+              <p className="text-xs text-muted-foreground mt-1">Unread messages</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>System Information</CardTitle>
-            <CardDescription>Your account status and security</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Account Status</span>
-              <span className="text-sm font-medium text-primary">Active</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">PIN Security</span>
-              <Button variant="link" size="sm" onClick={() => navigate({ to: '/security' })} className="h-auto p-0">
-                Manage
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Reported Vehicles</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{vehiclesLoading ? '...' : reportedVehicles}</div>
+              <p className="text-xs text-muted-foreground mt-1">Lost/Stolen/Pawned</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {quickActions.map((action) => (
+              <Card key={action.title} className="hover:shadow-md transition-shadow cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <action.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <CardTitle className="text-base">{action.title}</CardTitle>
+                  </div>
+                  <CardDescription>{action.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant={action.variant} className="w-full" onClick={action.action}>
+                    {action.title}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {vehicles && vehicles.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Recent Vehicles</h2>
+              <Button variant="link" size="sm" onClick={() => navigate({ to: '/vehicles' })} className="h-auto p-0">
+                View all
               </Button>
             </div>
-            {isAdmin && (
-              <div className="pt-2 border-t">
-                <Button onClick={() => navigate({ to: '/admin' })} variant="secondary" className="w-full gap-2">
-                  <Shield className="h-4 w-4" />
-                  Admin Panel
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {vehicles.slice(0, 3).map((vehicle) => (
+                <Card
+                  key={vehicle.id}
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate({ to: `/vehicles/${vehicle.id}` })}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">
+                        {vehicle.brand} {vehicle.model}
+                      </CardTitle>
+                      <Badge
+                        variant={
+                          vehicle.status.__kind__ === 'ACTIVE'
+                            ? 'default'
+                            : vehicle.status.__kind__ === 'FOUND'
+                              ? 'secondary'
+                              : 'destructive'
+                        }
+                      >
+                        {vehicle.status.__kind__}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      {vehicle.year} • {vehicle.location}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

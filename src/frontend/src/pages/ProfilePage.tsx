@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useProfile';
+import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +10,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LogOut, User, Mail, MapPin, Globe, Info, Edit2, Save, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
 
 export default function ProfilePage() {
   const { clear, identity } = useInternetIdentity();
   const { data: userProfile, isLoading } = useGetCallerUserProfile();
+  const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
   const saveProfile = useSaveCallerUserProfile();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -83,6 +86,8 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-bold">Profile</h1>
           <p className="text-muted-foreground mt-1">Manage your account information</p>
         </div>
+
+        <VehicleRegistrationActivationCard isActivated={isActivated || false} isLoading={activationLoading} />
 
         <Card>
           <CardHeader>

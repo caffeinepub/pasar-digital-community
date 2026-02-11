@@ -1,33 +1,63 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T16:31:49.082Z",
+  "generatedAt": "2026-02-11T22:31:48.161Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with the error `Unauthorized: Only admins can assign user roles`. Keep the existing behavior for the allowlisted first-admin claim (allowlisted principal can complete onboarding with an empty token).",
+        "summary": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping the special case where the allowlist admin can claim the first admin role.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Update the frontend onboarding error handling so that if the backend still returns an authorization-related onboarding failure, the onboarding UI shows a clear English message explaining registration could not be completed (without mentioning admin role assignment), and does not display the raw backend error string to end users.",
+        "summary": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/normalizeActorError.ts",
+          "frontend/src/hooks/useOnboarding.ts",
+          "frontend/src/pages/OnboardingPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/normalizeActorError.ts",
+          "frontend/src/hooks/useOnboarding.ts",
+          "frontend/src/pages/OnboardingPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useOnboarding.ts",
-          "frontend/src/pages/OnboardingInvitePage.tsx"
+          "frontend/src/pages/OnboardingPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useOnboarding.ts"
+          "frontend/src/hooks/useOnboarding.ts",
+          "frontend/src/pages/OnboardingPage.tsx"
         ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Fix PWA icon assets so the manifest icons load as valid PNG images without console warnings. Regenerate the PWA icon files referenced by index.html and manifest.webmanifest and ensure they are placed at the expected paths under frontend/public/assets/generated.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
+          "frontend/index.html",
+          "frontend/public/manifest.webmanifest"
+        ],
+        "matchedFiles": []
       }
     ]
   },
@@ -37,8 +67,13 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png, 180x180",
+    "frontend/public/assets/generated/pwa-icon.dim_192x192.png, 192x192",
+    "frontend/public/assets/generated/pwa-icon.dim_512x512.png, 512x512",
+    "frontend/public/assets/generated/pwa-maskable.dim_512x512.png, 512x512",
     "frontend/src/hooks/useOnboarding.ts",
-    "frontend/src/utils/urlParams.ts",
+    "frontend/src/pages/OnboardingPage.tsx",
+    "frontend/src/utils/normalizeActorError.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

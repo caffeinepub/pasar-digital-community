@@ -63,12 +63,20 @@ actor {
     transferCode : ?Text;
   };
 
+  type ActivationToken = {
+    token : Text;
+    userId : Principal;
+    admin : Principal;
+    createdAt : Time.Time;
+    redeemed : Bool;
+    redeemedAt : ?Time.Time;
+  };
+
   let userProfiles = Map.empty<Principal, UserProfile>();
   let userPINs = Map.empty<Principal, Text>();
   let notifications = Map.empty<Text, Notification>();
   let vehicleState = Map.empty<Text, Vehicle>();
   let usedInviteTokens = Map.empty<Text, Principal>();
-
   var notificationCounter : Nat = 0;
 
   let allowlistAdmin = Principal.fromText("dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae");
@@ -77,6 +85,10 @@ actor {
     vehicle : Vehicle;
     statusNote : Text;
   };
+
+  // Persistent activation data
+  var activationTokens : Map.Map<Text, ActivationToken> = Map.empty<Text, ActivationToken>();
+  var userActivations : Map.Map<Principal, Bool> = Map.empty<Principal, Bool>();
 
   // Helper function to check if allowlist admin is onboarded
   func isAllowlistAdminOnboarded() : Bool {
@@ -168,7 +180,8 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  public shared ({ caller }) func completeOnboarding(inviteToken : Text, profile : UserProfile) : async () {
+  // New onboarding (ignore inviteToken for non-admin onboarding)
+  public shared ({ caller }) func completeOnboarding(_inviteToken : Text, profile : UserProfile) : async () {
     let isAllowlistAdminNotOnboarded = not isAllowlistAdminOnboarded();
     let isClaimingFirstAdmin = isCallerAllowlistAdmin(caller) and isAllowlistAdminNotOnboarded;
 
@@ -181,19 +194,8 @@ actor {
         onboarded = true;
       };
       userProfiles.add(caller, adminProfile);
+      AccessControl.assignRole(accessControlState, caller, caller, #admin);
     } else {
-      // Validate invite token exists and is unused
-      let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
-      switch (inviteCodes.find(func(code) { code.code == inviteToken })) {
-        case (null) { Runtime.trap("Invalid or expired invitation token") };
-        case (?_code) {
-          switch (usedInviteTokens.get(inviteToken)) {
-            case (?_) { Runtime.trap("Invitation token already used") };
-            case null {};
-          };
-        };
-      };
-
       switch (userProfiles.get(caller)) {
         case (?existingProfile) {
           if (existingProfile.onboarded) {
@@ -203,9 +205,6 @@ actor {
         case null {};
       };
 
-      usedInviteTokens.add(inviteToken, caller);
-      AccessControl.assignRole(accessControlState, caller, caller, #user);
-
       let onboardedProfile = {
         fullName = profile.fullName;
         email = profile.email;
@@ -214,6 +213,10 @@ actor {
         onboarded = true;
       };
       userProfiles.add(caller, onboardedProfile);
+
+      // Assign user role - always use allowlist admin as the assigner
+      // The allowlist admin has implicit authority to assign roles even if not onboarded
+      AccessControl.assignRole(accessControlState, allowlistAdmin, caller, #user);
     };
   };
 
@@ -261,6 +264,55 @@ actor {
   };
 
   // --------------------------------- Vehicle Registration ---------------------------------
+
+  // Admin method to generate activation token for a specific user
+  public shared ({ caller }) func generateActivationToken(userId : Principal) : async Text {
+    if (not hasAdminPermission(caller)) {
+      Runtime.trap("Unauthorized: Only admins can generate activation tokens");
+    };
+
+    let tokenBlob = await Random.blob();
+
+    let token = InviteLinksModule.generateUUID(tokenBlob);
+
+    let activationToken : ActivationToken = {
+      token = token;
+      userId = userId;
+      admin = caller;
+      createdAt = Time.now();
+      redeemed = false;
+      redeemedAt = null;
+    };
+
+    activationTokens.add(token, activationToken);
+    token;
+  };
+
+  // Method for user to redeem their activation token
+  public shared ({ caller }) func redeemActivationToken(token : Text) : async () {
+    switch (activationTokens.get(token)) {
+      case (null) { Runtime.trap("Invalid activation token") };
+      case (?activationToken) {
+        if (activationToken.redeemed) {
+          Runtime.trap("Activation token already redeemed");
+        };
+
+        if (caller != activationToken.userId) {
+          Runtime.trap("Activation token not valid for this user");
+        };
+
+        let updatedToken = {
+          activationToken with
+          redeemed = true;
+          redeemedAt = ?Time.now();
+        };
+        activationTokens.add(token, updatedToken);
+        userActivations.add(caller, true);
+      };
+    };
+  };
+
+  // Vehicle registration now gated by activation status
   public shared ({ caller }) func registerVehicle(
     engineNumber : Text,
     chassisNumber : Text,
@@ -297,6 +349,19 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can register vehicles");
     };
+
+    // Check activation status
+    switch (userActivations.get(caller)) {
+      case (null) {
+        Runtime.trap("Vehicle registration blocked: Account not activated. Please complete activation before registering vehicles.");
+      };
+      case (?activated) {
+        if (not activated) {
+          Runtime.trap("Vehicle registration blocked: Account not activated. Please complete activation before registering vehicles.");
+        };
+      };
+    };
+
     let id = engineNumber.concat(chassisNumber);
     switch (vehicleState.get(id)) {
       case (?_) { Runtime.trap("Vehicle already registered") };
@@ -726,7 +791,7 @@ actor {
     time : Time.Time;
   } {
     {
-      build = "v0.1.1";
+      build = "v0.1.2";
       time = Time.now();
     };
   };

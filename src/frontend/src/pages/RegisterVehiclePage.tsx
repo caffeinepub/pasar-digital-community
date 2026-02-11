@@ -1,18 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useRegisterVehicle } from '../hooks/useVehicles';
+import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExternalBlob } from '../backend';
 import { toast } from 'sonner';
-import { Upload, ArrowLeft } from 'lucide-react';
+import { Upload, ArrowLeft, AlertCircle, ExternalLink } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
 
 export default function RegisterVehiclePage() {
   const navigate = useNavigate();
   const registerVehicle = useRegisterVehicle();
+  const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
   const [engineNumber, setEngineNumber] = useState('');
   const [chassisNumber, setChassisNumber] = useState('');
   const [brand, setBrand] = useState('');
@@ -39,7 +44,7 @@ export default function RegisterVehiclePage() {
     e.preventDefault();
 
     if (!photoFile) {
-      toast.error('Foto kendaraan harus diunggah');
+      toast.error('Vehicle photo is required');
       return;
     }
 
@@ -60,46 +65,98 @@ export default function RegisterVehiclePage() {
         vehiclePhoto: blob,
       });
 
-      toast.success('Kendaraan berhasil didaftarkan');
+      toast.success('Vehicle registered successfully');
       navigate({ to: '/vehicles' });
     } catch (error: any) {
-      toast.error(error.message || 'Gagal mendaftarkan kendaraan');
+      const errorMessage = error.message || 'Failed to register vehicle';
+      
+      if (errorMessage.includes('not activated') || errorMessage.includes('blocked')) {
+        toast.error('Vehicle registration is not activated. Please complete activation first.');
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
+
+  if (activationLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="h-64 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isActivated) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Button variant="ghost" onClick={() => navigate({ to: '/vehicles' })} className="mb-6 gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Register New Vehicle</h1>
+            <p className="text-muted-foreground mt-1">Activation required to register vehicles</p>
+          </div>
+
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Vehicle registration is not activated for your account. Please redeem an activation token or contact the
+              admin to activate your account.
+            </AlertDescription>
+          </Alert>
+
+          <VehicleRegistrationActivationCard isActivated={false} isLoading={false} />
+
+          <div className="pt-4 border-t">
+            <Link to="/about" className="flex items-center gap-2 text-sm text-primary hover:underline">
+              <ExternalLink className="h-4 w-4" />
+              Contact Admin for Activation
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <Button variant="ghost" onClick={() => navigate({ to: '/vehicles' })} className="mb-6 gap-2">
         <ArrowLeft className="h-4 w-4" />
-        Kembali
+        Back
       </Button>
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftarkan Kendaraan Baru</CardTitle>
-          <CardDescription>Lengkapi informasi kendaraan Anda untuk perlindungan maksimal</CardDescription>
+          <CardTitle>Register New Vehicle</CardTitle>
+          <CardDescription>Complete vehicle information for maximum protection</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="engineNumber">Nomor Mesin *</Label>
+                <Label htmlFor="engineNumber">Engine Number *</Label>
                 <Input
                   id="engineNumber"
                   value={engineNumber}
                   onChange={(e) => setEngineNumber(e.target.value)}
-                  placeholder="Nomor mesin kendaraan"
+                  placeholder="Vehicle engine number"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="chassisNumber">Nomor Rangka *</Label>
+                <Label htmlFor="chassisNumber">Chassis Number *</Label>
                 <Input
                   id="chassisNumber"
                   value={chassisNumber}
                   onChange={(e) => setChassisNumber(e.target.value)}
-                  placeholder="Nomor rangka kendaraan"
+                  placeholder="Vehicle chassis number"
                   required
                 />
               </div>
@@ -107,23 +164,23 @@ export default function RegisterVehiclePage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="brand">Merek *</Label>
+                <Label htmlFor="brand">Brand *</Label>
                 <Input
                   id="brand"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
-                  placeholder="Contoh: Honda, Toyota"
+                  placeholder="Example: Honda, Toyota"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="model">Tipe/Model *</Label>
+                <Label htmlFor="model">Type/Model *</Label>
                 <Input
                   id="model"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder="Contoh: Civic, Avanza"
+                  placeholder="Example: Civic, Avanza"
                   required
                 />
               </div>
@@ -131,7 +188,7 @@ export default function RegisterVehiclePage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="year">Tahun *</Label>
+                <Label htmlFor="year">Year *</Label>
                 <Input
                   id="year"
                   type="number"
@@ -145,25 +202,25 @@ export default function RegisterVehiclePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Lokasi *</Label>
+                <Label htmlFor="location">Location *</Label>
                 <Input
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Kota/Wilayah"
+                  placeholder="City/Region"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="photo">Foto Kendaraan *</Label>
+              <Label htmlFor="photo">Vehicle Photo *</Label>
               <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
                 {photoPreview ? (
                   <div className="space-y-4">
                     <img src={photoPreview} alt="Preview" className="max-h-64 mx-auto rounded-lg" />
                     <Button type="button" variant="outline" onClick={() => document.getElementById('photo')?.click()}>
-                      Ganti Foto
+                      Change Photo
                     </Button>
                   </div>
                 ) : (
@@ -175,10 +232,10 @@ export default function RegisterVehiclePage() {
                         variant="outline"
                         onClick={() => document.getElementById('photo')?.click()}
                       >
-                        Pilih Foto
+                        Select Photo
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground">PNG, JPG hingga 10MB</p>
+                    <p className="text-sm text-muted-foreground">PNG, JPG up to 10MB</p>
                   </div>
                 )}
                 <input
@@ -195,7 +252,7 @@ export default function RegisterVehiclePage() {
             {uploadProgress > 0 && uploadProgress < 100 && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Mengunggah...</span>
+                  <span>Uploading...</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <Progress value={uploadProgress} />
@@ -203,7 +260,7 @@ export default function RegisterVehiclePage() {
             )}
 
             <Button type="submit" className="w-full" disabled={registerVehicle.isPending}>
-              {registerVehicle.isPending ? 'Mendaftarkan...' : 'Daftarkan Kendaraan'}
+              {registerVehicle.isPending ? 'Registering...' : 'Register Vehicle'}
             </Button>
           </form>
         </CardContent>

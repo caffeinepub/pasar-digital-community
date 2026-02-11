@@ -206,35 +206,3 @@ export function getSecretFromHash(paramName: string): string | null {
 export function getSecretParameter(paramName: string): string | null {
     return getSecretFromHash(paramName);
 }
-
-// --------------------------------- Invite Token Helpers ---------------------------------
-
-const INVITE_TOKEN_STORAGE_KEY = 'inviteToken';
-
-/**
- * Captures invite token from URL (query string or hash) and persists it to sessionStorage
- * This should be called early in the app lifecycle (e.g., in RootRouteGate)
- * to ensure the token is captured before any navigation occurs
- */
-export function captureAndPersistInviteToken(): void {
-    const token = getUrlParameter('inviteToken');
-    if (token) {
-        storeSessionParameter(INVITE_TOKEN_STORAGE_KEY, token);
-    }
-}
-
-/**
- * Retrieves the persisted invite token from sessionStorage
- * @returns The invite token if found, null otherwise
- */
-export function getPersistedInviteToken(): string | null {
-    return getSessionParameter(INVITE_TOKEN_STORAGE_KEY);
-}
-
-/**
- * Clears the persisted invite token from sessionStorage
- * Should be called after successful onboarding to prevent token reuse
- */
-export function clearPersistedInviteToken(): void {
-    clearSessionParameter(INVITE_TOKEN_STORAGE_KEY);
-}

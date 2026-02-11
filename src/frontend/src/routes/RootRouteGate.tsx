@@ -12,7 +12,6 @@ import SignInScreen from '../components/auth/SignInScreen';
 import ProfileBootstrapError from '../components/auth/ProfileBootstrapError';
 import StartupBootstrapError from '../components/auth/StartupBootstrapError';
 import AppLayout from '../components/layout/AppLayout';
-import { captureAndPersistInviteToken } from '../utils/urlParams';
 
 export default function RootRouteGate() {
   const { identity, isInitializing } = useInternetIdentity();
@@ -28,15 +27,6 @@ export default function RootRouteGate() {
   const navigate = useNavigate();
   const hasRedirectedRef = useRef(false);
   const lastIdentityRef = useRef<string | null>(null);
-  const hasAttemptedTokenCaptureRef = useRef(false);
-
-  // Capture invite token from URL on mount (before sign-in)
-  useEffect(() => {
-    if (!hasAttemptedTokenCaptureRef.current) {
-      captureAndPersistInviteToken();
-      hasAttemptedTokenCaptureRef.current = true;
-    }
-  }, []);
 
   // Reset redirect flag when identity changes
   useEffect(() => {
@@ -48,7 +38,6 @@ export default function RootRouteGate() {
   }, [identity]);
 
   // Redirect to onboarding if authenticated but no profile
-  // When getCallerUserProfile returns null, user needs to complete onboarding
   useEffect(() => {
     if (!identity || !isFetched || hasRedirectedRef.current) return;
 

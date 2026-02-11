@@ -114,6 +114,7 @@ export const idlService = IDL.Service({
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'checkVehicle' : IDL.Func([IDL.Text], [VehicleCheckStatus], ['query']),
   'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
+  'generateActivationToken' : IDL.Func([IDL.Principal], [IDL.Text], []),
   'generateInviteCode' : IDL.Func([], [IDL.Text], []),
   'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
   'getBackendDiagnostics' : IDL.Func(
@@ -171,6 +172,7 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'redeemActivationToken' : IDL.Func([IDL.Text], [], []),
   'registerVehicle' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
       [IDL.Text],
@@ -292,6 +294,7 @@ export const idlFactory = ({ IDL }) => {
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'checkVehicle' : IDL.Func([IDL.Text], [VehicleCheckStatus], ['query']),
     'completeOnboarding' : IDL.Func([IDL.Text, UserProfile], [], []),
+    'generateActivationToken' : IDL.Func([IDL.Principal], [IDL.Text], []),
     'generateInviteCode' : IDL.Func([], [IDL.Text], []),
     'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
     'getBackendDiagnostics' : IDL.Func(
@@ -349,6 +352,7 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'redeemActivationToken' : IDL.Func([IDL.Text], [], []),
     'registerVehicle' : IDL.Func(
         [
           IDL.Text,

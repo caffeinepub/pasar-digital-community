@@ -104,6 +104,7 @@ export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'checkVehicle' : ActorMethod<[string], VehicleCheckStatus>,
   'completeOnboarding' : ActorMethod<[string, UserProfile], undefined>,
+  'generateActivationToken' : ActorMethod<[Principal], string>,
   'generateInviteCode' : ActorMethod<[], string>,
   'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
   'getBackendDiagnostics' : ActorMethod<
@@ -149,6 +150,7 @@ export interface _SERVICE {
     ],
     undefined
   >,
+  'redeemActivationToken' : ActorMethod<[string], undefined>,
   'registerVehicle' : ActorMethod<
     [string, string, string, string, bigint, string, ExternalBlob],
     string

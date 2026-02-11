@@ -1,47 +1,69 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T16:31:49.079Z",
-  "summary": "REQ-2 (frontend onboarding error handling) appears implemented in `frontend/src/hooks/useOnboarding.ts` by mapping authorization-related backend errors to friendly English messages and avoiding exposing the raw backend string. REQ-1 (backend onboarding role assignment fix) is not evidenced in the provided truncated `backend/main.mo` diff. Additionally, the diff summary indicates multiple unrelated frontend changes and modifications to files that were explicitly constrained as immutable.",
+  "generatedAt": "2026-02-11T22:31:48.158Z",
+  "summary": "Diff adds frontend error normalization and extensive console tracing around onboarding, plus some backend refactoring helpers related to allowlist admin/admin permission. However, several acceptance criteria cannot be confirmed from the provided (truncated) diff, and PWA icon asset regeneration is not evidenced.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with `Unauthorized: Only admins can assign user roles`. Keep existing allowlisted first-admin claim behavior.",
-      "reason": "The provided `backend/main.mo` diff excerpt shows new helper functions (e.g., `hasAdminPermission`) and existing admin checks (e.g., `generateInviteCode`), but does not include any visible change to `completeOnboarding` logic or role assignment that would prevent the `Only admins can assign user roles` trap for normal users. Because the relevant section is truncated, there is insufficient evidence the requirement is implemented.",
+      "requirement": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping allowlist admin first-admin claim.",
+      "reason": "backend/main.mo is truncated before any completeOnboarding/getCallerUserProfile logic is shown; the diff summary only shows new helper functions and admin-permission checks, but no evidence that completeOnboarding now allows non-admin onboarding without invite token or that it persists the profile and makes getCallerUserProfile return it.",
       "evidence": [
-        "backend/main.mo (truncated; no `completeOnboarding` changes shown)"
+        "backend/main.mo (truncated; no completeOnboarding/getCallerUserProfile changes shown)"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Onboarding page alert renders a normalized/specific error message (not always generic).",
+      "reason": "useCompleteOnboarding now throws a normalized Error(userMessage), but the OnboardingPage.tsx excerpt is truncated before any alert rendering logic is shown; cannot confirm that the page displays the specific message instead of a generic one.",
+      "evidence": [
+        "frontend/src/pages/OnboardingPage.tsx (truncated; no alert rendering shown)",
+        "frontend/src/hooks/useOnboarding.ts (throws new Error(normalized.userMessage))"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "While completeOnboarding.isPending is true, the Register button remains disabled and the button label indicates progress.",
+      "reason": "OnboardingPage.tsx is truncated before the submit button implementation; cannot verify disabled state and progress label behavior.",
+      "evidence": [
+        "frontend/src/pages/OnboardingPage.tsx (truncated; button implementation not shown)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Regenerate and add valid PNG PWA icon files at the expected paths under frontend/public/assets/generated, keeping manifest paths unchanged.",
+      "reason": "No icon PNG files are added/modified in the diff summary. The manifest is mentioned in a separate summary file, but there is no evidence that the required PNG files exist and are valid images.",
+      "evidence": [
+        "(No evidence of files under) frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+        "(No evidence of files under) frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+        "(No evidence of files under) frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+        "(No evidence of files under) frontend/public/assets/generated/apple-touch-icon.dim_180x180.png"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Modified frontend immutable files that were explicitly constrained as 'Do not modify' (at least `frontend/src/main.tsx` and `frontend/src/hooks/useActor.ts`).",
-      "reason": "BuildRequest constraints prohibit changes to these paths, but the diff summary text indicates they were changed.",
+      "description": "Added email redaction and emoji-rich console logging for onboarding traces.",
+      "reason": "REQ-3 asked for lightweight request tracing, but did not request redaction logic or emoji markers; this is additional behavior beyond the spec.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions modifications to `frontend/src/main.tsx` and `frontend/src/hooks/useActor.ts`)"
+        "frontend/src/hooks/useOnboarding.ts (redacts email, uses 🚀/📡/✅/❌ emojis in logs)"
       ]
     },
     {
-      "description": "Large set of unrelated frontend feature additions/changes (e.g., new /vehicle-check route, About page, navigation/menu updates, PWA/service worker/manifest updates, i18n provider integration, admin dashboard/invite-token management UI work).",
-      "reason": "These features are not requested by REQ-1/REQ-2 and are outside the stated scope (only onboarding authorization + onboarding error message mapping).",
+      "description": "Introduced normalizeActorError utility with error-type classification (already-onboarded/unauthorized/generic) and formatted user messages like `Registration failed: ...`.",
+      "reason": "REQ-2 requested preserving raw error for debugging and showing a more specific UI message when available; adding explicit error taxonomy and message formatting is extra, and may change user-facing phrasing beyond what was specified.",
       "evidence": [
-        "frontend-file-summaries.txt (multiple entries describing new routes/pages/PWA/i18n/admin UI changes)"
-      ]
-    },
-    {
-      "description": "Added/updated URL parameter + sessionStorage utilities in `frontend/src/utils/urlParams.ts` beyond onboarding error handling.",
-      "reason": "REQ-2 only asks to update onboarding error handling messages; URL param persistence utilities are not requested in the BuildRequest.",
-      "evidence": [
-        "frontend/src/utils/urlParams.ts"
+        "frontend/src/utils/normalizeActorError.ts"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/hooks/useOnboarding.ts",
-    "frontend/src/utils/urlParams.ts",
+    "frontend/src/pages/OnboardingPage.tsx",
+    "frontend/src/utils/normalizeActorError.ts",
     "project_state.json"
   ]
 }

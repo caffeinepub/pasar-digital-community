@@ -1,32 +1,55 @@
-import { useIsCallerAdmin, useGetInviteCodes, useGenerateInviteCode } from '../../hooks/useAdmin';
+import { useState } from 'react';
+import { useIsCallerAdmin, useGenerateActivationToken } from '../../hooks/useAdmin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AccessDeniedScreen from '../../components/auth/AccessDeniedScreen';
 import { toast } from 'sonner';
-import { Plus, Copy, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Copy, AlertCircle, RefreshCw, Key, User } from 'lucide-react';
+import { Principal } from '@icp-sdk/core/principal';
 
 export default function AdminInviteTokensPage() {
   const { data: isAdmin, isLoading: adminLoading, error: adminError, refetch: refetchAdmin } = useIsCallerAdmin();
-  const { data: inviteCodes, isLoading: codesLoading } = useGetInviteCodes();
-  const generateCode = useGenerateInviteCode();
+  const generateActivationToken = useGenerateActivationToken();
+  const [userPrincipal, setUserPrincipal] = useState('');
+  const [generatedToken, setGeneratedToken] = useState('');
 
-  const handleGenerateCode = async () => {
+  const handleGenerateActivationToken = async () => {
+    if (!userPrincipal.trim()) {
+      toast.error('Please enter a user principal');
+      return;
+    }
+
     try {
-      const code = await generateCode.mutateAsync();
-      toast.success('Invite token created successfully');
-      handleCopyLink(code);
+      const principal = Principal.fromText(userPrincipal.trim());
+      const token = await generateActivationToken.mutateAsync(principal);
+      setGeneratedToken(token);
+      toast.success('Activation token generated successfully');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create token');
+      if (error.message.includes('Invalid principal')) {
+        toast.error('Invalid principal format. Please check and try again.');
+      } else {
+        toast.error(error.message || 'Failed to generate activation token');
+      }
     }
   };
 
-  const handleCopyLink = (code: string) => {
-    const link = `${window.location.origin}/#/onboarding?inviteToken=${code}`;
-    navigator.clipboard.writeText(link);
-    toast.success('Invite link copied to clipboard');
+  const handleCopyToken = () => {
+    if (generatedToken) {
+      navigator.clipboard.writeText(generatedToken);
+      toast.success('Activation token copied to clipboard');
+    }
+  };
+
+  const handleCopyRedemptionInstructions = () => {
+    if (generatedToken) {
+      const instructions = `Your vehicle registration activation token: ${generatedToken}\n\nTo activate:\n1. Log in to your account\n2. Go to Profile page\n3. Find "Vehicle Registration Activation" section\n4. Enter this token and click "Redeem Token"`;
+      navigator.clipboard.writeText(instructions);
+      toast.success('Instructions copied to clipboard');
+    }
   };
 
   if (adminLoading) {
@@ -50,8 +73,8 @@ export default function AdminInviteTokensPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>Failed to verify admin status. Please try again.</span>
-              <Button variant="outline" size="sm" onClick={() => refetchAdmin()} className="ml-4" disabled={adminLoading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${adminLoading ? 'animate-spin' : ''}`} />
+              <Button variant="outline" size="sm" onClick={() => refetchAdmin()}>
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Retry
               </Button>
             </AlertDescription>
@@ -65,160 +88,91 @@ export default function AdminInviteTokensPage() {
     return <AccessDeniedScreen />;
   }
 
-  const unusedCodes = inviteCodes?.filter((code) => !code.used) || [];
-  const usedCodes = inviteCodes?.filter((code) => code.used) || [];
-
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Invite Tokens</h1>
-          <p className="text-muted-foreground">Generate and manage invitation tokens for new users</p>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Token Management</h1>
+          <p className="text-muted-foreground mt-1">Generate and manage activation tokens for users</p>
         </div>
-        <Button onClick={handleGenerateCode} disabled={generateCode.isPending} className="gap-2">
-          <Plus className="h-4 w-4" />
-          {generateCode.isPending ? 'Generating...' : 'Generate Token'}
-        </Button>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-chart-3" />
-              Unused Tokens
-            </CardTitle>
-            <CardDescription>Available invitation tokens ready to be shared</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {codesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : unusedCodes.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No unused tokens available</p>
-                <p className="text-sm mt-2">Generate a new token to invite users</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {unusedCodes.map((code) => (
-                  <div
-                    key={code.code}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <code className="text-sm font-mono block truncate">{code.code}</code>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Created: {new Date(Number(code.created / BigInt(1000000))).toLocaleDateString()}
-                      </p>
+        <Tabs defaultValue="activation" className="w-full">
+          <TabsList className="grid w-full grid-cols-1">
+            <TabsTrigger value="activation">Activation Tokens</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="activation" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5" />
+                  Generate Activation Token
+                </CardTitle>
+                <CardDescription>
+                  Create an activation token for a specific user to enable vehicle registration
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <User className="h-4 w-4" />
+                  <AlertDescription>
+                    Enter the user's Internet Identity Principal to generate their activation token. The user can find
+                    their Principal ID on their Profile page.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label htmlFor="userPrincipal">User Principal ID *</Label>
+                  <Input
+                    id="userPrincipal"
+                    value={userPrincipal}
+                    onChange={(e) => setUserPrincipal(e.target.value)}
+                    placeholder="Enter user principal (e.g., xxxxx-xxxxx-xxxxx-xxxxx-xxx)"
+                    disabled={generateActivationToken.isPending}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The user can find their Principal ID on their Profile page
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleGenerateActivationToken}
+                  disabled={generateActivationToken.isPending || !userPrincipal.trim()}
+                  className="w-full"
+                >
+                  {generateActivationToken.isPending ? 'Generating...' : 'Generate Activation Token'}
+                </Button>
+
+                {generatedToken && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <div className="space-y-2">
+                      <Label>Generated Token</Label>
+                      <div className="flex gap-2">
+                        <Input value={generatedToken} readOnly className="font-mono text-sm" />
+                        <Button onClick={handleCopyToken} variant="outline" size="icon">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleCopyLink(code.code)} className="ml-2 shrink-0">
-                      <Copy className="h-4 w-4" />
+
+                    <Button onClick={handleCopyRedemptionInstructions} variant="secondary" className="w-full">
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Instructions for User
                     </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-chart-2" />
-              Used Tokens
-            </CardTitle>
-            <CardDescription>Tokens that have been redeemed by users</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {codesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : usedCodes.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No tokens have been used yet</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {usedCodes.map((code) => (
-                  <div key={code.code} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                    <div className="flex-1 min-w-0">
-                      <code className="text-sm font-mono block truncate opacity-60">{code.code}</code>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Created: {new Date(Number(code.created / BigInt(1000000))).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="ml-2 shrink-0">
-                      Used
-                    </Badge>
+                    <Alert className="border-green-600/50 bg-green-600/5">
+                      <AlertDescription className="text-sm">
+                        Share this token with the user. They can redeem it on their Profile page to activate vehicle
+                        registration.
+                      </AlertDescription>
+                    </Alert>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Tokens</CardTitle>
-          <CardDescription>Complete list of all invitation tokens</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {codesLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : !inviteCodes || inviteCodes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No tokens generated yet</p>
-              <p className="text-sm mt-2">Click "Generate Token" to create your first invitation</p>
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Token Code</TableHead>
-                    <TableHead>Created Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {inviteCodes.map((code) => (
-                    <TableRow key={code.code}>
-                      <TableCell>
-                        <code className="text-sm font-mono">{code.code}</code>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(Number(code.created / BigInt(1000000))).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={code.used ? 'secondary' : 'default'}>{code.used ? 'Used' : 'Available'}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {!code.used && (
-                          <Button variant="ghost" size="sm" onClick={() => handleCopyLink(code.code)} className="gap-2">
-                            <Copy className="h-4 w-4" />
-                            Copy Link
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

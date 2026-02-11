@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, User, LogOut, Shield, Bell, Car, Home, Search, Settings, FileSearch } from 'lucide-react';
+import { Menu, User, LogOut, Shield, Bell, Car, Home, Search, FileSearch } from 'lucide-react';
 import AppLogo from '../brand/AppLogo';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -38,8 +38,6 @@ export default function AppHeader() {
     { label: 'Notifications', path: '/notifications', icon: Bell },
   ];
 
-  // Show admin link based on admin status (not profile presence)
-  // Admin status is determined by backend checks including allowlisted admin
   if ((adminFetched && isAdmin) || (adminError && !adminLoading)) {
     navItems.push({
       label: adminError ? 'Admin (Retry)' : 'Admin',
@@ -94,10 +92,6 @@ export default function AppHeader() {
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: '/security' })}>
-                <Settings className="mr-2 h-4 w-4" />
-                Security Settings
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
@@ -138,10 +132,10 @@ export default function AppHeader() {
                   ))}
                 </nav>
 
-                <div className="border-t pt-4 flex flex-col gap-2">
+                <div className="pt-4 border-t space-y-2">
                   <Button
                     variant="ghost"
-                    className="justify-start gap-2"
+                    className="w-full justify-start gap-2"
                     onClick={() => {
                       navigate({ to: '/profile' });
                       setMobileMenuOpen(false);
@@ -150,20 +144,10 @@ export default function AppHeader() {
                     <User className="h-4 w-4" />
                     Profile
                   </Button>
+
                   <Button
                     variant="ghost"
-                    className="justify-start gap-2"
-                    onClick={() => {
-                      navigate({ to: '/security' });
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Settings className="h-4 w-4" />
-                    Security Settings
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="justify-start gap-2 text-destructive"
+                    className="w-full justify-start gap-2 text-destructive hover:text-destructive"
                     onClick={() => {
                       handleLogout();
                       setMobileMenuOpen(false);

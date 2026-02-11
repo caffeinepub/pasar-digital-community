@@ -1,30 +1,36 @@
-// Rebuild trigger: Backend canister restart (2026-02-11)
+import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { InternetIdentityProvider } from './hooks/useInternetIdentity';
 import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from 'next-themes';
-import { createRouter, createRoute, createRootRoute, RouterProvider } from '@tanstack/react-router';
 import RootRouteGate from './routes/RootRouteGate';
 import DashboardPage from './pages/DashboardPage';
 import VehiclesPage from './pages/VehiclesPage';
 import RegisterVehiclePage from './pages/RegisterVehiclePage';
 import VehicleDetailPage from './pages/VehicleDetailPage';
 import LostVehiclesPage from './pages/LostVehiclesPage';
-import VehicleCheckPage from './pages/VehicleCheckPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
-import SecuritySettingsPage from './pages/SecuritySettingsPage';
-import AcceptTransferPage from './pages/AcceptTransferPage';
-import OnboardingInvitePage from './pages/OnboardingInvitePage';
+import OnboardingPage from './pages/OnboardingPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminInviteTokensPage from './pages/admin/AdminInviteTokensPage';
 import AboutPage from './pages/AboutPage';
+import VehicleCheckPage from './pages/VehicleCheckPage';
+import TopLevelErrorBoundary from './components/system/TopLevelErrorBoundary';
 
-// Root route with auth gate and layout
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 const rootRoute = createRootRoute({
   component: RootRouteGate,
 });
 
-// Define all routes
-const dashboardRoute = createRoute({
+const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: DashboardPage,
@@ -54,12 +60,6 @@ const lostVehiclesRoute = createRoute({
   component: LostVehiclesPage,
 });
 
-const vehicleCheckRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/vehicle-check',
-  component: VehicleCheckPage,
-});
-
 const notificationsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/notifications',
@@ -72,22 +72,10 @@ const profileRoute = createRoute({
   component: ProfilePage,
 });
 
-const securityRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/security',
-  component: SecuritySettingsPage,
-});
-
-const acceptTransferRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/accept-transfer',
-  component: AcceptTransferPage,
-});
-
 const onboardingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/onboarding',
-  component: OnboardingInvitePage,
+  component: OnboardingPage,
 });
 
 const adminDashboardRoute = createRoute({
@@ -108,32 +96,44 @@ const aboutRoute = createRoute({
   component: AboutPage,
 });
 
-// Create route tree
+const vehicleCheckRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/vehicle-check',
+  component: VehicleCheckPage,
+});
+
 const routeTree = rootRoute.addChildren([
-  dashboardRoute,
+  indexRoute,
   vehiclesRoute,
   registerVehicleRoute,
   vehicleDetailRoute,
   lostVehiclesRoute,
-  vehicleCheckRoute,
   notificationsRoute,
   profileRoute,
-  securityRoute,
-  acceptTransferRoute,
   onboardingRoute,
   adminDashboardRoute,
   adminInviteTokensRoute,
   aboutRoute,
+  vehicleCheckRoute,
 ]);
 
-// Create router
 const router = createRouter({ routeTree });
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      <RouterProvider router={router} />
-      <Toaster />
-    </ThemeProvider>
+    <TopLevelErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <InternetIdentityProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </InternetIdentityProvider>
+      </QueryClientProvider>
+    </TopLevelErrorBoundary>
   );
 }

@@ -102,7 +102,8 @@ export interface backendInterface {
     adminUpdateVehicleStatus(vehicleId: string, newStatus: VehicleStatus): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     checkVehicle(engineNumber: string): Promise<VehicleCheckStatus>;
-    completeOnboarding(inviteToken: string, profile: UserProfile): Promise<void>;
+    completeOnboarding(_inviteToken: string, profile: UserProfile): Promise<void>;
+    generateActivationToken(userId: Principal): Promise<string>;
     generateInviteCode(): Promise<string>;
     getAllRSVPs(): Promise<Array<RSVP>>;
     getBackendDiagnostics(): Promise<{
@@ -136,6 +137,7 @@ export interface backendInterface {
     isOnboardingAllowed(): Promise<boolean>;
     markNotificationRead(notificationId: string): Promise<void>;
     markVehicleAsLostStolenOrPawned(vehicleId: string, category: Variant_stolen_lost_pawned, reportNote: string): Promise<void>;
+    redeemActivationToken(token: string): Promise<void>;
     registerVehicle(engineNumber: string, chassisNumber: string, brand: string, model: string, year: bigint, location: string, vehiclePhoto: ExternalBlob): Promise<string>;
     reportVehicleFound(vehicleId: string, finderReport: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;

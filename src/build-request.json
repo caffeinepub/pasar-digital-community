@@ -1,55 +1,108 @@
 {
   "kind": "build_request",
-  "title": "Fix user onboarding so registration does not require admin authorization",
-  "priority": "normal",
+  "title": "Fix onboarding registration failure and improve error observability",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix backend onboarding so a normal user completing onboarding with a valid invite token can be assigned the `#user` role without requiring admin privileges, and without trapping with the error `Unauthorized: Only admins can assign user roles`. Keep the existing behavior for the allowlisted first-admin claim (allowlisted principal can complete onboarding with an empty token).",
+      "text": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping the special case where the allowlist admin can claim the first admin role.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "ini sekarang di akun pengguna, masih tetap minta authorize ke admin. Kan saya sudah bilang di permudah untuk daftar nya, Coba lihat screnshot yang saya kirim"
+          "kan sudah tidak menggunakan Token Undangan."
         ]
       },
       "acceptanceCriteria": [
-        "When a non-admin, non-allowlisted user calls `completeOnboarding(inviteToken, profile)` with a valid, unused invite token, the call succeeds and the user can subsequently access user-gated methods (e.g., `getCallerUserProfile` returns a non-null profile, `registerVehicle` is allowed).",
-        "The onboarding flow does not produce/trap with `Unauthorized: Only admins can assign user roles` for normal users.",
-        "The allowlisted admin principal (\"dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae\") can still call `completeOnboarding('', profile)` (when not yet onboarded) successfully."
+        "A newly authenticated non-admin principal can call completeOnboarding('', profile) successfully and receives a persisted user profile with onboarded=true.",
+        "After onboarding, getCallerUserProfile returns the caller profile (not null) for the newly onboarded user.",
+        "The allowlist admin can still complete onboarding as the first admin and ends up with admin permissions.",
+        "The backend does not require an invite token for non-admin onboarding."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the frontend onboarding error handling so that if the backend still returns an authorization-related onboarding failure, the onboarding UI shows a clear English message explaining registration could not be completed (without mentioning admin role assignment), and does not display the raw backend error string to end users.",
+      "text": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "masih tetap minta authorize ke admin"
+          "Registration failed. Please contact an admin for assistance."
         ]
       },
       "acceptanceCriteria": [
-        "On `/onboarding`, users do not see the raw error text `Unauthorized: Only admins can assign user roles` in the inline alert or toast.",
-        "The user-facing error message is in English and is actionable (e.g., suggests trying again or contacting an admin), while preserving existing error mappings for invalid/used tokens and already-onboarded users."
+        "When completeOnboarding fails, the console includes a log entry that contains the original error payload/message received from the actor call.",
+        "The Onboarding page alert renders the normalized error message, but it must not always collapse distinct backend failures into the same generic message if a more specific message is available (e.g., 'Already onboarded').",
+        "When the actor is not available, the UI displays an actionable message (not a silent failure)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Tombol Register TIDAK mengirim request apa pun ke backend."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking Register always triggers the React Query mutation (visible via tracing logs) and results in an actor call attempt (or a clear 'actor not available' error before the call).",
+        "While completeOnboarding.isPending is true, the Register button remains disabled and the button label indicates progress."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Fix PWA icon assets so the manifest icons load as valid PNG images without console warnings. Regenerate the PWA icon files referenced by index.html and manifest.webmanifest and ensure they are placed at the expected paths under frontend/public/assets/generated.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Error while trying to use the following icon from the Manifest: https://.../assets/generated/pwa-icon.dim_192x192.png (Download error or resource isn't a valid image)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Loading the app no longer shows 'resource isn't a valid image' for manifest icons in the browser console.",
+        "The following files exist and are valid PNGs: /assets/generated/pwa-icon.dim_192x192.png, /assets/generated/pwa-icon.dim_512x512.png, /assets/generated/pwa-maskable.dim_512x512.png, /assets/generated/apple-touch-icon.dim_180x180.png.",
+        "manifest.webmanifest continues to reference the same icon paths (no breaking path changes)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko canister; keep all Motoko logic in `backend/main.mo`.",
-    "Do not modify files under `frontend/src/hooks/useInternetIdentity.ts` / `.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, or anything in `frontend/src/components/ui` (immutable paths).",
-    "Do not change the public backend API method names/signatures used by the frontend (e.g., `completeOnboarding`, `getCallerUserProfile`)."
+    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo changes if state schema changes are required.",
+    "Do not edit any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Removing the invite-token requirement for non-admin users (registration should still follow the existing invite-token rules unless explicitly changed later).",
-    "Adding new authentication providers or third-party identity systems."
+    "Changing the vehicle registration activation requirement (users still must be admin-activated before registering a vehicle).",
+    "Adding third-party authentication providers (only Internet Identity is supported).",
+    "Adding new external databases or backend services."
   ],
   "imageRequirements": {
-    "required": [],
+    "required": [
+      "Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_192x192.png, 192x192)",
+      "Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_512x512.png, 512x512)",
+      "Square maskable app icon with safe padding and centered emblem (pwa-maskable.dim_512x512.png, 512x512)",
+      "Apple touch icon with centered emblem and balanced margins (apple-touch-icon.dim_180x180.png, 180x180)"
+    ],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

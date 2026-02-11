@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-frontend-onboarding-error-handling-so-that-if-the-backend-still-returns-an-authorization-related-onboarding-failure-the-onboarding-ui-shows-a-clear-english-message-explaining-registration-could-not-be-completed-without-mentioning-admin-role-assignment-and-does-not-display-the-raw-backend-error-string-to-end-users",
-      "featureTitle": "Update the frontend onboarding error handling so that if the backend still returns an authorization-related onboarding failure, the onboarding UI shows a clear English message explaining registration could not be completed (without mentioning admin role assignment), and does not display the raw backend error string to end users.",
+      "featureId": "feature-improve-frontend-onboarding-error-handling-to-avoid-masking-the-underlying-backend-error-preserve-the-raw-backend-error-message-for-debugging-at-least-in-console-logs-and-show-a-more-specific-ui-message-when-available-instead-of-always-showing-the-generic-registration-failed-please-contact-an-admin-for-assistance",
+      "featureTitle": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
       "files": [
-        "frontend/src/hooks/useOnboarding.ts"
+        "frontend/src/hooks/useOnboarding.ts",
+        "frontend/src/pages/OnboardingPage.tsx",
+        "frontend/src/utils/normalizeActorError.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,6 +21,28 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-onboarding-submission-reliably-triggers-a-backend-call-and-is-debuggable-from-devtools-network-add-lightweight-request-tracing-start-finish-around-the-submit-flow-so-it-is-obvious-when-the-mutation-is-invoked-and-whether-it-reached-the-actor-call",
+      "featureTitle": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
+      "files": [
+        "frontend/src/hooks/useOnboarding.ts",
+        "frontend/src/pages/OnboardingPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

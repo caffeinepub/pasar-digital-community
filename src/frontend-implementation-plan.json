@@ -1,25 +1,92 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Onboarding UI: hide raw authorization errors and show clear registration failure message",
+  "title": "Fix onboarding frontend observability and PWA icon assets",
   "requirements": [
     {
       "id": "REQ-2",
-      "summary": "Normalize onboarding authorization-related failures into a clear English message and prevent raw backend error strings from being shown on the onboarding UI.",
+      "summary": "Preserve and surface actionable onboarding errors by logging raw actor failures and rendering specific UI messages when available.",
       "acceptanceCriteria": [
-        "On `/onboarding`, users do not see the raw error text `Unauthorized: Only admins can assign user roles` in the inline alert or toast.",
-        "The user-facing error message is in English and is actionable (e.g., suggests trying again or contacting an admin), while preserving existing error mappings for invalid/used tokens and already-onboarded users."
+        "When completeOnboarding fails, the console includes a log entry that contains the original error payload/message received from the actor call.",
+        "The Onboarding page alert renders the normalized error message, but it must not always collapse distinct backend failures into the same generic message if a more specific message is available (e.g., 'Already onboarded').",
+        "When the actor is not available, the UI displays an actionable message (not a silent failure)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/normalizeActorError.ts",
+          "operation": "create",
+          "description": "Add a small utility to extract and normalize error details from actor calls (e.g., preserve raw payload for logs while returning a user-safe message)."
+        },
+        {
+          "path": "frontend/src/hooks/useOnboarding.ts",
+          "operation": "modify",
+          "description": "Update completeOnboarding mutation to (1) log the raw caught error/payload to console for debugging, (2) use the shared normalization utility to map known backend messages (e.g., Already onboarded/Unauthorized/etc.) to more specific UI text, and (3) throw an actionable error message when the actor is not available (instead of a generic registration failure). Use the selected \"authorization\" component guidance for handling backend trap/Unauthorized errors gracefully in UI; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/OnboardingPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the page renders the mutation's normalized error message consistently (including the actor-not-available case) and does not swallow errors silently in the submit handler (keep try/catch only if it adds value)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add lightweight tracing around onboarding submit so mutation invocation and actor-call attempt are obvious in DevTools logs, and keep submit button disabled with progress label while pending.",
+      "acceptanceCriteria": [
+        "Clicking Register always triggers the React Query mutation (visible via tracing logs) and results in an actor call attempt (or a clear 'actor not available' error before the call).",
+        "While completeOnboarding.isPending is true, the Register button remains disabled and the button label indicates progress."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useOnboarding.ts",
           "operation": "modify",
-          "description": "Extend error normalization for completeOnboarding so any authorization-related onboarding failure (including the `Unauthorized: Only admins can assign user roles` trap) is converted into a clear, actionable English registration message that does not mention admin role assignment; keep existing mappings for invalid/expired tokens, used tokens, and already-onboarded users; for unmapped errors, return a safe generic registration failure message instead of rethrowing the raw backend error."
+          "description": "Add lightweight request tracing (start/finish) around the mutation lifecycle (e.g., onMutate/onSuccess/onError/onSettled) with a per-submit trace id so it is clear when the mutation runs and when the actor call is attempted/finished. Ensure tracing logs include whether the actor was available before the call attempt."
         },
         {
-          "path": "frontend/src/pages/OnboardingInvitePage.tsx",
+          "path": "frontend/src/pages/OnboardingPage.tsx",
           "operation": "modify",
-          "description": "Ensure `/onboarding` only displays normalized, user-safe messages from the onboarding mutation (toast + inline Alert), avoiding fallback to raw error objects/strings; keep existing UX for token-required and first-admin claim flows."
+          "description": "Add a submit-flow trace log at the beginning of handleSubmit (and optionally when validation prevents submit) so it is obvious that clicking Register initiated the flow. Confirm the Register button remains disabled and shows a progress label while the mutation is pending."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Regenerate and place valid PWA PNG icon assets at the manifest-referenced paths to remove browser console warnings.",
+      "acceptanceCriteria": [
+        "Loading the app no longer shows 'resource isn't a valid image' for manifest icons in the browser console.",
+        "The following files exist and are valid PNGs: /assets/generated/pwa-icon.dim_192x192.png, /assets/generated/pwa-icon.dim_512x512.png, /assets/generated/pwa-maskable.dim_512x512.png, /assets/generated/apple-touch-icon.dim_180x180.png.",
+        "manifest.webmanifest continues to reference the same icon paths (no breaking path changes)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+          "operation": "create",
+          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/pwa-icon.dim_192x192.png (matches existing manifest/index.html path)."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+          "operation": "create",
+          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/pwa-icon.dim_512x512.png (matches existing manifest/index.html path)."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+          "operation": "create",
+          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/pwa-maskable.dim_512x512.png (matches existing manifest path; ensure maskable-safe padding)."
+        },
+        {
+          "path": "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
+          "operation": "create",
+          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/apple-touch-icon.dim_180x180.png (matches existing index.html path)."
+        },
+        {
+          "path": "frontend/index.html",
+          "operation": "modify",
+          "description": "Verify index.html continues to reference the same generated icon paths and that the referenced files exist and load as valid PNGs (no path changes)."
+        },
+        {
+          "path": "frontend/public/manifest.webmanifest",
+          "operation": "modify",
+          "description": "Verify manifest.webmanifest continues to reference the same icon paths and that all referenced PNGs exist and are valid (no breaking path changes)."
         }
       ]
     }
