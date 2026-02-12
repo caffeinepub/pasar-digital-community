@@ -1,32 +1,36 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Vehicle management app: implement and surface a vehicle ownership revocation (pencabutan kepemilikan) flow, and adjust its UI placement/visibility (user wants it accessible from the main menu; user reports Vehicle Detail Page not visible).",
-  "architectural_notes": [],
-  "known_issues": [
-    "User tidak dapat menemukan/melihat Halaman Detail Kendaraan (Vehicle Detail Page) untuk mengakses tombol 'Cabut Kepemilikan'."
+  "summary": "Build and publish an Internet Computer app named Pasar Digital Community (Pasar Digital) with vehicle registration/status checking and ownership management; current focus includes enabling installable PWA support for Android/iOS and ensuring the favicon uses the Pasar Digital logo.",
+  "architectural_notes": [
+    "Target delivery as an installable Progressive Web App (PWA) with proper manifest/service worker support for Android and iOS.",
+    "Branding requirement: favicon must use the Pasar Digital logo."
   ],
-  "isFixRequest": true,
+  "known_issues": [
+    "PWA installability is not currently working/implemented as expected (user reports app is not yet a PWA)."
+  ],
+  "isFixRequest": false,
+  "imageRequirements": "## Required Images\n- Browser favicon using the Pasar Digital logo (favicon.dim_32x32.png)\n- Browser favicon using the Pasar Digital logo (favicon.dim_16x16.png)\n- Apple touch icon using the Pasar Digital logo (apple-touch-icon.dim_180x180.png)\n- PWA app icon using the Pasar Digital logo (pwa-icon.dim_192x192.png)\n- PWA app icon using the Pasar Digital logo (pwa-icon.dim_512x512.png)\n- Maskable PWA icon using the Pasar Digital logo (pwa-maskable.dim_512x512.png)",
   "existing_features": [
     {
-      "id": "feature-add-a-main-menu-entry-point-for-the-existing-ownership-revocation-flow-so-users-can-access-it-from-the-primary-navigation-menu-utama-not-only-from-the-vehicle-detail-page-this-must-be-user-visible-in-the-top-navigation-appheader-and-must-use-english-labeling-e-g-revoke-ownership",
-      "title": "Add a main-menu entry point for the existing ownership revocation flow so users can access it from the primary navigation (menu utama), not only from the Vehicle Detail page. This must be user-visible in the top navigation (AppHeader) and must use English labeling (e.g., \"Revoke Ownership\").",
+      "id": "feature-make-the-frontend-fully-installable-as-a-progressive-web-app-pwa-on-android-and-ios-by-ensuring-the-service-worker-is-registered-in-the-app-and-that-the-manifest-app-icons-are-correctly-served-from-the-frontend-static-assets",
+      "title": "Make the frontend fully installable as a Progressive Web App (PWA) on Android and iOS by ensuring the service worker is registered in the app and that the manifest + app icons are correctly served from the frontend static assets.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-a-dashboard-home-quick-action-entry-point-for-ownership-revocation-placed-alongside-existing-dashboard-quick-actions-with-english-user-facing-text-the-action-must-guide-the-user-into-a-revoke-flow-by-first-selecting-a-vehicle-if-needed-and-then-continuing-to-the-existing-pin-verified-revocation-process",
-      "title": "Add a Dashboard (home) \"Quick Action\" entry point for ownership revocation, placed alongside existing Dashboard quick actions, with English user-facing text. The action must guide the user into a revoke flow by first selecting a vehicle (if needed) and then continuing to the existing PIN-verified revocation process.",
+      "id": "feature-update-pwa-metadata-so-that-the-favicon-and-platform-icons-use-the-pasar-digital-logo-consistently-including-browser-favicon-s-apple-touch-icon-and-manifest-icons",
+      "title": "Update PWA metadata so that the favicon and platform icons use the Pasar Digital logo consistently, including browser favicon(s), Apple touch icon, and manifest icons.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-improve-discoverability-of-the-existing-vehicle-detail-page-so-users-can-clearly-find-and-open-it-from-the-vehicle-list-and-immediately-after-registering-a-vehicle-do-not-change-the-existing-route-path-vehicles-vehicleid",
-      "title": "Improve discoverability of the existing Vehicle Detail page so users can clearly find and open it from the vehicle list and immediately after registering a vehicle. Do not change the existing route path (`/vehicles/$vehicleId`).",
+      "id": "feature-add-a-minimal-verification-checklist-documented-in-changelog-md-for-pwa-installability-covering-android-chrome-and-ios-safari-without-changing-existing-feature-behavior",
+      "title": "Add a minimal verification checklist (documented in CHANGELOG.md) for PWA installability covering Android Chrome and iOS Safari, without changing existing feature behavior.",
       "reqIds": [
         "REQ-3"
       ],
@@ -36,12 +40,13 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Tampilkan fitur 'Cabut Kepemilikan' (ownership revocation) di Menu Utama agar mudah diakses, bukan hanya di halaman Detail Kendaraan.",
+      "summary": "Enable installable PWA (Android/iOS) for the web app and set the favicon to the Pasar Digital logo.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Expose ownership revocation from main menu and improve discoverability of Vehicle Detail page",
+  "gameProjectType": "none",
+  "projectName": "Pasar Digital Community",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

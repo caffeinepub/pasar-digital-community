@@ -1,6 +1,6 @@
 {
   "frontend/src/hooks/useProfile.ts": "React Query hooks for user profile operations using real backend getCallerUserProfile and saveCallerUserProfile methods with proper actor-dependent loading states to prevent profile-setup flash.",
-  "frontend/src/App.tsx": "Main application component with TanStack Router setup including /revoke-ownership route, all existing routes preserved, with proper QueryClient and InternetIdentity providers (removed I18nProvider and OnboardingInvitePage imports, fixed TopLevelErrorBoundary import).",
+  "frontend/src/App.tsx": "Main application component with TanStack Router setup, all existing routes preserved, and service worker registration wired into AppContent via useEffect hook for PWA support.",
   "frontend/src/pages/ProfilePage.tsx": "Profile page with inline editing, activation status card integration, Security PIN section with conditional rendering (Create PIN form when no PIN exists, Update PIN form when PIN exists), and account management with English UI text.",
   "frontend/src/components/brand/AppLogo.tsx": "Logo component that displays the Pasar Digital Community logo with configurable sizes and proper aspect ratio preservation.",
   "frontend/src/components/nav/AppHeader.tsx": "Responsive header navigation with new \"Revoke Ownership\" navigation item added to both desktop and mobile menus alongside existing navigation items.",
@@ -10,10 +10,10 @@
   "frontend/src/pages/AboutPage.tsx": "About page displaying app description, features, and admin contact information (WhatsApp and email) with responsive layout.",
   "frontend/src/pages/admin/AdminInviteTokensPage.tsx": "Admin token management page with principal input for generating user-specific activation tokens, copy-to-clipboard functionality, and redemption instructions with English UI.",
   "frontend/src/hooks/useAdmin.ts": "Admin hooks with corrected imports using isAllowlistedAdmin function, includes useGetSystemStats hook for admin dashboard statistics.",
-  "frontend/index.html": "HTML entry point with English language attribute and updated meta description for blockchain-based vehicle security system, with proper PWA manifest and icon references.",
+  "frontend/index.html": "HTML entry point with complete PWA meta tags (iOS-specific tags, favicon references for 16x16 and 32x32, Apple touch icon, and manifest link) using Pasar Digital logo assets.",
   "frontend/src/main.tsx": "Application entry point wrapping the app with I18nProvider (in addition to existing QueryClient and InternetIdentity providers) to enable app-wide translations.",
-  "frontend/public/manifest.webmanifest": "PWA manifest with icon references pointing to generated PNG assets under /assets/generated/.",
-  "frontend/public/sw.js": "Service worker with updated cache version (v3), network-first strategy for HTML/navigation requests to ensure fresh app shell after deploys, and cache-first for static assets while never caching PWA icons/manifest.",
+  "frontend/public/manifest.webmanifest": "PWA manifest with proper metadata, Pasar Digital branding, icon references to generated logo assets, and additional scope/prefer_related_applications fields for better installability.",
+  "frontend/public/sw.js": "Service worker with v4 cache, network-first strategy for HTML, cache-first for static assets, and NEVER_CACHE list updated to include favicon files (16x16, 32x32) alongside existing PWA icons.",
   "frontend/src/backend.d.ts": "TypeScript interface for backend with generateActivationToken and redeemActivationToken methods added to support vehicle registration activation flow.",
   "frontend/src/pages/admin/AdminDashboardPage.tsx": "Admin dashboard page with system statistics display using useGetSystemStats hook, proper error handling and retry functionality.",
   "frontend/src/components/auth/ProfileBootstrapError.tsx": "Profile bootstrap error screen with backend health diagnostics display, reachability-aware error classification to avoid misidentifying issues as STOPPED-canister when backend is reachable, and English-only messaging with proper CardFooter import.",
@@ -47,7 +47,7 @@
   "frontend/src/test/setup.ts": "Shared test setup file that configures Testing Library, mocks browser APIs (matchMedia, IntersectionObserver, ResizeObserver), and runs cleanup after each test.",
   "frontend/QUALITY_GATES.md": "Quality gates documentation covering three automated checks (typecheck, lint, format) with detailed explanations, CI integration examples, and a note about future test suite implementation.",
   "frontend/ci-run-gates.sh": "Simple POSIX shell script that runs the frontend quality gates command for CI integration without external dependencies.",
-  "frontend/CHANGELOG.md": "Version history documenting all notable changes including the new /revoke-ownership route added on 2026-02-12 per change-control policy.",
+  "frontend/CHANGELOG.md": "Version history documenting PWA enablement with manual installation verification steps for Android Chrome and iOS Safari, technical notes about cache strategy, and confirmation that no routes were changed.",
   "frontend/src/version.ts": "Single source of truth for application version (v1.0.0) and build date with ISO timestamp, exported for display in UI and documentation.",
   "frontend/README_VERSIONING.md": "Versioning discipline documentation explaining semantic versioning format, version location (frontend/src/version.ts), where version is displayed, how to update versions, changelog discipline, and frontend-only versioning rationale.",
   "frontend/src/routes/__tests__/RootRouteGate.test.tsx": "Comprehensive test suite for RootRouteGate covering unauthenticated state (sign-in screen, loading), authenticated loading states, error states (profile and actor bootstrap errors), and successful authenticated rendering with app layout.",
@@ -79,5 +79,6 @@
   "frontend/src/pages/ReportFoundVehiclePage.tsx": "Dedicated page for reporting found vehicles with engine number search, vehicle photo display via VehiclePhotoSection, status display, and conditional ReportFoundDialog integration for Lost/Stolen/Pawned vehicles.",
   "frontend/src/components/vehicle/VehiclePhotoSection.tsx": "Reusable component that displays vehicle photos using ExternalBlob's getDirectURL() method with error handling and fallback UI for failed image loads.",
   "frontend/src/hooks/useVehicles.ts": "React Query hooks for vehicle operations including getUserVehicles, getVehicle, registerVehicle, and the new useRevokeVehicleOwnership mutation with proper cache invalidation.",
-  "frontend/src/pages/RevokeOwnershipPage.tsx": "Dedicated page for revoking vehicle ownership with vehicle selection from active vehicles, PIN confirmation dialog (removed isPending prop), and permanent ownership removal with navigation back to vehicles list."
+  "frontend/src/pages/RevokeOwnershipPage.tsx": "Dedicated page for revoking vehicle ownership with vehicle selection from active vehicles, PIN confirmation dialog (removed isPending prop), and permanent ownership removal with navigation back to vehicles list.",
+  "frontend/src/pwa/registerServiceWorker.ts": "Service worker registration helper that registers /sw.js only in production builds with proper error handling and update detection."
 }

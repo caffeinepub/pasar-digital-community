@@ -1,83 +1,67 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:58:07.055Z",
-  "summary": "REQ-1 and REQ-2 appear implemented via a new /revoke-ownership route, an AppHeader nav item, and a Dashboard quick action that routes into a vehicle-selection + PIN-gated revoke flow. REQ-3 is partially evidenced (post-registration navigation to Vehicle Detail is added), but the diff summary does not clearly show the required explicit 'View Details' affordance on each vehicle in the vehicles list. The diff also includes several unrelated/unrequested changes (i18n/provider wiring, PWA/service worker/manifest edits, admin/profile/about/auth refactors), including modifications to files listed as immutable in the constraints.",
+  "generatedAt": "2026-02-12T02:30:56.605Z",
+  "summary": "Diff implements core PWA pieces (service worker registration helper, manifest + favicon/apple-touch-icon links, and a CHANGELOG checklist). However, it also includes multiple unrelated frontend feature/UI/auth/admin changes and edits to files marked immutable in the BuildRequest constraints. The diff summary does not show the required generated icon image assets being added under frontend/public/assets/generated/.",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "Vehicles list makes it explicit how to open vehicle details (e.g., an explicit \"View Details\" button/affordance on each vehicle card, in English).",
-      "reason": "The VehiclesPage.tsx diff excerpt is truncated before the vehicle list rendering, and the visible portion does not show any per-vehicle \"View Details\" UI or navigation to `/vehicles/$vehicleId`. Without explicit evidence in the provided diff summary, this acceptance criterion cannot be confirmed as implemented.",
+      "id": "REQ-2",
+      "requirement": "Generated icons are stored as static assets under `frontend/public/assets/generated/` (favicon 16x16/32x32, apple-touch-icon 180x180, PWA 192x192/512x512, maskable 512x512) and referenced directly by the frontend.",
+      "reason": "The diff updates `index.html` and `manifest.webmanifest` to reference `/assets/generated/...`, but the diff summary does not include additions of the actual image files under `frontend/public/assets/generated/`.",
       "evidence": [
-        "frontend/src/pages/VehiclesPage.tsx (truncated)"
+        "frontend/index.html",
+        "frontend/public/manifest.webmanifest"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Introduced or re-wired app-wide i18n / I18nProvider support (including wrapping the app entry point).",
-      "reason": "Not requested by any REQ; also conflicts with the constraint forbidding edits to `frontend/src/main.tsx`.",
+      "description": "Edits to files explicitly marked immutable by constraints (`frontend/src/main.tsx`, `frontend/src/hooks/useActor.ts`).",
+      "reason": "BuildRequest constraints state these paths must not be edited; diff summary indicates they were modified.",
       "evidence": [
-        "frontend-file-summaries.txt: \"frontend/src/main.tsx\": \"Application entry point wrapping the app with I18nProvider...\""
+        "frontend-file-summaries.txt (mentions modifications to `frontend/src/main.tsx` and `frontend/src/hooks/useActor.ts`)"
       ]
     },
     {
-      "description": "Modified protected/immutable authentication/actor hook files (useActor.ts and possibly others).",
-      "reason": "Not requested and explicitly disallowed by constraints (do not edit `frontend/src/hooks/useActor.ts` and other immutable auth hooks).",
+      "description": "New route/feature and navigation related to \"Revoke Ownership\".",
+      "reason": "BuildRequest scope is strictly PWA installability and favicon/icon branding; new route and nav item are unrelated.",
       "evidence": [
-        "frontend-file-summaries.txt: \"frontend/src/hooks/useActor.ts\": \"Actor initialization hook...\""
+        "frontend/CHANGELOG.md (v1.0.0 entries for `/revoke-ownership` and related UI)",
+        "frontend-file-summaries.txt (mentions AppHeader navigation item and RevokeOwnershipPage)"
       ]
     },
     {
-      "description": "Added/changed PWA/service-worker/manifest and index.html metadata behavior (cache strategy, manifest icon rules, meta description).",
-      "reason": "Not requested by REQ-1/2/3; unrelated to exposing revocation entry points or Vehicle Detail discoverability.",
+      "description": "Admin activation/token management features and related backend type additions (e.g., generate/redeem activation tokens).",
+      "reason": "BuildRequest explicitly says keep backend as-is and limit changes strictly to PWA installability and branding; adding backend typings/features is unrelated.",
       "evidence": [
-        "frontend-file-summaries.txt: \"frontend/public/sw.js\"",
-        "frontend-file-summaries.txt: \"frontend/public/manifest.webmanifest\"",
-        "frontend-file-summaries.txt: \"frontend/index.html\""
+        "frontend-file-summaries.txt (mentions `frontend/src/backend.d.ts` additions and AdminInviteTokens/AdminDashboard changes)"
       ]
     },
     {
-      "description": "Added/expanded About page content and admin contact details.",
-      "reason": "Not requested by REQ-1/2/3.",
+      "description": "Authentication/access-denied behavior and sign-in UI/i18n related changes.",
+      "reason": "Non-goal/scope limit indicates no changes to authentication providers/flows; diff summary describes significant auth UI/behavior updates and i18n provider wiring.",
       "evidence": [
-        "frontend-file-summaries.txt: \"frontend/src/pages/AboutPage.tsx\""
+        "frontend-file-summaries.txt (mentions SignInScreen translation via i18n hook, AccessDeniedScreen simplification, and `frontend/src/main.tsx` wrapping with I18nProvider)"
       ]
     },
     {
-      "description": "Admin token management and admin dashboard stats features (invite tokens page, system stats hook).",
-      "reason": "Not requested by REQ-1/2/3 and outside the described scope.",
+      "description": "Service worker behavior changes beyond installability (cache version bump to v4, caching strategy changes).",
+      "reason": "BuildRequest is focused on installability and icon branding; changing caching strategy/cache version is additional behavior not explicitly requested (though related to SW).",
       "evidence": [
-        "frontend-file-summaries.txt: \"frontend/src/pages/admin/AdminInviteTokensPage.tsx\"",
-        "frontend-file-summaries.txt: \"frontend/src/pages/admin/AdminDashboardPage.tsx\"",
-        "frontend-file-summaries.txt: \"frontend/src/hooks/useAdmin.ts\""
-      ]
-    },
-    {
-      "description": "Profile page redesign/feature expansion (PIN create/update UI and account management changes).",
-      "reason": "Not requested by REQ-1/2/3.",
-      "evidence": [
-        "frontend-file-summaries.txt: \"frontend/src/pages/ProfilePage.tsx\""
-      ]
-    },
-    {
-      "description": "Backend API contract/type changes for activation tokens (generate/redeem activation token methods).",
-      "reason": "Not requested by REQ-1/2/3 and potentially conflicts with the constraint to avoid backend/service changes (even though this is a frontend type contract change).",
-      "evidence": [
-        "frontend-file-summaries.txt: \"frontend/src/backend.d.ts\": \"...generateActivationToken and redeemActivationToken methods added...\""
+        "frontend/public/sw.js",
+        "frontend/CHANGELOG.md (Technical Notes mention v4 and caching strategies)"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.74,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/CHANGELOG.md",
+    "frontend/index.html",
+    "frontend/public/manifest.webmanifest",
+    "frontend/public/sw.js",
     "frontend/src/App.tsx",
-    "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/pages/DashboardPage.tsx",
-    "frontend/src/pages/RegisterVehiclePage.tsx",
-    "frontend/src/pages/RevokeOwnershipPage.tsx",
-    "frontend/src/pages/VehiclesPage.tsx",
+    "frontend/src/pwa/registerServiceWorker.ts",
     "project_state.json"
   ]
 }

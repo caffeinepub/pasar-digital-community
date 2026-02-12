@@ -29,5 +29,7 @@
   ],
   "categories": ["security", "utilities", "productivity"],
   "lang": "id",
-  "dir": "ltr"
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
 }

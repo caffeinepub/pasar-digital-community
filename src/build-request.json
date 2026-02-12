@@ -1,76 +1,92 @@
 {
   "kind": "build_request",
-  "title": "Expose ownership revocation from main menu and improve discoverability of Vehicle Detail page",
+  "title": "Enable installable PWA (Android/iOS) and set favicon to Pasar Digital logo",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a main-menu entry point for the existing ownership revocation flow so users can access it from the primary navigation (menu utama), not only from the Vehicle Detail page. This must be user-visible in the top navigation (AppHeader) and must use English labeling (e.g., \"Revoke Ownership\").",
+      "text": "Make the frontend fully installable as a Progressive Web App (PWA) on Android and iOS by ensuring the service worker is registered in the app and that the manifest + app icons are correctly served from the frontend static assets.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-2026-02-12-1"
+          "msg-20"
         ],
         "quotes": [
-          "bagusnya sih di tampilkan di menu utama saja ya."
+          "Aplikasi ini belum anda jadikan web aplikasi (PWA) supaya bisa di buka di hp android dan IOS dan langsung bisa di install."
         ]
       },
       "acceptanceCriteria": [
-        "A new navigation item is visible in the main app navigation (header menu) labeled in English (e.g., \"Revoke Ownership\").",
-        "Clicking the new navigation item takes the user to a screen that allows them to proceed toward revoking ownership (it may reuse existing pages/flows), without requiring the user to first find VehicleDetailPage manually.",
-        "No protected/immutable auth hooks are modified."
+        "On first load in a production build, the app registers the existing service worker at `/sw.js` without console errors.",
+        "In Chrome/Edge, the site meets installability checks (valid manifest, service worker controlling the page) and shows an install prompt (where supported).",
+        "In iOS Safari, the app can be added via “Add to Home Screen” and launches in standalone mode using the manifest metadata/icons.",
+        "No existing application routes, auth flow, or backend interactions are broken by the PWA changes."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add a Dashboard (home) \"Quick Action\" entry point for ownership revocation, placed alongside existing Dashboard quick actions, with English user-facing text. The action must guide the user into a revoke flow by first selecting a vehicle (if needed) and then continuing to the existing PIN-verified revocation process.",
+      "text": "Update PWA metadata so that the favicon and platform icons use the Pasar Digital logo consistently, including browser favicon(s), Apple touch icon, and manifest icons.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-2026-02-12-1"
+          "msg-20"
         ],
         "quotes": [
-          "di tampilkan di menu utama saja ya"
+          "Jangan lupa pavicon gunakan logo Pasar Digital."
         ]
       },
       "acceptanceCriteria": [
-        "Dashboard shows an additional quick action card/button labeled in English (e.g., \"Revoke Ownership\").",
-        "From that quick action, a user can reach a vehicle-selection step (if applicable) and then proceed to the existing PIN prompt + revocation mutation.",
-        "The existing revocation behavior remains PIN-gated and continues to invalidate the same React Query caches as before."
+        "Browser tabs show the Pasar Digital logo as the favicon (at least 16x16 and 32x32 sizes).",
+        "`frontend/index.html` references the generated favicon(s) and Apple touch icon from `/assets/generated/` and no longer relies on non-logo placeholders.",
+        "`frontend/public/manifest.webmanifest` icons point to generated logo-based icons and remain valid JSON.",
+        "Generated icons are stored as static assets under `frontend/public/assets/generated/` and are referenced directly by the frontend (not routed through the backend)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Improve discoverability of the existing Vehicle Detail page so users can clearly find and open it from the vehicle list and immediately after registering a vehicle. Do not change the existing route path (`/vehicles/$vehicleId`).",
+      "text": "Add a minimal verification checklist (documented in CHANGELOG.md) for PWA installability covering Android Chrome and iOS Safari, without changing existing feature behavior.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-2026-02-12-1"
-        ],
-        "quotes": [
-          "Dan saya juga tidak melihat fitur Halaman Detail Kendaraan (Vehicle Detail Page)."
+          "msg-20"
         ]
       },
       "acceptanceCriteria": [
-        "Vehicles list makes it explicit how to open vehicle details (e.g., an explicit \"View Details\" button/affordance on each vehicle card, in English).",
-        "After successful vehicle registration, the UI offers a clear path to the newly registered vehicle’s detail screen (e.g., redirect to the detail page, or success toast with a \"View Details\" action), without removing the existing ability to go back to /vehicles.",
-        "Vehicle detail route remains `/vehicles/$vehicleId` and continues to render the existing revoke-ownership button under the existing owner gating (owner + ACTIVE)."
+        "CHANGELOG.md includes an entry documenting PWA enablement and the manual install verification steps for Android and iOS.",
+        "No protected route paths are changed as part of this update."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain single-actor; do not introduce additional canisters/services.",
-    "Do not edit files under frontend immutable paths: `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, and anything under `frontend/src/components/ui`.",
-    "Do not change existing route paths in `frontend/src/App.tsx` for `/vehicles/$vehicleId` (Vehicle Detail). If any new route is added, it must be documented per `frontend/CHANGE_CONTROL_POLICY.md`.",
-    "All new/updated user-facing text must be in English."
+    "Do not change or break any existing working features; limit changes strictly to PWA installability and favicon/icon branding.",
+    "Do not edit files under `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useActor.ts`, or `frontend/src/main.tsx` (immutable paths).",
+    "Keep the backend as-is; no Motoko API changes are required for PWA support."
   ],
   "nonGoals": [
-    "Implementing a new backend revocation API or changing the backend revocation rules (PIN validation, authorization, status gating).",
-    "Adding third-party auth or any non-Internet-Identity login options.",
-    "Redesigning the vehicle registration form fields or validation beyond what’s necessary to add a clearer post-registration navigation path."
+    "Adding push notifications or background sync.",
+    "Adding third-party analytics or external services.",
+    "Changing authentication providers (must remain Internet Identity)."
   ],
   "imageRequirements": {
-    "required": [],
+    "required": [
+      "Browser favicon using the Pasar Digital logo (favicon.dim_32x32.png)",
+      "Browser favicon using the Pasar Digital logo (favicon.dim_16x16.png)",
+      "Apple touch icon using the Pasar Digital logo (apple-touch-icon.dim_180x180.png)",
+      "PWA app icon using the Pasar Digital logo (pwa-icon.dim_192x192.png)",
+      "PWA app icon using the Pasar Digital logo (pwa-icon.dim_512x512.png)",
+      "Maskable PWA icon using the Pasar Digital logo (pwa-maskable.dim_512x512.png)"
+    ],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [
+      "Use English for user-facing text in build artifacts and documentation."
+    ],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

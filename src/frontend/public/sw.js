@@ -1,10 +1,12 @@
-const CACHE_NAME = 'pasar-digital-v3';
+const CACHE_NAME = 'pasar-digital-v4';
 const STATIC_ASSETS = [
   '/assets/Logo Pasar Digital Community-1.png',
 ];
 
 // Assets that should never be cached (always fetch fresh)
 const NEVER_CACHE = [
+  '/assets/generated/favicon.dim_16x16.png',
+  '/assets/generated/favicon.dim_32x32.png',
   '/assets/generated/pwa-icon.dim_192x192.png',
   '/assets/generated/pwa-icon.dim_512x512.png',
   '/assets/generated/pwa-maskable.dim_512x512.png',
@@ -24,7 +26,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Never cache PWA icons and manifest - always fetch fresh
+  // Never cache PWA icons, favicons, and manifest - always fetch fresh
   if (NEVER_CACHE.some(path => url.pathname.includes(path))) {
     event.respondWith(
       fetch(event.request).catch(() => {

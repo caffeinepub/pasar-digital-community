@@ -1,78 +1,104 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Ownership revocation entry points and improved Vehicle Detail discoverability",
+  "title": "Installable PWA support (Android/iOS) + Pasar Digital favicon/icon branding",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Expose ownership revocation from the primary top navigation (AppHeader) with an English-labeled entry point that starts the existing PIN-gated revoke flow without requiring manual discovery of Vehicle Detail first.",
+      "summary": "Ensure the app registers the existing service worker and serves a valid manifest + icons so it is installable as a PWA on Android and iOS.",
       "acceptanceCriteria": [
-        "A new navigation item is visible in the main app navigation (header menu) labeled in English (e.g., \"Revoke Ownership\").",
-        "Clicking the new navigation item takes the user to a screen that allows them to proceed toward revoking ownership (it may reuse existing pages/flows), without requiring the user to first find VehicleDetailPage manually.",
-        "No protected/immutable auth hooks are modified."
+        "On first load in a production build, the app registers the existing service worker at `/sw.js` without console errors.",
+        "In Chrome/Edge, the site meets installability checks (valid manifest, service worker controlling the page) and shows an install prompt (where supported).",
+        "In iOS Safari, the app can be added via “Add to Home Screen” and launches in standalone mode using the manifest metadata/icons.",
+        "No existing application routes, auth flow, or backend interactions are broken by the PWA changes."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/nav/AppHeader.tsx",
-          "operation": "modify",
-          "description": "Add a new top navigation item labeled \"Revoke Ownership\" that navigates to a new revoke-ownership entry screen/route."
-        },
-        {
-          "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "path": "frontend/src/pwa/registerServiceWorker.ts",
           "operation": "create",
-          "description": "Create a revoke-ownership entry screen that lets users select one of their vehicles and proceed into the existing PIN-prompt + ownership revocation mutation flow (reuse existing React Query hooks and the existing PIN dialog)."
+          "description": "Add a small helper that registers the existing service worker at `/sw.js` only in production builds, avoids noisy console errors, and safely no-ops when Service Workers are unsupported."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Register a new route for the revoke-ownership entry screen and wire it into the route tree (keep existing `/vehicles/$vehicleId` route path unchanged)."
+          "description": "Wire service worker registration into the running app (e.g., call the new `registerServiceWorker()` from a React effect) without changing any existing route paths or authentication/bootstrap logic."
         },
         {
-          "path": "frontend/CHANGELOG.md",
+          "path": "frontend/public/sw.js",
           "operation": "modify",
-          "description": "Document the new route addition and navigation entry per frontend/CHANGE_CONTROL_POLICY.md (route structure is a protected interface)."
+          "description": "Adjust service worker caching rules as needed for installability and correctness (e.g., ensure manifest + app icons are consistently fetchable and not served stale), without changing app routes or adding new features like push/background sync."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add a Dashboard \"Quick Action\" for ownership revocation that guides users into a vehicle-selection step and then continues to the existing PIN-verified revocation process while preserving existing cache invalidation behavior.",
+      "summary": "Update favicon and platform icons so Pasar Digital logo is used consistently across browser favicon(s), Apple touch icon, and manifest icons.",
       "acceptanceCriteria": [
-        "Dashboard shows an additional quick action card/button labeled in English (e.g., \"Revoke Ownership\").",
-        "From that quick action, a user can reach a vehicle-selection step (if applicable) and then proceed to the existing PIN prompt + revocation mutation.",
-        "The existing revocation behavior remains PIN-gated and continues to invalidate the same React Query caches as before."
+        "Browser tabs show the Pasar Digital logo as the favicon (at least 16x16 and 32x32 sizes).",
+        "`frontend/index.html` references the generated favicon(s) and Apple touch icon from `/assets/generated/` and no longer relies on non-logo placeholders.",
+        "`frontend/public/manifest.webmanifest` icons point to generated logo-based icons and remain valid JSON.",
+        "Generated icons are stored as static assets under `frontend/public/assets/generated/` and are referenced directly by the frontend (not routed through the backend)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/DashboardPage.tsx",
-          "operation": "modify",
-          "description": "Add a new Quick Actions card/button labeled \"Revoke Ownership\" alongside existing actions that navigates to the revoke-ownership entry screen/route."
+          "path": "frontend/public/assets/generated/favicon.dim_32x32.png",
+          "operation": "create",
+          "description": "Add the generated Pasar Digital logo favicon asset at `frontend/public/assets/generated/favicon.dim_32x32.png`."
         },
         {
-          "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "path": "frontend/public/assets/generated/favicon.dim_16x16.png",
+          "operation": "create",
+          "description": "Add the generated Pasar Digital logo favicon asset at `frontend/public/assets/generated/favicon.dim_16x16.png`."
+        },
+        {
+          "path": "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
+          "operation": "create",
+          "description": "Ensure the generated Apple touch icon exists at `frontend/public/assets/generated/apple-touch-icon.dim_180x180.png` (add/replace as needed to use the Pasar Digital logo)."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+          "operation": "create",
+          "description": "Ensure the generated PWA icon exists at `frontend/public/assets/generated/pwa-icon.dim_192x192.png` (add/replace as needed to use the Pasar Digital logo)."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+          "operation": "create",
+          "description": "Ensure the generated PWA icon exists at `frontend/public/assets/generated/pwa-icon.dim_512x512.png` (add/replace as needed to use the Pasar Digital logo)."
+        },
+        {
+          "path": "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+          "operation": "create",
+          "description": "Ensure the generated maskable PWA icon exists at `frontend/public/assets/generated/pwa-maskable.dim_512x512.png` (add/replace as needed to use the Pasar Digital logo)."
+        },
+        {
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Ensure the vehicle-selection + PIN-gated revoke flow is fully supported from this page using existing hooks (including the existing revoke mutation so the same React Query caches are invalidated) and the existing PIN prompt dialog."
+          "description": "Update favicon + Apple touch icon `<link>` tags to reference the generated logo assets from `frontend/public/assets/generated/` (specifically: `frontend/public/assets/generated/favicon.dim_16x16.png`, `frontend/public/assets/generated/favicon.dim_32x32.png`, and `frontend/public/assets/generated/apple-touch-icon.dim_180x180.png`) while keeping the existing manifest link intact."
+        },
+        {
+          "path": "frontend/public/manifest.webmanifest",
+          "operation": "modify",
+          "description": "Verify/adjust manifest icon entries to point to the generated logo-based icons (including `frontend/public/assets/generated/pwa-icon.dim_192x192.png`, `frontend/public/assets/generated/pwa-icon.dim_512x512.png`, `frontend/public/assets/generated/pwa-maskable.dim_512x512.png`) and keep the manifest valid JSON."
+        },
+        {
+          "path": "frontend/public/sw.js",
+          "operation": "modify",
+          "description": "Update the service worker allow/deny caching lists so favicon/manifest/icon files (including `frontend/public/assets/generated/favicon.dim_16x16.png` and `frontend/public/assets/generated/favicon.dim_32x32.png`) are always served correctly and do not get stuck with stale cached versions."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Make Vehicle Detail discoverable from the vehicles list and immediately after successful vehicle registration without changing the existing Vehicle Detail route path (`/vehicles/$vehicleId`).",
+      "summary": "Document a minimal manual verification checklist for PWA installability (Android Chrome + iOS Safari) in CHANGELOG.md without changing app behavior.",
       "acceptanceCriteria": [
-        "Vehicles list makes it explicit how to open vehicle details (e.g., an explicit \"View Details\" button/affordance on each vehicle card, in English).",
-        "After successful vehicle registration, the UI offers a clear path to the newly registered vehicle’s detail screen (e.g., redirect to the detail page, or success toast with a \"View Details\" action), without removing the existing ability to go back to /vehicles.",
-        "Vehicle detail route remains `/vehicles/$vehicleId` and continues to render the existing revoke-ownership button under the existing owner gating (owner + ACTIVE)."
+        "CHANGELOG.md includes an entry documenting PWA enablement and the manual install verification steps for Android and iOS.",
+        "No protected route paths are changed as part of this update."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/VehiclesPage.tsx",
+          "path": "frontend/CHANGELOG.md",
           "operation": "modify",
-          "description": "Add an explicit per-vehicle \"View Details\" affordance (English) on each vehicle card while keeping existing navigation behavior intact (do not change the `/vehicles/$vehicleId` route path)."
-        },
-        {
-          "path": "frontend/src/pages/RegisterVehiclePage.tsx",
-          "operation": "modify",
-          "description": "After successful registration, use the returned vehicle id to provide a clear path to the newly registered vehicle’s detail screen (e.g., redirect to `/vehicles/$vehicleId` and keep an obvious way to return to `/vehicles`)."
+          "description": "Add a new changelog entry (English) describing PWA enablement, plus a short manual install verification checklist for Android Chrome and iOS Safari, explicitly noting that route paths were not changed."
         }
       ]
     }

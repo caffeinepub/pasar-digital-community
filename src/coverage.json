@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:58:07.058Z",
+  "generatedAt": "2026-02-12T02:30:56.609Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,45 +12,55 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a main-menu entry point for the existing ownership revocation flow so users can access it from the primary navigation (menu utama), not only from the Vehicle Detail page. This must be user-visible in the top navigation (AppHeader) and must use English labeling (e.g., \"Revoke Ownership\").",
+        "summary": "Make the frontend fully installable as a Progressive Web App (PWA) on Android and iOS by ensuring the service worker is registered in the app and that the manifest + app icons are correctly served from the frontend static assets.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "frontend/src/pwa/registerServiceWorker.ts",
           "frontend/src/App.tsx",
-          "frontend/CHANGELOG.md"
+          "frontend/public/sw.js"
         ],
         "matchedFiles": [
-          "frontend/src/components/nav/AppHeader.tsx",
-          "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "frontend/src/pwa/registerServiceWorker.ts",
           "frontend/src/App.tsx",
-          "frontend/CHANGELOG.md"
+          "frontend/public/sw.js"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add a Dashboard (home) \"Quick Action\" entry point for ownership revocation, placed alongside existing Dashboard quick actions, with English user-facing text. The action must guide the user into a revoke flow by first selecting a vehicle (if needed) and then continuing to the existing PIN-verified revocation process.",
+        "summary": "Update PWA metadata so that the favicon and platform icons use the Pasar Digital logo consistently, including browser favicon(s), Apple touch icon, and manifest icons.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/DashboardPage.tsx",
-          "frontend/src/pages/RevokeOwnershipPage.tsx"
+          "frontend/public/assets/generated/favicon.dim_32x32.png",
+          "frontend/public/assets/generated/favicon.dim_16x16.png",
+          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
+          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+          "frontend/index.html",
+          "frontend/public/manifest.webmanifest",
+          "frontend/public/sw.js"
         ],
         "matchedFiles": [
-          "frontend/src/pages/DashboardPage.tsx",
-          "frontend/src/pages/RevokeOwnershipPage.tsx"
+          "frontend/public/assets/generated/favicon.dim_32x32.png",
+          "frontend/public/assets/generated/favicon.dim_16x16.png",
+          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
+          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+          "frontend/index.html",
+          "frontend/public/manifest.webmanifest",
+          "frontend/public/sw.js"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Improve discoverability of the existing Vehicle Detail page so users can clearly find and open it from the vehicle list and immediately after registering a vehicle. Do not change the existing route path (`/vehicles/$vehicleId`).",
+        "summary": "Add a minimal verification checklist (documented in CHANGELOG.md) for PWA installability covering Android Chrome and iOS Safari, without changing existing feature behavior.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/VehiclesPage.tsx",
-          "frontend/src/pages/RegisterVehiclePage.tsx"
+          "frontend/CHANGELOG.md"
         ],
         "matchedFiles": [
-          "frontend/src/pages/VehiclesPage.tsx",
-          "frontend/src/pages/RegisterVehiclePage.tsx"
+          "frontend/CHANGELOG.md"
         ]
       }
     ]
@@ -61,12 +71,17 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/CHANGELOG.md",
+    "frontend/index.html",
+    "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
+    "frontend/public/assets/generated/favicon.dim_16x16.png",
+    "frontend/public/assets/generated/favicon.dim_32x32.png",
+    "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+    "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
+    "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
+    "frontend/public/manifest.webmanifest",
+    "frontend/public/sw.js",
     "frontend/src/App.tsx",
-    "frontend/src/components/nav/AppHeader.tsx",
-    "frontend/src/pages/DashboardPage.tsx",
-    "frontend/src/pages/RegisterVehiclePage.tsx",
-    "frontend/src/pages/RevokeOwnershipPage.tsx",
-    "frontend/src/pages/VehiclesPage.tsx",
+    "frontend/src/pwa/registerServiceWorker.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

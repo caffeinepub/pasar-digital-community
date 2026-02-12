@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Make the ownership revocation flow easy to find from the main navigation and Dashboard, and make Vehicle Detail easier to discover from the vehicle list and after registration.
+**Goal:** Make the frontend installable as a PWA on Android and iOS, and ensure the favicon/app icons consistently use the Pasar Digital logo.
 
 **Planned changes:**
-- Add a new main navigation (AppHeader) menu item labeled in English (e.g., “Revoke Ownership”) that takes users into the existing revocation flow without needing to first open Vehicle Detail.
-- Add a new Dashboard “Quick Action” labeled in English (e.g., “Revoke Ownership”) that guides users to select a vehicle (if needed) and then continues to the existing PIN-gated revocation flow.
-- Improve Vehicle Detail discoverability by adding an explicit English affordance (e.g., “View Details”) on each vehicle in the vehicle list.
-- After successful vehicle registration, provide a clear path to the new vehicle’s detail page (e.g., redirect or a success message with a “View Details” action) while keeping the existing ability to go back to `/vehicles`.
+- Ensure the existing service worker at `/sw.js` is registered in production and properly controls the page for PWA installability.
+- Verify and update `manifest.webmanifest` so it is correctly served and references logo-based app icons from `/assets/generated/`.
+- Update `frontend/index.html` to reference Pasar Digital logo favicon(s) and Apple touch icon from `/assets/generated/`.
+- Add a minimal manual verification checklist to `CHANGELOG.md` for Android Chrome and iOS Safari PWA install/installability checks.
 
-**User-visible outcome:** Users can start “Revoke Ownership” directly from the header menu or Dashboard, and can more easily find and open a vehicle’s detail page from the vehicle list and immediately after registering a vehicle.
+**User-visible outcome:** Users can install the web app to their Android/iOS home screen, open it in standalone mode, and see the Pasar Digital logo as the browser favicon and app icon.

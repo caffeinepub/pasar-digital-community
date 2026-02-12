@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
 import { InternetIdentityProvider } from './hooks/useInternetIdentity';
@@ -19,6 +19,7 @@ import AboutPage from './pages/AboutPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminInviteTokensPage from './pages/admin/AdminInviteTokensPage';
 import TopLevelErrorBoundary from './components/system/TopLevelErrorBoundary';
+import { registerServiceWorker } from './pwa/registerServiceWorker';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -142,14 +143,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+function AppContent() {
+  useEffect(() => {
+    // Register service worker for PWA support
+    registerServiceWorker();
+  }, []);
+
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Toaster />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <StrictMode>
       <TopLevelErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <InternetIdentityProvider>
-            <RouterProvider router={router} />
-            <Toaster />
+            <AppContent />
           </InternetIdentityProvider>
         </QueryClientProvider>
       </TopLevelErrorBoundary>
