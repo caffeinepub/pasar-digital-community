@@ -349,8 +349,12 @@ actor {
     };
   };
 
-  // Query method to check caller activation status
+  // Query method to check caller activation status (with allowlist admin always activated)
   public query ({ caller }) func isCallerActivatedForVehicleRegistration() : async Bool {
+    if (caller == allowlistAdmin) {
+      // Always return true for the allowlist admin
+      return true;
+    };
     switch (userActivations.get(caller)) {
       case (null) { false }; // Not found means not activated
       case (?activated) { activated };

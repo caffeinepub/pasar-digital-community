@@ -1,15 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Re-add PIN management on the Profile page so existing users can create or update a Security PIN without re-registering, while keeping all existing profile and app flows unchanged.
+**Goal:** Fix the allowlist admin account so it is always treated as activated for vehicle registration, eliminating the incorrect “Not Activated” status while keeping all other activation behavior unchanged.
 
 **Planned changes:**
-- Backend: Add an authenticated API that returns whether the current caller has a PIN set (boolean only; never returns the PIN value), consistent with existing anonymous-caller handling.
-- Frontend: Re-introduce a clearly labeled PIN section on the existing Profile page that:
-  - Shows “Create PIN” when no PIN exists (uses existing `setupPIN` mutation).
-  - Shows “Update PIN” when a PIN exists (old PIN + new PIN + confirm; uses existing `updatePIN` mutation).
-  - Validates minimum PIN length (4) and matching new/confirm before submission.
-  - Refreshes/invalidates the PIN-status query after a successful change so the UI updates immediately.
-- Data safety: Ensure PIN create/update does not modify or overwrite existing stored profile fields and does not introduce any onboarding/registration steps.
+- Backend: Update the vehicle-registration activation-status check so the hard-coded allowlist admin principal is always considered activated (returns true), independent of stored activation state.
+- Backend: Preserve existing activation checks and token issuance/redeem flows for all non-admin users.
+- Frontend: Ensure Profile and Vehicles pages reflect the corrected activation status for the allowlist admin (show “Activated” and the “Register Vehicle” primary action), without introducing new UI flows or altering other working features.
 
-**User-visible outcome:** Users can manage (create or update) their Security PIN directly from the Profile page, and existing users keep all their profile data without needing to sign up again.
+**User-visible outcome:** When logged in as the allowlist admin, the app shows Vehicle Registration as “Activated” (no activation-token redeem form) and allows registering vehicles; non-admin users see no change in activation behavior.

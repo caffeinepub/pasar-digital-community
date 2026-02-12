@@ -1,45 +1,33 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T00:31:25.720Z",
+  "generatedAt": "2026-02-12T00:43:33.454Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 2,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Expose a backend API to let the frontend determine whether the caller has a PIN set, without returning the PIN value, so existing users can set/update a PIN via their existing account profile without re-registering.",
+        "summary": "Update the backend activation-status check so the allowlist admin principal is always considered activated for vehicle registration, ensuring the admin account never shows a 'Not Activated' status in the UI.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Re-add PIN section to the existing Profile page UI so users can create a PIN (if none exists) or update their PIN (if already set) directly from the Profile page, without requiring re-onboarding or re-registration.",
+        "summary": "Ensure the Profile and Vehicles pages reflect the corrected admin activation status without introducing new UI flows or altering existing working features.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/usePin.ts",
-          "frontend/src/pages/ProfilePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/usePin.ts",
-          "frontend/src/pages/ProfilePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Ensure existing users’ stored profile data remains intact when introducing the Profile-page PIN UI and PIN-status query, and avoid any requirement for users to register again.",
-        "status": "implemented",
-        "plannedFiles": [
+          "frontend/src/hooks/useVehicleRegistrationActivation.ts",
           "frontend/src/pages/ProfilePage.tsx",
-          "frontend/src/pages/__tests__/ProfilePage.pin-profile-integrity.test.tsx"
+          "frontend/src/pages/VehiclesPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProfilePage.tsx"
+          "frontend/src/hooks/useVehicleRegistrationActivation.ts"
         ]
       }
     ]
@@ -50,12 +38,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/usePin.ts",
-    "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/hooks/useVehicleRegistrationActivation.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

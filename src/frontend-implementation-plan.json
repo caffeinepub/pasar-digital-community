@@ -1,50 +1,31 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Re-add PIN management to Profile page (frontend-only)",
+  "title": "Fix admin activation status display for vehicle registration",
   "requirements": [
     {
       "id": "REQ-2",
-      "summary": "Add a PIN section to the existing Profile page that conditionally supports creating or updating a PIN using existing backend functions.",
+      "summary": "Update frontend activation-status querying so the allowlist admin principal is treated as activated and Profile/Vehicles pages reflect it without changing existing flows.",
       "acceptanceCriteria": [
-        "Profile page shows a clearly labeled PIN section in English (e.g., 'PIN' / 'Security PIN').",
-        "If the user has no PIN, the Profile page shows a 'Create PIN' form that calls the existing setupPIN mutation.",
-        "If the user already has a PIN, the Profile page shows an 'Update PIN' form requiring old PIN + new PIN + confirm, calling the existing updatePIN mutation.",
-        "Client-side validation prevents submission when new PIN and confirmation do not match and enforces a minimum length of 4 characters (matching existing SecuritySettingsPage behavior).",
-        "Successful create/update invalidates or refreshes any relevant PIN-status query so the UI updates immediately.",
-        "No changes are made to unrelated Profile page functionality (profile editing, activation card, logout, principal display)."
+        "When logged in as the allowlist admin principal, the Profile page activation card shows 'Activated' (not 'Not Activated') and does not show the activation-token redeem form.",
+        "When logged in as the allowlist admin principal, Vehicles page treats the account as activated (shows the 'Register Vehicle' primary action rather than 'Activate to Register').",
+        "For non-admin users, activation UI/behavior remains unchanged (still shows 'Not Activated' when userActivations is false/missing)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/usePin.ts",
+          "path": "frontend/src/hooks/useVehicleRegistrationActivation.ts",
           "operation": "modify",
-          "description": "Add a React Query hook to fetch the caller's PIN status (e.g., useHasPIN using backend hasPIN for the current caller) and update existing PIN mutations (useSetupPIN/useUpdatePIN) to invalidate/refresh the PIN-status query on success so Profile UI updates immediately."
+          "description": "Adjust the activation-status query to be identity-aware and to treat the allowlist admin principal as activated by first verifying allowlist-admin status (using the backend capability isAllowlistAdmin and the client-side allowlist helper) before falling back to the existing isCallerActivatedForVehicleRegistration call. Ensure the React Query key includes the caller principal so cached activation state does not leak across sessions. Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Re-add a new 'Security PIN' section to the existing Profile page UI with conditional rendering based on the PIN-status hook: show a Create PIN form when no PIN exists, otherwise show an Update PIN form (old PIN + new PIN + confirm). Implement client-side validation (min length 4, new/confirm match) and call existing useSetupPIN/useUpdatePIN mutations. Keep all labels in English and ensure existing profile editing, activation card, logout, and principal display behavior remain unchanged."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Ensure Profile page PIN UI integrates without changing existing profile load/save behavior or introducing new onboarding/registration steps.",
-      "acceptanceCriteria": [
-        "Existing userProfile fields (fullName, email, city, country, onboarded) are unchanged and continue to load/save as before.",
-        "PIN changes do not modify or overwrite stored profile data in saveCallerUserProfile.",
-        "No new onboarding or registration steps are introduced to set a PIN."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/ProfilePage.tsx",
-          "operation": "modify",
-          "description": "Keep PIN state and submission logic fully separate from the profile edit/save flow so that saving a profile still submits only the existing UserProfile fields (fullName/email/city/country/onboarded) and PIN create/update actions never call or depend on saveCallerUserProfile."
+          "description": "Confirm the Profile page continues to rely on the centralized activation hook result only (no new UI flows) so that once the activation hook returns true for allowlist admin, the VehicleRegistrationActivationCard renders the Activated state and hides the redeem form as-is. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/pages/__tests__/ProfilePage.pin-profile-integrity.test.tsx",
-          "operation": "create",
-          "description": "Add a focused regression test ensuring Profile renders the PIN section without affecting existing profile form behavior: profile load still uses the existing profile hook, and triggering PIN create/update does not alter the profile save payload or require any onboarding/registration UI."
+          "path": "frontend/src/pages/VehiclesPage.tsx",
+          "operation": "modify",
+          "description": "Confirm the Vehicles page continues to use the centralized activation hook result only so that allowlist admin sees the existing 'Register Vehicle' primary action without changing any registration/activation UI logic for normal users. Verify the component's usage instructions before implementing."
         }
       ]
     }

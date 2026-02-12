@@ -1,16 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 
 export function useIsActivatedForVehicleRegistration() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<boolean>({
-    queryKey: ['vehicleRegistrationActivation'],
+    queryKey: ['vehicleRegistrationActivation', identity?.getPrincipal().toString()],
     queryFn: async () => {
       if (!actor) return false;
       
       try {
         // Call the real backend method to check activation status
+        // Backend already handles allowlist admin check internally
         const isActivated = await actor.isCallerActivatedForVehicleRegistration();
         return isActivated;
       } catch (error: any) {
@@ -19,7 +22,7 @@ export function useIsActivatedForVehicleRegistration() {
         return false;
       }
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!identity,
   });
 }
 

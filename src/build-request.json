@@ -1,75 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Re-add PIN management to Profile page without affecting existing users",
-  "priority": "normal",
+  "title": "Fix admin account incorrectly showing Vehicle Registration status as Not Activated",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Expose a backend API to let the frontend determine whether the caller has a PIN set, without returning the PIN value, so existing users can set/update a PIN via their existing account profile without re-registering.",
+      "text": "Update the backend activation-status check so the allowlist admin principal is always considered activated for vehicle registration, ensuring the admin account never shows a 'Not Activated' status in the UI.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "Harusnya di tambahkan PIN... Fokus ke akun profil saja menambahkan PIN saja."
+          "ini kenapa saya sebagai admin tapi status akun nya Not Active ? Kan saya ini admin nya. Coba perbaiki dan jangan ganggu fitur-fitur yang sudah berjalan normal. Fokus ke akun admin saja."
         ]
       },
       "acceptanceCriteria": [
-        "Backend provides a query method (e.g., returns Bool) indicating whether the caller currently has a PIN set.",
-        "The query traps for anonymous callers consistently with other profile/PIN methods.",
-        "No existing backend methods used by current flows (profile save, onboarding, vehicle registration, transfers) change behavior."
+        "When the caller principal equals the hard-coded allowlist admin (backend/main.mo:79), backend method isCallerActivatedForVehicleRegistration returns true regardless of userActivations state.",
+        "For non-admin/non-allowlist users, isCallerActivatedForVehicleRegistration behavior remains unchanged (returns the value from userActivations or false if missing).",
+        "No changes are made to activation token issuance/redeem flows for normal users."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Re-add PIN section to the existing Profile page UI so users can create a PIN (if none exists) or update their PIN (if already set) directly from the Profile page, without requiring re-onboarding or re-registration.",
+      "text": "Ensure the Profile and Vehicles pages reflect the corrected admin activation status without introducing new UI flows or altering existing working features.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "Kan tadi nya di akun profile ada buat PIN. sekarang hilang. Di muncul kan lagi saja... Tinggal tambahkan field PIN saja."
+          "jangan ganggu fitur-fitur yang sudah berjalan normal. Fokus ke akun admin saja."
         ]
       },
       "acceptanceCriteria": [
-        "Profile page shows a clearly labeled PIN section in English (e.g., 'PIN' / 'Security PIN').",
-        "If the user has no PIN, the Profile page shows a 'Create PIN' form that calls the existing setupPIN mutation.",
-        "If the user already has a PIN, the Profile page shows an 'Update PIN' form requiring old PIN + new PIN + confirm, calling the existing updatePIN mutation.",
-        "Client-side validation prevents submission when new PIN and confirmation do not match and enforces a minimum length of 4 characters (matching existing SecuritySettingsPage behavior).",
-        "Successful create/update invalidates or refreshes any relevant PIN-status query so the UI updates immediately.",
-        "No changes are made to unrelated Profile page functionality (profile editing, activation card, logout, principal display)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Ensure existing users’ stored profile data remains intact when introducing the Profile-page PIN UI and PIN-status query, and avoid any requirement for users to register again.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "pengguna yang sudah daftar jangan sampe hilang data nya, cukup nanti di update saja akun profile nya untuk membuat PIN. karena kalau daftar lagi takut nya jadi error."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Existing userProfile fields (fullName, email, city, country, onboarded) are unchanged and continue to load/save as before.",
-        "PIN changes do not modify or overwrite stored profile data in saveCallerUserProfile.",
-        "No new onboarding or registration steps are introduced to set a PIN."
+        "When logged in as the allowlist admin principal, the Profile page activation card shows 'Activated' (not 'Not Activated') and does not show the activation-token redeem form.",
+        "When logged in as the allowlist admin principal, Vehicles page treats the account as activated (shows the 'Register Vehicle' primary action rather than 'Activate to Register').",
+        "For non-admin users, activation UI/behavior remains unchanged (still shows 'Not Activated' when userActivations is false/missing)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend immutable paths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
-    "Keep all Motoko logic within the single backend actor (backend/main.mo).",
-    "Do not disrupt existing, already-working features; scope changes to Profile/PIN only."
+    "Do not change or remove existing backend authorization rules (admin/user permission helpers) except what is necessary to correct the allowlist admin activation status.",
+    "Do not modify any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT.",
+    "Keep all other existing features working as-is; scope is limited to the admin account activation status display and its underlying activation check."
   ],
   "nonGoals": [
-    "Do not change vehicle transfer flow or PIN prompt behavior in transfer dialogs.",
-    "Do not add third-party authentication or any external database.",
-    "Do not redesign unrelated pages or convert existing Indonesian UI text outside the Profile page."
+    "Do not redesign the activation feature for all admins or all users.",
+    "Do not introduce new roles, new admin management screens, or new activation-token policies.",
+    "Do not perform data migrations unless strictly required for this fix."
   ],
   "imageRequirements": {
     "required": [],

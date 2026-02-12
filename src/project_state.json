@@ -2,25 +2,17 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [
-    "Profile data/schema update must be backward-compatible: existing users keep data; PIN can be added via profile update (no re-registration required)."
+  "architectural_notes": [],
+  "known_issues": [
+    "Admin account is incorrectly showing status 'Not Active' despite being an admin; needs a fix focused only on the admin account without impacting existing working features."
   ],
-  "known_issues": [],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-re-add-pin-section-to-the-existing-profile-page-ui-so-users-can-create-a-pin-if-none-exists-or-update-their-pin-if-already-set-directly-from-the-profile-page-without-requiring-re-onboarding-or-re-registration",
-      "title": "Re-add PIN section to the existing Profile page UI so users can create a PIN (if none exists) or update their PIN (if already set) directly from the Profile page, without requiring re-onboarding or re-registration.",
+      "id": "feature-ensure-the-profile-and-vehicles-pages-reflect-the-corrected-admin-activation-status-without-introducing-new-ui-flows-or-altering-existing-working-features",
+      "title": "Ensure the Profile and Vehicles pages reflect the corrected admin activation status without introducing new UI flows or altering existing working features.",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-existing-users-stored-profile-data-remains-intact-when-introducing-the-profile-page-pin-ui-and-pin-status-query-and-avoid-any-requirement-for-users-to-register-again",
-      "title": "Ensure existing users’ stored profile data remains intact when introducing the Profile-page PIN UI and PIN-status query, and avoid any requirement for users to register again.",
-      "reqIds": [
-        "REQ-3"
       ],
       "version": 1
     }
@@ -28,20 +20,14 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Re-add PIN field to user Profile and allow existing users to set/update PIN without losing existing account data; keep other features unaffected",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Expose a backend API to let the frontend determine whether the caller has a PIN set, without returning the PIN value, so existing users can set/update a PIN via their existing account profile without re-registering.",
+      "summary": "Update the backend activation-status check so the allowlist admin principal is always considered activated for vehicle registration, ensuring the admin account never shows a 'Not Activated' status in the UI.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "Re-add PIN management to Profile page without affecting existing users",
+  "projectName": "Fix admin account incorrectly showing Vehicle Registration status as Not Activated",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
