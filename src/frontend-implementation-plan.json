@@ -1,31 +1,43 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix admin activation status display for vehicle registration",
+  "title": "Vehicle ownership revocation UI with PIN confirmation",
   "requirements": [
     {
       "id": "REQ-2",
-      "summary": "Update frontend activation-status querying so the allowlist admin principal is treated as activated and Profile/Vehicles pages reflect it without changing existing flows.",
+      "summary": "Expose revokeVehicleOwnership on the frontend actor TypeScript declarations without changing auth/bootstrap or routes.",
       "acceptanceCriteria": [
-        "When logged in as the allowlist admin principal, the Profile page activation card shows 'Activated' (not 'Not Activated') and does not show the activation-token redeem form.",
-        "When logged in as the allowlist admin principal, Vehicles page treats the account as activated (shows the 'Register Vehicle' primary action rather than 'Activate to Register').",
-        "For non-admin users, activation UI/behavior remains unchanged (still shows 'Not Activated' when userActivations is false/missing)."
+        "TypeScript compilation succeeds with the new actor method available.",
+        "No changes are made to protected auth/bootstrap files or route structure."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useVehicleRegistrationActivation.ts",
+          "path": "frontend/src/backend.d.ts",
           "operation": "modify",
-          "description": "Adjust the activation-status query to be identity-aware and to treat the allowlist admin principal as activated by first verifying allowlist-admin status (using the backend capability isAllowlistAdmin and the client-side allowlist helper) before falling back to the existing isCallerActivatedForVehicleRegistration call. Ensure the React Query key includes the caller principal so cached activation state does not leak across sessions. Verify the component's usage instructions before implementing."
+          "description": "Update the frontend backend type declarations to include the revokeVehicleOwnership(vehicleId: string, pin: string): Promise<void> method signature on backendInterface, keeping existing declarations and bootstrap compatibility intact."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add a PIN-confirmed “Revoke Ownership” destructive action on Vehicle Detail for ACTIVE vehicles owned by the viewer, including no-PIN guidance and post-success navigation/cache invalidation.",
+      "acceptanceCriteria": [
+        "As the current owner of an ACTIVE vehicle, clicking \"Revoke Ownership\" opens a PIN dialog and requires PIN input before submission.",
+        "With a correct PIN, the revoke action completes, the vehicle disappears from the owner’s Vehicles list, and the UI navigates back to `/vehicles`.",
+        "With an incorrect PIN, the dialog shows an error and the vehicle remains owned; no navigation occurs.",
+        "If the user has no PIN set, the UI prevents revocation and directs the user to set a PIN in `/security`.",
+        "No existing owner actions (Mark Lost, Transfer Ownership) are broken or changed in behavior."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useVehicles.ts",
+          "operation": "modify",
+          "description": "Add a new React Query mutation hook (e.g., useRevokeVehicleOwnership) that calls actor.revokeVehicleOwnership(vehicleId, pin) and invalidates relevant caches (at minimum: ['vehicle', vehicleId] and ['userVehicles']) on success, following existing mutation patterns used by transfer/lost flows."
         },
         {
-          "path": "frontend/src/pages/ProfilePage.tsx",
+          "path": "frontend/src/pages/VehicleDetailPage.tsx",
           "operation": "modify",
-          "description": "Confirm the Profile page continues to rely on the centralized activation hook result only (no new UI flows) so that once the activation hook returns true for allowlist admin, the VehicleRegistrationActivationCard renders the Activated state and hides the redeem form as-is. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/VehiclesPage.tsx",
-          "operation": "modify",
-          "description": "Confirm the Vehicles page continues to use the centralized activation hook result only so that allowlist admin sees the existing 'Register Vehicle' primary action without changing any registration/activation UI logic for normal users. Verify the component's usage instructions before implementing."
+          "description": "Within the existing \"Owner Actions\" area (gated by isOwner and ACTIVE), add a new destructive button labeled \"Revoke Ownership\". On click: if useHasPIN() indicates no PIN, block the flow, show an English toast guiding the user to set a PIN, and provide a direct navigation path to /security; otherwise open the existing PinPromptDialog to collect the PIN and submit via the new revoke mutation. On success: show an English success toast, ensure relevant React Query caches are invalidated, and navigate back to /vehicles. On failure: show an English error toast using existing error normalization patterns, and keep the user on the detail page with no state corruption."
         }
       ]
     }

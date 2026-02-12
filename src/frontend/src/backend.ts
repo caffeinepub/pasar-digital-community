@@ -235,6 +235,7 @@ export interface backendInterface {
     redeemActivationToken(token: string): Promise<void>;
     registerVehicle(engineNumber: string, chassisNumber: string, brand: string, model: string, year: bigint, location: string, vehiclePhoto: ExternalBlob): Promise<string>;
     reportVehicleFound(vehicleId: string, finderReport: string): Promise<void>;
+    revokeVehicleOwnership(vehicleId: string, pin: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setupPIN(pin: string): Promise<void>;
     submitRSVP(name: string, attending: boolean, inviteCode: string): Promise<void>;
@@ -785,6 +786,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.reportVehicleFound(arg0, arg1);
+            return result;
+        }
+    }
+    async revokeVehicleOwnership(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.revokeVehicleOwnership(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.revokeVehicleOwnership(arg0, arg1);
             return result;
         }
     }

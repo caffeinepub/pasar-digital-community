@@ -1,9 +1,9 @@
 {
   "frontend/src/hooks/useProfile.ts": "React Query hooks for user profile operations using real backend getCallerUserProfile and saveCallerUserProfile methods with proper actor-dependent loading states to prevent profile-setup flash.",
-  "frontend/src/App.tsx": "Main application component with TanStack Router setup, removed I18nProvider import, includes all routes with proper QueryClient and InternetIdentity providers.",
+  "frontend/src/App.tsx": "Main application component with TanStack Router setup including new /report-found route, all existing routes preserved, with proper QueryClient and InternetIdentity providers.",
   "frontend/src/pages/ProfilePage.tsx": "Profile page with inline editing, activation status card integration, Security PIN section with conditional rendering (Create PIN form when no PIN exists, Update PIN form when PIN exists), and account management with English UI text.",
   "frontend/src/components/brand/AppLogo.tsx": "Logo component that displays the Pasar Digital Community logo with configurable sizes and proper aspect ratio preservation.",
-  "frontend/src/components/nav/AppHeader.tsx": "Responsive header navigation with corrected route references, removed non-existent /security route, includes mobile menu with proper navigation.",
+  "frontend/src/components/nav/AppHeader.tsx": "Responsive header navigation with new \"Report Found Vehicle\" navigation item added to both desktop and mobile menus, all existing navigation items preserved.",
   "frontend/src/components/layout/AppLayout.tsx": "Application layout wrapper with header, main content, and footer displaying app version (v1.0.0), dynamic year, custom attribution \"Built by Lucky Zamaludin Malik\", and About page link.",
   "frontend/src/components/auth/SignInScreen.tsx": "Sign-in screen with all UI text (title, subtitle, features, button states, disclaimer) translated via i18n hook using English as default.",
   "frontend/src/components/auth/AccessDeniedScreen.tsx": "Simplified access denied screen without first-admin claim functionality, showing only basic access denied message with back button.",
@@ -59,13 +59,13 @@
   "frontend/src/hooks/useLostVehicles.ts": "React Query hooks for lost vehicle operations including getLostVehicles, markVehicleAsLostStolenOrPawned with category parameter, and reportVehicleFound with proper cache invalidation for all affected queries.",
   "frontend/src/pages/LostVehiclesPage.tsx": "Page displaying all reported vehicles (Lost/Stolen/Pawned) with search functionality, distinct status badges for each category, and report details with English UI text.",
   "frontend/src/pages/VehiclesPage.tsx": "User vehicles list page with activation status check that conditionally shows \"Register Vehicle\" button only when activated, otherwise displays \"Activate to Register\" with helper alert explaining activation requirement.",
-  "frontend/src/pages/VehicleDetailPage.tsx": "Vehicle detail page with comprehensive status display for Lost/Stolen/Pawned/Found/Active states, owner actions for active vehicles, and English UI text.",
+  "frontend/src/pages/VehicleDetailPage.tsx": "Vehicle detail page with comprehensive status display, owner actions for active vehicles including the new \"Revoke Ownership\" button with PIN confirmation dialog, proper error handling, and navigation to /vehicles after successful revocation.",
   "frontend/src/components/lost/ReportFoundDialog.tsx": "Dialog component for reporting found vehicles with finder report field and English UI text, properly invalidating all relevant caches on success.",
   "frontend/src/components/transfer/PinPromptDialog.tsx": "PIN prompt dialog with client-side validation preventing empty PIN submission, inline error display, and disabled submit button when PIN is empty.",
   "frontend/src/components/transfer/InitiateTransferPanel.tsx": "Transfer initiation panel with PIN validation, success state showing transfer code with copy action, and English UI text throughout.",
-  "frontend/src/pages/VehicleCheckPage.tsx": "Public vehicle status check page with engine number input, comprehensive result display including status warnings for reported vehicles, and English UI text.",
+  "frontend/src/pages/VehicleCheckPage.tsx": "Public vehicle status check page with engine number input, comprehensive result display including vehicle photo via VehiclePhotoSection, status badges/alerts, and ReportFoundDialog integration for Lost/Stolen/Pawned vehicles.",
   "frontend/src/hooks/useVehicleCheck.ts": "React Query mutation hook for checking vehicle status by engine number using the backend checkVehicle query method.",
-  "frontend/src/pages/DashboardPage.tsx": "Dashboard page with quick actions and statistics, removed /security route reference, includes vehicle check action button.",
+  "frontend/src/pages/DashboardPage.tsx": "Dashboard page with quick actions including new \"Report Found Vehicle\" card, statistics display, and recent vehicles list with English UI text.",
   "frontend/src/hooks/useBackendHealth.ts": "Lightweight hook for checking backend reachability by directly calling createActorWithConfig to create anonymous actor for getBackendDiagnostics query, returning loading/reachable status and optional build/time information.",
   "frontend/src/utils/__tests__/bootstrapError.test.ts": "Comprehensive unit tests for bootstrap error classification covering IC0508, reject_code 5, non_replicated_rejection patterns, canister+stopped co-occurrence, health hint integration, and edge cases.",
   "frontend/src/hooks/useOnboarding.ts": "React Query mutation hook for completing onboarding with comprehensive request tracing (trace IDs, lifecycle logging), raw error logging for debugging, normalized error messages for UI display, and proper actor availability checks before call attempts.",
@@ -75,5 +75,8 @@
   "frontend/src/components/activation/VehicleRegistrationActivationCard.tsx": "Reusable card component displaying activation status (Activated/Not activated), token redemption form, and link to admin contact page with English UI.",
   "frontend/src/pages/RegisterVehiclePage.tsx": "Vehicle registration page that gates form access based on activation status, showing activation-required screen with token redemption UI when not activated, and registration form only when activated with proper error handling.",
   "frontend/src/utils/normalizeActorError.ts": "Utility to extract and normalize error details from actor calls with context-aware handling for vehicle registration activation errors, onboarding errors, and generic authorization failures.",
-  "frontend/src/hooks/usePin.ts": "React Query hooks for PIN management including useHasPIN query to check PIN status, useSetupPIN and useUpdatePIN mutations with proper cache invalidation to refresh PIN status after changes."
+  "frontend/src/hooks/usePin.ts": "React Query hooks for PIN management including useHasPIN query to check PIN status, useSetupPIN and useUpdatePIN mutations with proper cache invalidation to refresh PIN status after changes.",
+  "frontend/src/pages/ReportFoundVehiclePage.tsx": "Dedicated page for reporting found vehicles with engine number search, vehicle photo display via VehiclePhotoSection, status display, and conditional ReportFoundDialog integration for Lost/Stolen/Pawned vehicles.",
+  "frontend/src/components/vehicle/VehiclePhotoSection.tsx": "Reusable component that displays vehicle photos using ExternalBlob's getDirectURL() method with error handling and fallback UI for failed image loads.",
+  "frontend/src/hooks/useVehicles.ts": "React Query hooks for vehicle operations including getUserVehicles, getVehicle, registerVehicle, and the new useRevokeVehicleOwnership mutation with proper cache invalidation."
 }

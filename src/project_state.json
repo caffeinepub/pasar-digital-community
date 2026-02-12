@@ -1,18 +1,27 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [
-    "Admin account is incorrectly showing status 'Not Active' despite being an admin; needs a fix focused only on the admin account without impacting existing working features."
+  "summary": "Vehicle ownership management app; add a feature for owners to revoke/remove vehicle ownership (e.g., when selling/transferring) with mandatory PIN confirmation, without impacting existing working features.",
+  "architectural_notes": [
+    "Revoke ownership action must require PIN verification/confirmation.",
+    "Implement revoke-ownership with minimal changes to existing stable features (avoid regressions)."
   ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-ensure-the-profile-and-vehicles-pages-reflect-the-corrected-admin-activation-status-without-introducing-new-ui-flows-or-altering-existing-working-features",
-      "title": "Ensure the Profile and Vehicles pages reflect the corrected admin activation status without introducing new UI flows or altering existing working features.",
+      "id": "feature-expose-the-new-backend-method-to-the-frontend-by-updating-the-generated-type-declarations-and-actor-interface-used-by-the-react-app-details-update-the-frontend-backend-type-declarations-per-change-control-policy-frontend-src-backend-d-ts-to-include-the-new-method-signature-ensure-the-frontend-actor-creation-continues-to-work-without-changes-to-the-auth-bootstrap-flow",
+      "title": "Expose the new backend method to the frontend by updating the generated/type declarations and actor interface used by the React app.\n\nDetails:\n- Update the frontend backend type declarations (per change-control policy, `frontend/src/backend.d.ts`) to include the new method signature.\n- Ensure the frontend actor creation continues to work without changes to the auth/bootstrap flow.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-frontend-ui-flow-for-owners-to-revoke-vehicle-ownership-from-the-vehicle-detail-page-using-a-pin-prompt-details-in-frontend-src-pages-vehicledetailpage-tsx-within-the-existing-owner-actions-area-add-a-new-destructive-action-button-labeled-revoke-ownership-only-show-the-button-when-the-viewer-is-the-owner-isowner-and-the-vehicle-status-is-active-match-existing-owner-actions-gating-clicking-the-button-must-require-pin-entry-using-the-existing-pinpromptdialog-component-if-the-user-does-not-have-a-pin-set-use-usehaspin-block-the-revoke-flow-and-show-user-facing-guidance-in-english-e-g-toast-you-must-set-a-pin-before-revoking-ownership-and-provide-a-direct-navigation-path-to-security-on-successful-revocation-show-a-success-toast-in-english-e-g-ownership-revoked-invalidate-relevant-react-query-caches-vehicle-detail-user-vehicles-list-navigate-back-to-vehicles-on-failure-show-an-error-toast-in-english-using-the-existing-error-normalization-patterns-implementation-note-add-a-new-react-query-mutation-hook-e-g-userevokevehicleownership-in-frontend-src-hooks-usevehicles-ts-or-a-clearly-appropriate-existing-hook-file-that-calls-the-new-actor-method-and-handles-cache-invalidation",
+      "title": "Add a frontend UI flow for owners to revoke vehicle ownership from the Vehicle Detail page, using a PIN prompt.\n\nDetails:\n- In `frontend/src/pages/VehicleDetailPage.tsx`, within the existing \"Owner Actions\" area, add a new destructive action button labeled \"Revoke Ownership\".\n- Only show the button when:\n  - The viewer is the owner (`isOwner`), and\n  - The vehicle status is `ACTIVE` (match existing owner-actions gating).\n- Clicking the button must require PIN entry using the existing `PinPromptDialog` component.\n- If the user does not have a PIN set (use `useHasPIN()`), block the revoke flow and show user-facing guidance in English (e.g., toast \"You must set a PIN before revoking ownership\") and provide a direct navigation path to `/security`.\n- On successful revocation:\n  - Show a success toast in English (e.g., \"Ownership revoked\")\n  - Invalidate relevant React Query caches (vehicle detail + user vehicles list)\n  - Navigate back to `/vehicles`.\n- On failure:\n  - Show an error toast in English using the existing error normalization patterns.\n\nImplementation note:\n- Add a new React Query mutation hook (e.g., `useRevokeVehicleOwnership`) in `frontend/src/hooks/useVehicles.ts` (or a clearly appropriate existing hook file) that calls the new actor method and handles cache invalidation.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
@@ -20,14 +29,20 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update the backend activation-status check so the allowlist admin principal is always considered activated for vehicle registration, ensuring the admin account never shows a 'Not Activated' status in the UI.",
+      "summary": "Add 'revoke vehicle ownership' feature with mandatory PIN confirmation for owner when selling/transferring/removing a vehicle",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add a backend canister method to revoke a vehicle’s ownership, requiring the caller to provide their PIN.\n\nDetails:\n- Add a new public shared method (e.g., `revokeVehicleOwnership(vehicleId: Text, pin: Text) : async ()`) in `backend/main.mo`.\n- Authorization rules:\n  - Caller must be authenticated (not anonymous) and have user permission (same guards as other vehicle mutations).\n  - Vehicle must exist.\n  - Caller must be the current vehicle owner.\n  - PIN must be verified using the existing PIN store/verification logic.\n- Behavior on success:\n  - Update the vehicle record so it is no longer owned by the caller (set `owner` to the anonymous principal `Principal.fromText(\"2vxsx-fae\")`).\n  - Clear any existing `transferCode` (set to `null`).\n- Error handling:\n  - If the user has no PIN set, trap with a clear message (e.g., \"No PIN set for this user\").\n  - If PIN is wrong, trap with a clear message (e.g., \"Incorrect PIN\").\n  - Preserve existing behavior for all other methods (no functional changes).\n\nNote: Do not change the `Vehicle` type schema; implement revocation without introducing new fields/variants to avoid migrations and regressions.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "Fix admin account incorrectly showing Vehicle Registration status as Not Activated",
+  "projectName": "Add vehicle ownership revocation with mandatory PIN confirmation",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -158,6 +158,7 @@ export interface _SERVICE {
     string
   >,
   'reportVehicleFound' : ActorMethod<[string, string], undefined>,
+  'revokeVehicleOwnership' : ActorMethod<[string, string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setupPIN' : ActorMethod<[string], undefined>,
   'submitRSVP' : ActorMethod<[string, boolean, string], undefined>,

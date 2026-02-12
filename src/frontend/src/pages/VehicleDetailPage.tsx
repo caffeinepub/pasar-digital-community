@@ -1,22 +1,56 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useGetVehicle } from '../hooks/useVehicles';
+import { useGetVehicle, useRevokeVehicleOwnership } from '../hooks/useVehicles';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useHasPIN } from '../hooks/usePin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import InitiateTransferPanel from '../components/transfer/InitiateTransferPanel';
 import MarkLostDialog from '../components/lost/MarkLostDialog';
-import { ArrowLeft, Calendar, MapPin, Hash, AlertTriangle, CheckCircle } from 'lucide-react';
-import type { VehicleStatus } from '../backend';
+import PinPromptDialog from '../components/transfer/PinPromptDialog';
+import { ArrowLeft, Calendar, MapPin, Hash, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function VehicleDetailPage() {
   const { vehicleId } = useParams({ from: '/vehicles/$vehicleId' });
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
   const { data: vehicle, isLoading } = useGetVehicle(vehicleId);
+  const { data: hasPIN, isLoading: pinLoading } = useHasPIN();
+  const revokeOwnership = useRevokeVehicleOwnership();
+
+  const [showRevokePinDialog, setShowRevokePinDialog] = useState(false);
 
   const isOwner = vehicle && identity && vehicle.owner.toString() === identity.getPrincipal().toString();
+
+  const handleRevokeClick = () => {
+    if (pinLoading) return;
+
+    if (!hasPIN) {
+      toast.error('PIN Required', {
+        description: 'You must set up a PIN before revoking vehicle ownership. Please go to Security settings to create a PIN.',
+      });
+      navigate({ to: '/profile' });
+      return;
+    }
+
+    setShowRevokePinDialog(true);
+  };
+
+  const handleRevokeSubmit = async (pin: string) => {
+    try {
+      await revokeOwnership.mutateAsync({ vehicleId, pin });
+      toast.success('Ownership Revoked', {
+        description: 'Vehicle ownership has been successfully revoked.',
+      });
+      navigate({ to: '/vehicles' });
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to revoke ownership';
+      throw new Error(errorMessage);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -216,12 +250,24 @@ export default function VehicleDetailPage() {
                 <div className="flex flex-wrap gap-2">
                   <MarkLostDialog vehicleId={vehicle.id} />
                   <InitiateTransferPanel vehicleId={vehicle.id} />
+                  <Button variant="destructive" onClick={handleRevokeClick} className="gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    Revoke Ownership
+                  </Button>
                 </div>
               </div>
             </>
           )}
         </CardContent>
       </Card>
+
+      <PinPromptDialog
+        open={showRevokePinDialog}
+        onOpenChange={setShowRevokePinDialog}
+        onSubmit={handleRevokeSubmit}
+        title="Confirm Ownership Revocation"
+        description="Enter your PIN to revoke ownership of this vehicle. This action will remove the vehicle from your account."
+      />
     </div>
   );
 }

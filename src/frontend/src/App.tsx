@@ -15,6 +15,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminInviteTokensPage from './pages/admin/AdminInviteTokensPage';
 import AboutPage from './pages/AboutPage';
 import VehicleCheckPage from './pages/VehicleCheckPage';
+import ReportFoundVehiclePage from './pages/ReportFoundVehiclePage';
 import TopLevelErrorBoundary from './components/system/TopLevelErrorBoundary';
 
 const queryClient = new QueryClient({
@@ -102,6 +103,12 @@ const vehicleCheckRoute = createRoute({
   component: VehicleCheckPage,
 });
 
+const reportFoundRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/report-found',
+  component: ReportFoundVehiclePage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   vehiclesRoute,
@@ -115,6 +122,7 @@ const routeTree = rootRoute.addChildren([
   adminInviteTokensRoute,
   aboutRoute,
   vehicleCheckRoute,
+  reportFoundRoute,
 ]);
 
 const router = createRouter({ routeTree });

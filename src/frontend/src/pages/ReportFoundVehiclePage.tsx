@@ -6,11 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Search, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import ReportFoundDialog from '../components/lost/ReportFoundDialog';
 import VehiclePhotoSection from '../components/vehicle/VehiclePhotoSection';
 
-export default function VehicleCheckPage() {
+export default function ReportFoundVehiclePage() {
   const [engineNumber, setEngineNumber] = useState('');
   const vehicleCheck = useVehicleCheck();
 
@@ -66,70 +66,28 @@ export default function VehicleCheckPage() {
     );
   };
 
-  const getStatusAlert = (statusNote: string) => {
-    if (statusNote === 'Stolen') {
-      return (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Warning:</strong> This vehicle has been reported as stolen. Please contact local authorities
-            immediately if you encounter this vehicle.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    if (statusNote === 'Pawned') {
-      return (
-        <Alert variant="destructive" className="border-orange-600 bg-orange-50 text-orange-900">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Notice:</strong> This vehicle has been reported as pawned. Verify ownership before any transaction.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    if (statusNote === 'Lost') {
-      return (
-        <Alert variant="destructive" className="border-yellow-600 bg-yellow-50 text-yellow-900">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Notice:</strong> This vehicle has been reported as lost. Contact the owner if you have information.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    if (statusNote === 'Found') {
-      return (
-        <Alert className="border-green-600 bg-green-50 text-green-900">
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Good News:</strong> This vehicle has been reported as found and is being reunited with its owner.
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    return (
-      <Alert>
-        <CheckCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Status:</strong> This vehicle is registered and active in the system.
-        </AlertDescription>
-      </Alert>
-    );
-  };
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Vehicle Check</h1>
-          <p className="text-muted-foreground mt-1">Verify vehicle status before purchase or transaction</p>
+          <h1 className="text-3xl font-bold">Report Found Vehicle</h1>
+          <p className="text-muted-foreground mt-1">
+            Help reunite owners with their lost vehicles by reporting a found vehicle
+          </p>
         </div>
+
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Enter the engine number of the vehicle you found. If the vehicle is reported as Lost, Stolen, or Pawned,
+            you can submit a finder report to notify the owner.
+          </AlertDescription>
+        </Alert>
 
         <Card>
           <CardHeader>
-            <CardTitle>Check Vehicle Status</CardTitle>
-            <CardDescription>Enter the engine number to check if a vehicle is reported</CardDescription>
+            <CardTitle>Search Vehicle</CardTitle>
+            <CardDescription>Enter the engine number to check the vehicle status</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -145,7 +103,7 @@ export default function VehicleCheckPage() {
               </div>
               <Button type="submit" disabled={vehicleCheck.isPending} className="w-full gap-2">
                 <Search className="h-4 w-4" />
-                {vehicleCheck.isPending ? 'Checking...' : 'Check Vehicle'}
+                {vehicleCheck.isPending ? 'Searching...' : 'Search Vehicle'}
               </Button>
             </form>
           </CardContent>
@@ -164,14 +122,12 @@ export default function VehicleCheckPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Vehicle Information</CardTitle>
+                <CardTitle>Vehicle Found</CardTitle>
                 {getStatusBadge(vehicleCheck.data.statusNote)}
               </div>
-              <CardDescription>Details of the checked vehicle</CardDescription>
+              <CardDescription>Vehicle details and status information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {getStatusAlert(vehicleCheck.data.statusNote)}
-
               <VehiclePhotoSection
                 vehiclePhoto={vehicleCheck.data.vehicle.vehiclePhoto}
                 vehicleName={`${vehicleCheck.data.vehicle.brand} ${vehicleCheck.data.vehicle.model}`}
@@ -196,17 +152,31 @@ export default function VehicleCheckPage() {
                 </div>
               </div>
 
-              {isEligibleForReport(vehicleCheck.data.statusNote) && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Found this vehicle? Help reunite it with the owner by submitting a report.
-                  </p>
-                  <ReportFoundDialog
-                    vehicleId={vehicleCheck.data.vehicle.id}
-                    vehicleName={`${vehicleCheck.data.vehicle.brand} ${vehicleCheck.data.vehicle.model}`}
-                  />
-                </div>
-              )}
+              <div className="pt-4 border-t">
+                {isEligibleForReport(vehicleCheck.data.statusNote) ? (
+                  <div className="space-y-3">
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        This vehicle is reported as <strong>{vehicleCheck.data.statusNote}</strong>. You can submit a
+                        finder report to help the owner.
+                      </AlertDescription>
+                    </Alert>
+                    <ReportFoundDialog
+                      vehicleId={vehicleCheck.data.vehicle.id}
+                      vehicleName={`${vehicleCheck.data.vehicle.brand} ${vehicleCheck.data.vehicle.model}`}
+                    />
+                  </div>
+                ) : (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      This vehicle is currently marked as <strong>{vehicleCheck.data.statusNote}</strong> and is not
+                      eligible for a found report.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}

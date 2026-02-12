@@ -59,3 +59,19 @@ export function useRegisterVehicle() {
     },
   });
 }
+
+export function useRevokeVehicleOwnership() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ vehicleId, pin }: { vehicleId: string; pin: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.revokeVehicleOwnership(vehicleId, pin);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['vehicle', variables.vehicleId] });
+      queryClient.invalidateQueries({ queryKey: ['userVehicles'] });
+    },
+  });
+}

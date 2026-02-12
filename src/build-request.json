@@ -1,54 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Fix admin account incorrectly showing Vehicle Registration status as Not Activated",
-  "priority": "high",
+  "title": "Add vehicle ownership revocation with mandatory PIN confirmation",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the backend activation-status check so the allowlist admin principal is always considered activated for vehicle registration, ensuring the admin account never shows a 'Not Activated' status in the UI.",
+      "text": "Add a backend canister method to revoke a vehicle’s ownership, requiring the caller to provide their PIN.\n\nDetails:\n- Add a new public shared method (e.g., `revokeVehicleOwnership(vehicleId: Text, pin: Text) : async ()`) in `backend/main.mo`.\n- Authorization rules:\n  - Caller must be authenticated (not anonymous) and have user permission (same guards as other vehicle mutations).\n  - Vehicle must exist.\n  - Caller must be the current vehicle owner.\n  - PIN must be verified using the existing PIN store/verification logic.\n- Behavior on success:\n  - Update the vehicle record so it is no longer owned by the caller (set `owner` to the anonymous principal `Principal.fromText(\"2vxsx-fae\")`).\n  - Clear any existing `transferCode` (set to `null`).\n- Error handling:\n  - If the user has no PIN set, trap with a clear message (e.g., \"No PIN set for this user\").\n  - If PIN is wrong, trap with a clear message (e.g., \"Incorrect PIN\").\n  - Preserve existing behavior for all other methods (no functional changes).\n\nNote: Do not change the `Vehicle` type schema; implement revocation without introducing new fields/variants to avoid migrations and regressions.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-6"
         ],
         "quotes": [
-          "ini kenapa saya sebagai admin tapi status akun nya Not Active ? Kan saya ini admin nya. Coba perbaiki dan jangan ganggu fitur-fitur yang sudah berjalan normal. Fokus ke akun admin saja."
+          "sekarang bagaimana pemilik akan mencabut kepemilikan kendaraan? ... Dan ketika mau mencabut kepemilika wajib memasukan PIN ... jangan ganggu fitur-fitur yang sudah berrjalan normal. fokus saja ke fitur mencabut kepemilikan."
         ]
       },
       "acceptanceCriteria": [
-        "When the caller principal equals the hard-coded allowlist admin (backend/main.mo:79), backend method isCallerActivatedForVehicleRegistration returns true regardless of userActivations state.",
-        "For non-admin/non-allowlist users, isCallerActivatedForVehicleRegistration behavior remains unchanged (returns the value from userActivations or false if missing).",
-        "No changes are made to activation token issuance/redeem flows for normal users."
+        "Calling `revokeVehicleOwnership(vehicleId, pin)` as the current owner with the correct PIN succeeds and returns `()`.",
+        "After revocation, `getUserVehicles()` for the previous owner no longer includes the revoked vehicle.",
+        "After revocation, `getVehicle(vehicleId)` returns a vehicle whose `owner` is the anonymous principal and whose `transferCode` is `null`.",
+        "Calling `revokeVehicleOwnership` with an incorrect PIN traps with an error that clearly indicates the PIN is incorrect.",
+        "Calling `revokeVehicleOwnership` by a non-owner traps with an authorization error.",
+        "No existing backend methods change signature or behavior (other than adding the new method)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure the Profile and Vehicles pages reflect the corrected admin activation status without introducing new UI flows or altering existing working features.",
+      "text": "Expose the new backend method to the frontend by updating the generated/type declarations and actor interface used by the React app.\n\nDetails:\n- Update the frontend backend type declarations (per change-control policy, `frontend/src/backend.d.ts`) to include the new method signature.\n- Ensure the frontend actor creation continues to work without changes to the auth/bootstrap flow.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "wajib memasukan PIN ... jangan ganggu fitur-fitur yang sudah berrjalan normal. fokus saja ke fitur mencabut kepemilikan."
+        ]
+      },
+      "acceptanceCriteria": [
+        "TypeScript compilation succeeds with the new actor method available.",
+        "No changes are made to protected auth/bootstrap files or route structure."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add a frontend UI flow for owners to revoke vehicle ownership from the Vehicle Detail page, using a PIN prompt.\n\nDetails:\n- In `frontend/src/pages/VehicleDetailPage.tsx`, within the existing \"Owner Actions\" area, add a new destructive action button labeled \"Revoke Ownership\".\n- Only show the button when:\n  - The viewer is the owner (`isOwner`), and\n  - The vehicle status is `ACTIVE` (match existing owner-actions gating).\n- Clicking the button must require PIN entry using the existing `PinPromptDialog` component.\n- If the user does not have a PIN set (use `useHasPIN()`), block the revoke flow and show user-facing guidance in English (e.g., toast \"You must set a PIN before revoking ownership\") and provide a direct navigation path to `/security`.\n- On successful revocation:\n  - Show a success toast in English (e.g., \"Ownership revoked\")\n  - Invalidate relevant React Query caches (vehicle detail + user vehicles list)\n  - Navigate back to `/vehicles`.\n- On failure:\n  - Show an error toast in English using the existing error normalization patterns.\n\nImplementation note:\n- Add a new React Query mutation hook (e.g., `useRevokeVehicleOwnership`) in `frontend/src/hooks/useVehicles.ts` (or a clearly appropriate existing hook file) that calls the new actor method and handles cache invalidation.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-6"
         ],
         "quotes": [
-          "jangan ganggu fitur-fitur yang sudah berjalan normal. Fokus ke akun admin saja."
+          "ketika mau mencabut kepemilika wajib memasukan PIN ... fokus saja ke fitur mencabut kepemilikan."
         ]
       },
       "acceptanceCriteria": [
-        "When logged in as the allowlist admin principal, the Profile page activation card shows 'Activated' (not 'Not Activated') and does not show the activation-token redeem form.",
-        "When logged in as the allowlist admin principal, Vehicles page treats the account as activated (shows the 'Register Vehicle' primary action rather than 'Activate to Register').",
-        "For non-admin users, activation UI/behavior remains unchanged (still shows 'Not Activated' when userActivations is false/missing)."
+        "As the current owner of an ACTIVE vehicle, clicking \"Revoke Ownership\" opens a PIN dialog and requires PIN input before submission.",
+        "With a correct PIN, the revoke action completes, the vehicle disappears from the owner’s Vehicles list, and the UI navigates back to `/vehicles`.",
+        "With an incorrect PIN, the dialog shows an error and the vehicle remains owned; no navigation occurs.",
+        "If the user has no PIN set, the UI prevents revocation and directs the user to set a PIN in `/security`.",
+        "No existing owner actions (Mark Lost, Transfer Ownership) are broken or changed in behavior."
       ]
     }
   ],
   "constraints": [
-    "Do not change or remove existing backend authorization rules (admin/user permission helpers) except what is necessary to correct the allowlist admin activation status.",
-    "Do not modify any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT.",
-    "Keep all other existing features working as-is; scope is limited to the admin account activation status display and its underlying activation check."
+    "Do not modify or break any existing working features; changes must be scoped strictly to the ownership revocation feature.",
+    "Do not add, remove, or change any existing frontend routes listed in `frontend/src/App.tsx` (per `frontend/CHANGE_CONTROL_POLICY.md`).",
+    "Do not change the existing `Vehicle` schema/type; implement revocation without adding new fields or variants to avoid migrations.",
+    "Do not edit files under `frontend/src/components/ui` and do not edit immutable hook paths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Do not redesign the activation feature for all admins or all users.",
-    "Do not introduce new roles, new admin management screens, or new activation-token policies.",
-    "Do not perform data migrations unless strictly required for this fix."
+    "Do not redesign the transfer-ownership feature; revocation is a separate action.",
+    "Do not add third-party authentication or non-Internet-Identity auth.",
+    "Do not add admin workflows or analytics around revocations unless explicitly requested.",
+    "Do not implement real-time updates or notifications for revocation."
   ],
   "imageRequirements": {
     "required": [],

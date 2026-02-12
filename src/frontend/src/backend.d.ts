@@ -142,6 +142,7 @@ export interface backendInterface {
     redeemActivationToken(token: string): Promise<void>;
     registerVehicle(engineNumber: string, chassisNumber: string, brand: string, model: string, year: bigint, location: string, vehiclePhoto: ExternalBlob): Promise<string>;
     reportVehicleFound(vehicleId: string, finderReport: string): Promise<void>;
+    revokeVehicleOwnership(vehicleId: string, pin: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setupPIN(pin: string): Promise<void>;
     submitRSVP(name: string, attending: boolean, inviteCode: string): Promise<void>;

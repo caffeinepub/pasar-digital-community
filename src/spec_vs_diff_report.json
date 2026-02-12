@@ -1,55 +1,66 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T00:43:33.451Z",
-  "summary": "Diff shows a frontend hook now calling backend isCallerActivatedForVehicleRegistration, but the backend change to force-activate the allowlist admin is not evidenced in the provided truncation, and there are no shown changes to Profile/Vehicles pages to adjust UI behavior. The backend diff also appears to modify admin/user permission helper behavior beyond the requested activation-status fix.",
+  "generatedAt": "2026-02-12T01:33:18.842Z",
+  "summary": "Frontend added a React Query mutation hook (useRevokeVehicleOwnership) and started wiring a revoke flow into VehicleDetailPage, but key requirements are missing/incorrect: backend method implementation is not evidenced, frontend backend type declarations were not updated to include the new actor method, the no-PIN guidance navigates to the wrong route (/profile instead of /security), and failure handling does not show an error toast/normalized error. UI button/dialog integration is not evidenced in the truncated diff.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Update backend isCallerActivatedForVehicleRegistration so the hard-coded allowlist admin principal always returns true (non-admin behavior unchanged; no changes to token flows).",
-      "reason": "The backend file excerpt includes allowlist admin helpers and permission helpers, but the diff summary does not show any implementation or modification of isCallerActivatedForVehicleRegistration, nor evidence that it returns true for the allowlist admin regardless of userActivations.",
+      "requirement": "Add backend canister method revokeVehicleOwnership(vehicleId, pin) with auth/ownership checks, PIN verification, and on success set owner to anonymous principal and clear transferCode.",
+      "reason": "backend/main.mo is truncated and does not show any new revokeVehicleOwnership method or the specified behavior (owner set to Principal.fromText(\"2vxsx-fae\"), transferCode cleared) or required trap messages.",
       "evidence": [
-        "backend/main.mo (truncated; no isCallerActivatedForVehicleRegistration shown)"
+        "backend/main.mo (truncated; no revokeVehicleOwnership shown)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Ensure Profile and Vehicles pages reflect corrected admin activation status (admin shows Activated and no redeem form; Vehicles shows Register Vehicle; non-admin behavior unchanged).",
-      "reason": "No diff evidence shows changes to ProfilePage/Vehicles page conditional rendering. Only a hook change is shown, and the file summary is not a diff proving UI changes.",
+      "requirement": "Update frontend/src/backend.d.ts actor/type declarations to include revokeVehicleOwnership(vehicleId: string, pin: string): Promise<void> (or equivalent), making the method available to the React actor with TS compilation succeeding.",
+      "reason": "No diff evidence shows frontend/src/backend.d.ts being modified to add revokeVehicleOwnership; the only backend.d.ts mention in the provided summaries refers to activation-token methods, not revocation.",
       "evidence": [
-        "frontend/src/hooks/useVehicleRegistrationActivation.ts",
-        "frontend-file-summaries.txt (only a summary; no Vehicles page diff shown)"
+        "frontend-file-summaries.txt (mentions backend.d.ts changes for activation tokens only; no revokeVehicleOwnership)",
+        "Modified files list does not include frontend/src/backend.d.ts"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "If the user does not have a PIN set, block revoke flow, show guidance toast, and provide direct navigation path to /security.",
+      "reason": "The implemented no-PIN path navigates to /profile rather than /security.",
+      "evidence": [
+        "frontend/src/pages/VehicleDetailPage.tsx: navigate({ to: '/profile' });"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "On failure, show an error toast in English using existing error normalization patterns (and do not navigate).",
+      "reason": "The catch block rethrows a new Error instead of showing an error toast/normalized error message; no toast call is present in the failure path shown.",
+      "evidence": [
+        "frontend/src/pages/VehicleDetailPage.tsx: catch (...) { const errorMessage = ...; throw new Error(errorMessage); }"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Add a destructive \"Revoke Ownership\" button in the existing Owner Actions area, only for isOwner + ACTIVE, and wire it to PinPromptDialog.",
+      "reason": "The diff is truncated and does not show the actual Owner Actions UI, the presence of the button label, gating by ACTIVE status, or rendering/usage of PinPromptDialog (only import/state/handlers are visible).",
+      "evidence": [
+        "frontend/src/pages/VehicleDetailPage.tsx (truncated; UI section not shown)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Modified authorization/permission helper behavior to always grant admin/user permissions to the allowlist admin (hasAdminPermission/hasUserPermission changes).",
-      "reason": "BuildRequest explicitly constrained not to change/remove existing backend authorization rules except what is necessary for the allowlist admin activation status. Changing admin/user permission helpers is beyond the requested activation-status check fix.",
+      "description": "Redirecting users without a PIN to /profile instead of the required /security route.",
+      "reason": "BuildRequest explicitly requires a direct navigation path to /security when no PIN is set; the implementation uses /profile.",
       "evidence": [
-        "backend/main.mo (functions hasAdminPermission/hasUserPermission now special-case allowlist admin)"
-      ]
-    },
-    {
-      "description": "Added/modified backend helpers related to onboarding state for allowlist admin (isAllowlistAdminOnboarded, isUserOnboarded) that are not part of the requested activation-status check.",
-      "reason": "Requirements are limited to activation-status display and underlying activation check; onboarding helpers are not requested in REQ-1/REQ-2.",
-      "evidence": [
-        "backend/main.mo (isAllowlistAdminOnboarded, isUserOnboarded, isCallerAllowlistAdmin)"
-      ]
-    },
-    {
-      "description": "Updated project_state.json with new_feature_requests entries and statuses.",
-      "reason": "Not requested by the BuildRequest; this appears to be project tracking metadata rather than the activation-status fix.",
-      "evidence": [
-        "project_state.json"
+        "frontend/src/pages/VehicleDetailPage.tsx: navigate({ to: '/profile' });"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.63,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useVehicleRegistrationActivation.ts",
+    "frontend/src/hooks/useVehicles.ts",
+    "frontend/src/pages/VehicleDetailPage.tsx",
     "project_state.json"
   ]
 }

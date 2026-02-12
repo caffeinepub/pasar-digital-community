@@ -135,7 +135,11 @@ actor {
     code;
   };
 
-  public func submitRSVP(name : Text, attending : Bool, inviteCode : Text) : async () {
+  public shared ({ caller }) func submitRSVP(name : Text, attending : Bool, inviteCode : Text) : async () {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot submit RSVPs");
+    };
+
     let inviteCodes = InviteLinksModule.getInviteCodes(inviteState);
     switch (inviteCodes.find(func(code) { code.code == inviteCode })) {
       case (null) { Runtime.trap("Invalid invitation code") };
@@ -559,6 +563,46 @@ actor {
     vehicleState.add(vehicleId, vehicle);
   };
 
+  // --------------------------------- New Feature: Vehicle Ownership Revocation  ---------------------------------
+  public shared ({ caller }) func revokeVehicleOwnership(vehicleId : Text, pin : Text) : async () {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot revoke vehicle ownership");
+    };
+
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can revoke vehicle ownership");
+    };
+
+    let vehicle = switch (vehicleState.get(vehicleId)) {
+      case (null) { Runtime.trap("Vehicle not found") };
+      case (?vehicle) {
+        // Ownership check
+        if (vehicle.owner != caller) {
+          Runtime.trap("Unauthorized: Only the owner can revoke their vehicle ownership");
+        };
+
+        // PIN check (trap on missing PIN so message is clear)
+        let pinCheckResult = switch (userPINs.get(caller)) {
+          case (null) { Runtime.trap("No PIN set for this user. Please set up a PIN to revoke vehicle ownership."); };
+          case (?storedPin) { storedPin == pin };
+        };
+
+        if (not pinCheckResult) {
+          Runtime.trap("Incorrect PIN");
+        };
+
+        // Transfer code check (allow null or otherwise, always clear)
+        let clearedVehicle = {
+          vehicle with
+          owner = Principal.fromText("2vxsx-fae");
+          transferCode = null; // Always clear existing transfer code
+        };
+        clearedVehicle;
+      };
+    };
+    vehicleState.add(vehicleId, vehicle);
+  };
+
   // --------------------------------- Notifications ---------------------------------
   public query ({ caller }) func getMyNotifications() : async [Notification] {
     if (caller.isAnonymous()) {
@@ -804,7 +848,7 @@ actor {
   };
 
   // --------------------------------- Backend Health Diagnostics ---------------------------------
-  public query ({ caller }) func getBackendDiagnostics() : async {
+  public query func getBackendDiagnostics() : async {
     build : Text;
     time : Time.Time;
   } {

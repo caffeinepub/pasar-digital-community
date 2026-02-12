@@ -1,11 +1,18 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the allowlist admin account so it is always treated as activated for vehicle registration, eliminating the incorrect “Not Activated” status while keeping all other activation behavior unchanged.
+**Goal:** Let vehicle owners revoke their vehicle ownership with mandatory PIN confirmation, without affecting existing features.
 
 **Planned changes:**
-- Backend: Update the vehicle-registration activation-status check so the hard-coded allowlist admin principal is always considered activated (returns true), independent of stored activation state.
-- Backend: Preserve existing activation checks and token issuance/redeem flows for all non-admin users.
-- Frontend: Ensure Profile and Vehicles pages reflect the corrected activation status for the allowlist admin (show “Activated” and the “Register Vehicle” primary action), without introducing new UI flows or altering other working features.
+- Add a new backend canister method `revokeVehicleOwnership(vehicleId: Text, pin: Text) : async ()` that:
+  - Requires authenticated caller, correct permissions, existing vehicle, and caller being the current owner.
+  - Verifies the caller’s PIN using existing PIN verification logic (trap with clear messages for no PIN / incorrect PIN).
+  - On success sets `owner` to the anonymous principal and clears `transferCode` to `null`.
+- Expose the new backend method to the React frontend by updating `frontend/src/backend.d.ts` so the actor typing includes the method.
+- Add a new "Revoke Ownership" destructive action in `VehicleDetailPage.tsx` (only for owners of ACTIVE vehicles) that:
+  - Uses the existing `PinPromptDialog` to collect PIN before submitting.
+  - Blocks the action if the user has no PIN (via `useHasPIN()`), shows an English toast, and provides navigation to `/security`.
+  - On success shows an English success toast, invalidates relevant React Query caches (vehicle detail + user vehicles list), and navigates to `/vehicles`.
+  - On failure shows an English error toast using existing error normalization patterns.
 
-**User-visible outcome:** When logged in as the allowlist admin, the app shows Vehicle Registration as “Activated” (no activation-token redeem form) and allows registering vehicles; non-admin users see no change in activation behavior.
+**User-visible outcome:** Owners of ACTIVE vehicles can revoke their vehicle ownership from the vehicle detail page by entering their PIN; after success the vehicle is no longer in their vehicles list and they are returned to the vehicles page.
