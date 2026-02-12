@@ -13,11 +13,12 @@ import { toast } from 'sonner';
 import { Upload, ArrowLeft, AlertCircle, ExternalLink } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
+import { normalizeActorError } from '../utils/normalizeActorError';
 
 export default function RegisterVehiclePage() {
   const navigate = useNavigate();
   const registerVehicle = useRegisterVehicle();
-  const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
+  const { data: isActivated, isLoading: activationLoading, isFetched } = useIsActivatedForVehicleRegistration();
   const [engineNumber, setEngineNumber] = useState('');
   const [chassisNumber, setChassisNumber] = useState('');
   const [brand, setBrand] = useState('');
@@ -68,13 +69,8 @@ export default function RegisterVehiclePage() {
       toast.success('Vehicle registered successfully');
       navigate({ to: '/vehicles' });
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to register vehicle';
-      
-      if (errorMessage.includes('not activated') || errorMessage.includes('blocked')) {
-        toast.error('Vehicle registration is not activated. Please complete activation first.');
-      } else {
-        toast.error(errorMessage);
-      }
+      const normalized = normalizeActorError(error, 'registerVehicle');
+      toast.error(normalized.userMessage);
     }
   };
 
@@ -89,7 +85,8 @@ export default function RegisterVehiclePage() {
     );
   }
 
-  if (!isActivated) {
+  // Show activation required screen when not activated
+  if (isFetched && !isActivated) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Button variant="ghost" onClick={() => navigate({ to: '/vehicles' })} className="mb-6 gap-2">
@@ -106,8 +103,7 @@ export default function RegisterVehiclePage() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Vehicle registration is not activated for your account. Please redeem an activation token or contact the
-              admin to activate your account.
+              Vehicle registration is not activated for your account. Please redeem an activation token from the admin to activate your account.
             </AlertDescription>
           </Alert>
 

@@ -1,92 +1,50 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix onboarding frontend observability and PWA icon assets",
+  "title": "Re-add PIN management to Profile page (frontend-only)",
   "requirements": [
     {
       "id": "REQ-2",
-      "summary": "Preserve and surface actionable onboarding errors by logging raw actor failures and rendering specific UI messages when available.",
+      "summary": "Add a PIN section to the existing Profile page that conditionally supports creating or updating a PIN using existing backend functions.",
       "acceptanceCriteria": [
-        "When completeOnboarding fails, the console includes a log entry that contains the original error payload/message received from the actor call.",
-        "The Onboarding page alert renders the normalized error message, but it must not always collapse distinct backend failures into the same generic message if a more specific message is available (e.g., 'Already onboarded').",
-        "When the actor is not available, the UI displays an actionable message (not a silent failure)."
+        "Profile page shows a clearly labeled PIN section in English (e.g., 'PIN' / 'Security PIN').",
+        "If the user has no PIN, the Profile page shows a 'Create PIN' form that calls the existing setupPIN mutation.",
+        "If the user already has a PIN, the Profile page shows an 'Update PIN' form requiring old PIN + new PIN + confirm, calling the existing updatePIN mutation.",
+        "Client-side validation prevents submission when new PIN and confirmation do not match and enforces a minimum length of 4 characters (matching existing SecuritySettingsPage behavior).",
+        "Successful create/update invalidates or refreshes any relevant PIN-status query so the UI updates immediately.",
+        "No changes are made to unrelated Profile page functionality (profile editing, activation card, logout, principal display)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/normalizeActorError.ts",
-          "operation": "create",
-          "description": "Add a small utility to extract and normalize error details from actor calls (e.g., preserve raw payload for logs while returning a user-safe message)."
+          "path": "frontend/src/hooks/usePin.ts",
+          "operation": "modify",
+          "description": "Add a React Query hook to fetch the caller's PIN status (e.g., useHasPIN using backend hasPIN for the current caller) and update existing PIN mutations (useSetupPIN/useUpdatePIN) to invalidate/refresh the PIN-status query on success so Profile UI updates immediately."
         },
         {
-          "path": "frontend/src/hooks/useOnboarding.ts",
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Update completeOnboarding mutation to (1) log the raw caught error/payload to console for debugging, (2) use the shared normalization utility to map known backend messages (e.g., Already onboarded/Unauthorized/etc.) to more specific UI text, and (3) throw an actionable error message when the actor is not available (instead of a generic registration failure). Use the selected \"authorization\" component guidance for handling backend trap/Unauthorized errors gracefully in UI; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/OnboardingPage.tsx",
-          "operation": "modify",
-          "description": "Ensure the page renders the mutation's normalized error message consistently (including the actor-not-available case) and does not swallow errors silently in the submit handler (keep try/catch only if it adds value)."
+          "description": "Re-add a new 'Security PIN' section to the existing Profile page UI with conditional rendering based on the PIN-status hook: show a Create PIN form when no PIN exists, otherwise show an Update PIN form (old PIN + new PIN + confirm). Implement client-side validation (min length 4, new/confirm match) and call existing useSetupPIN/useUpdatePIN mutations. Keep all labels in English and ensure existing profile editing, activation card, logout, and principal display behavior remain unchanged."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add lightweight tracing around onboarding submit so mutation invocation and actor-call attempt are obvious in DevTools logs, and keep submit button disabled with progress label while pending.",
+      "summary": "Ensure Profile page PIN UI integrates without changing existing profile load/save behavior or introducing new onboarding/registration steps.",
       "acceptanceCriteria": [
-        "Clicking Register always triggers the React Query mutation (visible via tracing logs) and results in an actor call attempt (or a clear 'actor not available' error before the call).",
-        "While completeOnboarding.isPending is true, the Register button remains disabled and the button label indicates progress."
+        "Existing userProfile fields (fullName, email, city, country, onboarded) are unchanged and continue to load/save as before.",
+        "PIN changes do not modify or overwrite stored profile data in saveCallerUserProfile.",
+        "No new onboarding or registration steps are introduced to set a PIN."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useOnboarding.ts",
+          "path": "frontend/src/pages/ProfilePage.tsx",
           "operation": "modify",
-          "description": "Add lightweight request tracing (start/finish) around the mutation lifecycle (e.g., onMutate/onSuccess/onError/onSettled) with a per-submit trace id so it is clear when the mutation runs and when the actor call is attempted/finished. Ensure tracing logs include whether the actor was available before the call attempt."
+          "description": "Keep PIN state and submission logic fully separate from the profile edit/save flow so that saving a profile still submits only the existing UserProfile fields (fullName/email/city/country/onboarded) and PIN create/update actions never call or depend on saveCallerUserProfile."
         },
         {
-          "path": "frontend/src/pages/OnboardingPage.tsx",
-          "operation": "modify",
-          "description": "Add a submit-flow trace log at the beginning of handleSubmit (and optionally when validation prevents submit) so it is obvious that clicking Register initiated the flow. Confirm the Register button remains disabled and shows a progress label while the mutation is pending."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Regenerate and place valid PWA PNG icon assets at the manifest-referenced paths to remove browser console warnings.",
-      "acceptanceCriteria": [
-        "Loading the app no longer shows 'resource isn't a valid image' for manifest icons in the browser console.",
-        "The following files exist and are valid PNGs: /assets/generated/pwa-icon.dim_192x192.png, /assets/generated/pwa-icon.dim_512x512.png, /assets/generated/pwa-maskable.dim_512x512.png, /assets/generated/apple-touch-icon.dim_180x180.png.",
-        "manifest.webmanifest continues to reference the same icon paths (no breaking path changes)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
+          "path": "frontend/src/pages/__tests__/ProfilePage.pin-profile-integrity.test.tsx",
           "operation": "create",
-          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/pwa-icon.dim_192x192.png (matches existing manifest/index.html path)."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "operation": "create",
-          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/pwa-icon.dim_512x512.png (matches existing manifest/index.html path)."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-          "operation": "create",
-          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/pwa-maskable.dim_512x512.png (matches existing manifest path; ensure maskable-safe padding)."
-        },
-        {
-          "path": "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "operation": "create",
-          "description": "Add/regenerate a valid PNG at frontend/public/assets/generated/apple-touch-icon.dim_180x180.png (matches existing index.html path)."
-        },
-        {
-          "path": "frontend/index.html",
-          "operation": "modify",
-          "description": "Verify index.html continues to reference the same generated icon paths and that the referenced files exist and load as valid PNGs (no path changes)."
-        },
-        {
-          "path": "frontend/public/manifest.webmanifest",
-          "operation": "modify",
-          "description": "Verify manifest.webmanifest continues to reference the same icon paths and that all referenced PNGs exist and are valid (no breaking path changes)."
+          "description": "Add a focused regression test ensuring Profile renders the PIN section without affecting existing profile form behavior: profile load still uses the existing profile hook, and triggering PIN create/update does not alter the profile save payload or require any onboarding/registration UI."
         }
       ]
     }

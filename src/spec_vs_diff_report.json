@@ -1,69 +1,42 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T22:31:48.158Z",
-  "summary": "Diff adds frontend error normalization and extensive console tracing around onboarding, plus some backend refactoring helpers related to allowlist admin/admin permission. However, several acceptance criteria cannot be confirmed from the provided (truncated) diff, and PWA icon asset regeneration is not evidenced.",
+  "generatedAt": "2026-02-12T00:31:25.717Z",
+  "summary": "Frontend adds a new React Query hook (useHasPIN/useSetupPIN/useUpdatePIN) and ProfilePage PIN form handlers/validation, but the diff does not provide evidence that the backend exposes the required hasPIN query API or that profile data integrity is preserved in saveCallerUserProfile.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping allowlist admin first-admin claim.",
-      "reason": "backend/main.mo is truncated before any completeOnboarding/getCallerUserProfile logic is shown; the diff summary only shows new helper functions and admin-permission checks, but no evidence that completeOnboarding now allows non-admin onboarding without invite token or that it persists the profile and makes getCallerUserProfile return it.",
+      "requirement": "Expose a backend query API (e.g., Bool) to indicate whether the caller has a PIN set (without returning the PIN), trapping for anonymous callers consistently with other profile/PIN methods, and without changing behavior of existing backend methods used by current flows.",
+      "reason": "The backend diff is truncated and the shown portion does not include any new query method such as hasPIN (or equivalent), nor any evidence of anonymous-caller trapping behavior for that query or confirmation that existing methods were left behaviorally unchanged.",
       "evidence": [
-        "backend/main.mo (truncated; no completeOnboarding/getCallerUserProfile changes shown)"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Onboarding page alert renders a normalized/specific error message (not always generic).",
-      "reason": "useCompleteOnboarding now throws a normalized Error(userMessage), but the OnboardingPage.tsx excerpt is truncated before any alert rendering logic is shown; cannot confirm that the page displays the specific message instead of a generic one.",
-      "evidence": [
-        "frontend/src/pages/OnboardingPage.tsx (truncated; no alert rendering shown)",
-        "frontend/src/hooks/useOnboarding.ts (throws new Error(normalized.userMessage))"
+        "backend/main.mo (truncated; no hasPIN method shown)"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "While completeOnboarding.isPending is true, the Register button remains disabled and the button label indicates progress.",
-      "reason": "OnboardingPage.tsx is truncated before the submit button implementation; cannot verify disabled state and progress label behavior.",
+      "requirement": "Ensure existing users’ stored profile data remains intact; PIN changes must not modify/overwrite stored profile data in saveCallerUserProfile; no new onboarding/registration steps introduced to set a PIN.",
+      "reason": "While the UserProfile type shown matches the required fields, the diff summary does not include the implementations of saveCallerUserProfile/setupPIN/updatePIN (or related logic) needed to verify that PIN operations do not overwrite profile data and that no new onboarding/registration steps were introduced.",
       "evidence": [
-        "frontend/src/pages/OnboardingPage.tsx (truncated; button implementation not shown)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Regenerate and add valid PNG PWA icon files at the expected paths under frontend/public/assets/generated, keeping manifest paths unchanged.",
-      "reason": "No icon PNG files are added/modified in the diff summary. The manifest is mentioned in a separate summary file, but there is no evidence that the required PNG files exist and are valid images.",
-      "evidence": [
-        "(No evidence of files under) frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-        "(No evidence of files under) frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-        "(No evidence of files under) frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-        "(No evidence of files under) frontend/public/assets/generated/apple-touch-icon.dim_180x180.png"
+        "backend/main.mo (truncated; saveCallerUserProfile and PIN methods not shown)",
+        "frontend/src/pages/ProfilePage.tsx (truncated; cannot fully confirm no unrelated profile-flow changes)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added email redaction and emoji-rich console logging for onboarding traces.",
-      "reason": "REQ-3 asked for lightweight request tracing, but did not request redaction logic or emoji markers; this is additional behavior beyond the spec.",
+      "description": "Calling hasPIN with a null argument (actor.hasPIN(null)) instead of a no-arg query.",
+      "reason": "REQ-1 specifies a query method returning Bool but does not specify or require an argument; passing null suggests an interface change/assumption not justified by the request and could indicate mismatch with intended candid signature.",
       "evidence": [
-        "frontend/src/hooks/useOnboarding.ts (redacts email, uses 🚀/📡/✅/❌ emojis in logs)"
-      ]
-    },
-    {
-      "description": "Introduced normalizeActorError utility with error-type classification (already-onboarded/unauthorized/generic) and formatted user messages like `Registration failed: ...`.",
-      "reason": "REQ-2 requested preserving raw error for debugging and showing a more specific UI message when available; adding explicit error taxonomy and message formatting is extra, and may change user-facing phrasing beyond what was specified.",
-      "evidence": [
-        "frontend/src/utils/normalizeActorError.ts"
+        "frontend/src/hooks/usePin.ts"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.52,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useOnboarding.ts",
-    "frontend/src/pages/OnboardingPage.tsx",
-    "frontend/src/utils/normalizeActorError.ts",
+    "frontend/src/hooks/usePin.ts",
+    "frontend/src/pages/ProfilePage.tsx",
     "project_state.json"
   ]
 }

@@ -14,8 +14,6 @@ import AccessControl "authorization/access-control";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 
-
-
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -77,9 +75,10 @@ actor {
   let notifications = Map.empty<Text, Notification>();
   let vehicleState = Map.empty<Text, Vehicle>();
   let usedInviteTokens = Map.empty<Text, Principal>();
-  var notificationCounter : Nat = 0;
 
   let allowlistAdmin = Principal.fromText("dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae");
+
+  var notificationCounter : Nat = 0;
 
   type VehicleCheckStatus = {
     vehicle : Vehicle;
@@ -103,10 +102,25 @@ actor {
     caller == allowlistAdmin;
   };
 
+  // Helper function to check if user is onboarded
+  func isUserOnboarded(principal : Principal) : Bool {
+    switch (userProfiles.get(principal)) {
+      case (?profile) { profile.onboarded };
+      case (null) { false };
+    };
+  };
+
   // Helper function to check if caller has admin permission (including allowlist admin)
   func hasAdminPermission(caller : Principal) : Bool {
     if (isCallerAllowlistAdmin(caller)) { return true };
     AccessControl.hasPermission(accessControlState, caller, #admin);
+  };
+
+  // Helper function to check if caller has user permission (onboarded users or allowlist admin)
+  func hasUserPermission(caller : Principal) : Bool {
+    if (isCallerAllowlistAdmin(caller)) { return true };
+    if (isUserOnboarded(caller)) { return true };
+    AccessControl.hasPermission(accessControlState, caller, #user);
   };
 
   // --------------------------------- Prefab Invite Links API (DO NOT REMOVE: router dependency) ---------------------------------
@@ -147,45 +161,58 @@ actor {
 
   // --------------------------------- User Profile Management ---------------------------------
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (isCallerAllowlistAdmin(caller)) {
-      return userProfiles.get(caller);
-    };
-
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    // Anonymous principals cannot have profiles
+    if (caller.isAnonymous()) {
       return null;
     };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    // Admins can view any profile
     if (hasAdminPermission(caller)) {
       return userProfiles.get(user);
     };
 
+    // Users can only view their own profile
     if (caller != user) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
 
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
+    // Anonymous principals cannot view profiles
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot view profiles");
     };
+
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (isCallerAllowlistAdmin(caller)) { userProfiles.add(caller, profile); return };
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save their own profile");
+    // Anonymous principals cannot save profiles
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot save profiles");
     };
+
+    // Only onboarded users can save profiles (must have completed onboarding first)
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can save profiles");
+    };
+
     userProfiles.add(caller, profile);
   };
 
-  // New onboarding (ignore inviteToken for non-admin onboarding)
+  // New onboarding - any authenticated principal can onboard
   public shared ({ caller }) func completeOnboarding(_inviteToken : Text, profile : UserProfile) : async () {
+    // Anonymous principals cannot onboard
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot complete onboarding");
+    };
+
     let isAllowlistAdminNotOnboarded = not isAllowlistAdminOnboarded();
     let isClaimingFirstAdmin = isCallerAllowlistAdmin(caller) and isAllowlistAdminNotOnboarded;
 
     if (isClaimingFirstAdmin) {
+      // Special case: allowlist admin claiming first admin role
       let adminProfile = {
         fullName = profile.fullName;
         email = profile.email;
@@ -196,6 +223,7 @@ actor {
       userProfiles.add(caller, adminProfile);
       AccessControl.assignRole(accessControlState, caller, caller, #admin);
     } else {
+      // Regular onboarding for any authenticated principal
       switch (userProfiles.get(caller)) {
         case (?existingProfile) {
           if (existingProfile.onboarded) {
@@ -214,37 +242,42 @@ actor {
       };
       userProfiles.add(caller, onboardedProfile);
 
-      // Assign user role - always use allowlist admin as the assigner
-      // The allowlist admin has implicit authority to assign roles even if not onboarded
-      AccessControl.assignRole(accessControlState, allowlistAdmin, caller, #user);
+      // Note: We don't call AccessControl.assignRole here because it has admin-only guards.
+      // Instead, we rely on the onboarded flag in the profile and use hasUserPermission
+      // helper function to check authorization throughout the application.
     };
   };
 
   // --------------------------------- PIN Management ---------------------------------
-  public shared ({ caller }) func setupPIN(pin : Text) : async () {
-    if (isCallerAllowlistAdmin(caller)) { userPINs.add(caller, pin); return };
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can setup PIN");
+  public query ({ caller }) func hasPIN(callerToCheck : ?Principal) : async Bool {
+    let principalToCheck = switch (callerToCheck) {
+      case (?p) { p };
+      case (null) { caller };
     };
+    userPINs.containsKey(principalToCheck);
+  };
+
+  public shared ({ caller }) func setupPIN(pin : Text) : async () {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot setup PIN");
+    };
+
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can setup PIN");
+    };
+
     userPINs.add(caller, pin);
   };
 
   public shared ({ caller }) func updatePIN(oldPin : Text, newPin : Text) : async () {
-    if (isCallerAllowlistAdmin(caller)) {
-      switch (userPINs.get(caller)) {
-        case null { Runtime.trap("No PIN set for this user") };
-        case (?storedPin) {
-          if (storedPin != oldPin) {
-            Runtime.trap("Incorrect old PIN");
-          };
-          userPINs.add(caller, newPin);
-        };
-      };
-      return;
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot update PIN");
     };
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update PIN");
+
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can update PIN");
     };
+
     switch (userPINs.get(caller)) {
       case null { Runtime.trap("No PIN set for this user") };
       case (?storedPin) {
@@ -290,6 +323,10 @@ actor {
 
   // Method for user to redeem their activation token
   public shared ({ caller }) func redeemActivationToken(token : Text) : async () {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot redeem activation tokens");
+    };
+
     switch (activationTokens.get(token)) {
       case (null) { Runtime.trap("Invalid activation token") };
       case (?activationToken) {
@@ -312,6 +349,14 @@ actor {
     };
   };
 
+  // Query method to check caller activation status
+  public query ({ caller }) func isCallerActivatedForVehicleRegistration() : async Bool {
+    switch (userActivations.get(caller)) {
+      case (null) { false }; // Not found means not activated
+      case (?activated) { activated };
+    };
+  };
+
   // Vehicle registration now gated by activation status
   public shared ({ caller }) func registerVehicle(
     engineNumber : Text,
@@ -322,42 +367,24 @@ actor {
     location : Text,
     vehiclePhoto : Storage.ExternalBlob,
   ) : async Text {
-    if (isCallerAllowlistAdmin(caller)) {
-      let id = engineNumber.concat(chassisNumber);
-      switch (vehicleState.get(id)) {
-        case (?_) { Runtime.trap("Vehicle already registered") };
-        case null {};
-      };
-
-      let newVehicle : Vehicle = {
-        id;
-        owner = caller;
-        engineNumber;
-        chassisNumber;
-        brand;
-        model;
-        year;
-        location;
-        vehiclePhoto;
-        status = #ACTIVE;
-        transferCode = null;
-      };
-      vehicleState.add(id, newVehicle);
-      return id;
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot register vehicles");
     };
 
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can register vehicles");
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can register vehicles");
     };
 
-    // Check activation status
-    switch (userActivations.get(caller)) {
-      case (null) {
-        Runtime.trap("Vehicle registration blocked: Account not activated. Please complete activation before registering vehicles.");
-      };
-      case (?activated) {
-        if (not activated) {
+    // Check activation status (except for allowlist admin)
+    if (not isCallerAllowlistAdmin(caller)) {
+      switch (userActivations.get(caller)) {
+        case (null) {
           Runtime.trap("Vehicle registration blocked: Account not activated. Please complete activation before registering vehicles.");
+        };
+        case (?activated) {
+          if (not activated) {
+            Runtime.trap("Vehicle registration blocked: Account not activated. Please complete activation before registering vehicles.");
+          };
         };
       };
     };
@@ -386,31 +413,28 @@ actor {
   };
 
   public query ({ caller }) func getUserVehicles() : async [Vehicle] {
-    if (isCallerAllowlistAdmin(caller)) {
-      let iter = vehicleState.values();
-      let filtered = iter.filter(func(vehicle : Vehicle) : Bool { vehicle.owner == caller });
-      return filtered.toArray();
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot view vehicles");
     };
 
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view vehicles");
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can view vehicles");
     };
+
     let iter = vehicleState.values();
     let filtered = iter.filter(func(vehicle : Vehicle) : Bool { vehicle.owner == caller });
     filtered.toArray();
   };
 
   public query ({ caller }) func getVehicle(vehicleId : Text) : async Vehicle {
-    if (isCallerAllowlistAdmin(caller)) {
-      switch (vehicleState.get(vehicleId)) {
-        case (null) { Runtime.trap("Vehicle not found") };
-        case (?vehicle) { return vehicle };
-      };
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot view vehicle details");
     };
 
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view vehicles");
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can view vehicle details");
     };
+
     switch (vehicleState.get(vehicleId)) {
       case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) { vehicle };
@@ -454,11 +478,12 @@ actor {
     category : { #lost; #stolen; #pawned },
     reportNote : Text,
   ) : async () {
-    // Authorization check: must be authenticated user or allowlist admin
-    if (not isCallerAllowlistAdmin(caller)) {
-      if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-        Runtime.trap("Unauthorized: Only authenticated users can report vehicle status");
-      };
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot report vehicle status");
+    };
+
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can report vehicle status");
     };
 
     let vehicle = switch (vehicleState.get(vehicleId)) {
@@ -481,11 +506,12 @@ actor {
   };
 
   public shared ({ caller }) func reportVehicleFound(vehicleId : Text, finderReport : Text) : async () {
-    // Authorization check: must be authenticated user or allowlist admin
-    if (not isCallerAllowlistAdmin(caller)) {
-      if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-        Runtime.trap("Unauthorized: Only authenticated users can report found vehicles");
-      };
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot report found vehicles");
+    };
+
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can report found vehicles");
     };
 
     let vehicle = switch (vehicleState.get(vehicleId)) {
@@ -531,45 +557,28 @@ actor {
 
   // --------------------------------- Notifications ---------------------------------
   public query ({ caller }) func getMyNotifications() : async [Notification] {
-    if (isCallerAllowlistAdmin(caller)) {
-      let iter = notifications.values();
-      let filtered = iter.filter(func(notif : Notification) : Bool { notif.recipient == caller });
-      return filtered.toArray();
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot view notifications");
     };
 
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view notifications");
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can view notifications");
     };
+
     let iter = notifications.values();
     let filtered = iter.filter(func(notif : Notification) : Bool { notif.recipient == caller });
     filtered.toArray();
   };
 
   public shared ({ caller }) func markNotificationRead(notificationId : Text) : async () {
-    if (isCallerAllowlistAdmin(caller)) {
-      switch (notifications.get(notificationId)) {
-        case null { Runtime.trap("Notification not found") };
-        case (?notif) {
-          if (notif.recipient != caller) {
-            Runtime.trap("Unauthorized: Only the recipient can mark this notification as read");
-          };
-          let updatedNotif = {
-            id = notif.id;
-            recipient = notif.recipient;
-            message = notif.message;
-            timestamp = notif.timestamp;
-            read = true;
-            vehicleId = notif.vehicleId;
-          };
-          notifications.add(notificationId, updatedNotif);
-        };
-      };
-      return;
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot mark notifications as read");
     };
 
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can mark notifications as read");
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can mark notifications as read");
     };
+
     switch (notifications.get(notificationId)) {
       case null { Runtime.trap("Notification not found") };
       case (?notif) {
@@ -591,11 +600,12 @@ actor {
 
   // --------------------------------- Transfer System ---------------------------------
   public shared ({ caller }) func initiateTransfer(vehicleId : Text, pin : Text) : async Text {
-    // Authorization check: must be authenticated user or allowlist admin
-    if (not isCallerAllowlistAdmin(caller)) {
-      if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-        Runtime.trap("Unauthorized: Only authenticated users can initiate transfers");
-      };
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot initiate transfers");
+    };
+
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can initiate transfers");
     };
 
     if (not verifyPIN(caller, pin)) {
@@ -635,11 +645,12 @@ actor {
   };
 
   public shared ({ caller }) func acceptTransfer(transferCode : Text) : async () {
-    // Authorization check: must be authenticated user or allowlist admin
-    if (not isCallerAllowlistAdmin(caller)) {
-      if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-        Runtime.trap("Unauthorized: Only authenticated users can accept transfers");
-      };
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot accept transfers");
+    };
+
+    if (not hasUserPermission(caller)) {
+      Runtime.trap("Unauthorized: Only onboarded users can accept transfers");
     };
 
     switch (vehicleState.values().toArray().find(func(v) { switch (v.transferCode) { case (?code) { code == transferCode }; case null { false } } })) {
@@ -776,8 +787,11 @@ actor {
 
   // --------------------------------- Is Onboarding Allowed ---------------------------------
   public query ({ caller }) func isOnboardingAllowed() : async Bool {
-    let isAllowlistAdminNotOnboarded = not isAllowlistAdminOnboarded();
-    isCallerAllowlistAdmin(caller) and isAllowlistAdminNotOnboarded;
+    // Any authenticated (non-anonymous) principal can onboard
+    if (caller.isAnonymous()) {
+      return false;
+    };
+    true;
   };
 
   // --------------------------------- Internal Allowlist Check ---------------------------------
@@ -791,7 +805,7 @@ actor {
     time : Time.Time;
   } {
     {
-      build = "v0.1.2";
+      build = "v0.1.4";
       time = Time.now();
     };
   };

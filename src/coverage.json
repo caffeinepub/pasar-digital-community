@@ -1,63 +1,46 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T22:31:48.161Z",
+  "generatedAt": "2026-02-12T00:31:25.720Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 3,
     "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping the special case where the allowlist admin can claim the first admin role.",
+        "summary": "Expose a backend API to let the frontend determine whether the caller has a PIN set, without returning the PIN value, so existing users can set/update a PIN via their existing account profile without re-registering.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
+        "summary": "Re-add PIN section to the existing Profile page UI so users can create a PIN (if none exists) or update their PIN (if already set) directly from the Profile page, without requiring re-onboarding or re-registration.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/normalizeActorError.ts",
-          "frontend/src/hooks/useOnboarding.ts",
-          "frontend/src/pages/OnboardingPage.tsx"
+          "frontend/src/hooks/usePin.ts",
+          "frontend/src/pages/ProfilePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/utils/normalizeActorError.ts",
-          "frontend/src/hooks/useOnboarding.ts",
-          "frontend/src/pages/OnboardingPage.tsx"
+          "frontend/src/hooks/usePin.ts",
+          "frontend/src/pages/ProfilePage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
+        "summary": "Ensure existing users’ stored profile data remains intact when introducing the Profile-page PIN UI and PIN-status query, and avoid any requirement for users to register again.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useOnboarding.ts",
-          "frontend/src/pages/OnboardingPage.tsx"
+          "frontend/src/pages/ProfilePage.tsx",
+          "frontend/src/pages/__tests__/ProfilePage.pin-profile-integrity.test.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useOnboarding.ts",
-          "frontend/src/pages/OnboardingPage.tsx"
+          "frontend/src/pages/ProfilePage.tsx"
         ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Fix PWA icon assets so the manifest icons load as valid PNG images without console warnings. Regenerate the PWA icon files referenced by index.html and manifest.webmanifest and ensure they are placed at the expected paths under frontend/public/assets/generated.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "frontend/index.html",
-          "frontend/public/manifest.webmanifest"
-        ],
-        "matchedFiles": []
       }
     ]
   },
@@ -67,13 +50,12 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png, 180x180",
-    "frontend/public/assets/generated/pwa-icon.dim_192x192.png, 192x192",
-    "frontend/public/assets/generated/pwa-icon.dim_512x512.png, 512x512",
-    "frontend/public/assets/generated/pwa-maskable.dim_512x512.png, 512x512",
-    "frontend/src/hooks/useOnboarding.ts",
-    "frontend/src/pages/OnboardingPage.tsx",
-    "frontend/src/utils/normalizeActorError.ts",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/usePin.ts",
+    "frontend/src/pages/ProfilePage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -10,15 +10,13 @@ export function useIsActivatedForVehicleRegistration() {
       if (!actor) return false;
       
       try {
-        // Try to get user vehicles - if activation is required, this will fail
-        // But we need a dedicated backend method for this
-        // For now, we'll return true and let the registration fail with proper error
-        return true;
+        // Call the real backend method to check activation status
+        const isActivated = await actor.isCallerActivatedForVehicleRegistration();
+        return isActivated;
       } catch (error: any) {
-        if (error?.message?.includes('not activated')) {
-          return false;
-        }
-        throw error;
+        console.error('Error checking activation status:', error);
+        // If there's an error, assume not activated for safety
+        return false;
       }
     },
     enabled: !!actor && !isFetching,

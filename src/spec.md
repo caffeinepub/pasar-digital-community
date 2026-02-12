@@ -1,12 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Make onboarding registration succeed for new non-admin users and improve debuggability of onboarding failures (including fixing broken PWA manifest icons).
+**Goal:** Re-add PIN management on the Profile page so existing users can create or update a Security PIN without re-registering, while keeping all existing profile and app flows unchanged.
 
 **Planned changes:**
-- Backend: update onboarding logic so newly authenticated non-admin users can successfully complete onboarding (create profile) without an invite token or relying on an already-onboarded allowlist admin, while preserving the “first allowlist admin claims admin role” special case.
-- Frontend: improve onboarding submit flow observability (trace start/finish) so Register reliably triggers the React Query mutation and an actor call attempt (or a clear “actor not available” message).
-- Frontend: improve onboarding error handling to preserve/log the raw backend error payload and display a more specific UI message when available instead of always the generic registration failure.
-- Frontend: regenerate/fix the PWA icon PNG assets referenced by the manifest/index so they load without console warnings at the existing paths under `/assets/generated/`.
+- Backend: Add an authenticated API that returns whether the current caller has a PIN set (boolean only; never returns the PIN value), consistent with existing anonymous-caller handling.
+- Frontend: Re-introduce a clearly labeled PIN section on the existing Profile page that:
+  - Shows “Create PIN” when no PIN exists (uses existing `setupPIN` mutation).
+  - Shows “Update PIN” when a PIN exists (old PIN + new PIN + confirm; uses existing `updatePIN` mutation).
+  - Validates minimum PIN length (4) and matching new/confirm before submission.
+  - Refreshes/invalidates the PIN-status query after a successful change so the UI updates immediately.
+- Data safety: Ensure PIN create/update does not modify or overwrite existing stored profile fields and does not introduce any onboarding/registration steps.
 
-**User-visible outcome:** Users can complete account registration/onboarding successfully without an invite token; when onboarding fails, the UI shows a more specific error and developers can see the underlying error in console logs and clear submit tracing; PWA icons load correctly without browser console warnings.
+**User-visible outcome:** Users can manage (create or update) their Security PIN directly from the Profile page, and existing users keep all their profile data without needing to sign up again.

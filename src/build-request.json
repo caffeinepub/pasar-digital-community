@@ -1,108 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Fix onboarding registration failure and improve error observability",
-  "priority": "high",
+  "title": "Re-add PIN management to Profile page without affecting existing users",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping the special case where the allowlist admin can claim the first admin role.",
+      "text": "Expose a backend API to let the frontend determine whether the caller has a PIN set, without returning the PIN value, so existing users can set/update a PIN via their existing account profile without re-registering.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "kan sudah tidak menggunakan Token Undangan."
+          "Harusnya di tambahkan PIN... Fokus ke akun profil saja menambahkan PIN saja."
         ]
       },
       "acceptanceCriteria": [
-        "A newly authenticated non-admin principal can call completeOnboarding('', profile) successfully and receives a persisted user profile with onboarded=true.",
-        "After onboarding, getCallerUserProfile returns the caller profile (not null) for the newly onboarded user.",
-        "The allowlist admin can still complete onboarding as the first admin and ends up with admin permissions.",
-        "The backend does not require an invite token for non-admin onboarding."
+        "Backend provides a query method (e.g., returns Bool) indicating whether the caller currently has a PIN set.",
+        "The query traps for anonymous callers consistently with other profile/PIN methods.",
+        "No existing backend methods used by current flows (profile save, onboarding, vehicle registration, transfers) change behavior."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
+      "text": "Re-add PIN section to the existing Profile page UI so users can create a PIN (if none exists) or update their PIN (if already set) directly from the Profile page, without requiring re-onboarding or re-registration.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Registration failed. Please contact an admin for assistance."
+          "Kan tadi nya di akun profile ada buat PIN. sekarang hilang. Di muncul kan lagi saja... Tinggal tambahkan field PIN saja."
         ]
       },
       "acceptanceCriteria": [
-        "When completeOnboarding fails, the console includes a log entry that contains the original error payload/message received from the actor call.",
-        "The Onboarding page alert renders the normalized error message, but it must not always collapse distinct backend failures into the same generic message if a more specific message is available (e.g., 'Already onboarded').",
-        "When the actor is not available, the UI displays an actionable message (not a silent failure)."
+        "Profile page shows a clearly labeled PIN section in English (e.g., 'PIN' / 'Security PIN').",
+        "If the user has no PIN, the Profile page shows a 'Create PIN' form that calls the existing setupPIN mutation.",
+        "If the user already has a PIN, the Profile page shows an 'Update PIN' form requiring old PIN + new PIN + confirm, calling the existing updatePIN mutation.",
+        "Client-side validation prevents submission when new PIN and confirmation do not match and enforces a minimum length of 4 characters (matching existing SecuritySettingsPage behavior).",
+        "Successful create/update invalidates or refreshes any relevant PIN-status query so the UI updates immediately.",
+        "No changes are made to unrelated Profile page functionality (profile editing, activation card, logout, principal display)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
-      "target": "frontend",
+      "text": "Ensure existing users’ stored profile data remains intact when introducing the Profile-page PIN UI and PIN-status query, and avoid any requirement for users to register again.",
+      "target": "both",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Tombol Register TIDAK mengirim request apa pun ke backend."
+          "pengguna yang sudah daftar jangan sampe hilang data nya, cukup nanti di update saja akun profile nya untuk membuat PIN. karena kalau daftar lagi takut nya jadi error."
         ]
       },
       "acceptanceCriteria": [
-        "Clicking Register always triggers the React Query mutation (visible via tracing logs) and results in an actor call attempt (or a clear 'actor not available' error before the call).",
-        "While completeOnboarding.isPending is true, the Register button remains disabled and the button label indicates progress."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Fix PWA icon assets so the manifest icons load as valid PNG images without console warnings. Regenerate the PWA icon files referenced by index.html and manifest.webmanifest and ensure they are placed at the expected paths under frontend/public/assets/generated.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Error while trying to use the following icon from the Manifest: https://.../assets/generated/pwa-icon.dim_192x192.png (Download error or resource isn't a valid image)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Loading the app no longer shows 'resource isn't a valid image' for manifest icons in the browser console.",
-        "The following files exist and are valid PNGs: /assets/generated/pwa-icon.dim_192x192.png, /assets/generated/pwa-icon.dim_512x512.png, /assets/generated/pwa-maskable.dim_512x512.png, /assets/generated/apple-touch-icon.dim_180x180.png.",
-        "manifest.webmanifest continues to reference the same icon paths (no breaking path changes)."
+        "Existing userProfile fields (fullName, email, city, country, onboarded) are unchanged and continue to load/save as before.",
+        "PIN changes do not modify or overwrite stored profile data in saveCallerUserProfile.",
+        "No new onboarding or registration steps are introduced to set a PIN."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo changes if state schema changes are required.",
-    "Do not edit any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT.",
-    "Use English for any user-facing text."
+    "Do not modify files under frontend immutable paths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
+    "Keep all Motoko logic within the single backend actor (backend/main.mo).",
+    "Do not disrupt existing, already-working features; scope changes to Profile/PIN only."
   ],
   "nonGoals": [
-    "Changing the vehicle registration activation requirement (users still must be admin-activated before registering a vehicle).",
-    "Adding third-party authentication providers (only Internet Identity is supported).",
-    "Adding new external databases or backend services."
+    "Do not change vehicle transfer flow or PIN prompt behavior in transfer dialogs.",
+    "Do not add third-party authentication or any external database.",
+    "Do not redesign unrelated pages or convert existing Indonesian UI text outside the Profile page."
   ],
   "imageRequirements": {
-    "required": [
-      "Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_192x192.png, 192x192)",
-      "Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_512x512.png, 512x512)",
-      "Square maskable app icon with safe padding and centered emblem (pwa-maskable.dim_512x512.png, 512x512)",
-      "Apple touch icon with centered emblem and balanced margins (apple-touch-icon.dim_180x180.png, 180x180)"
-    ],
+    "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

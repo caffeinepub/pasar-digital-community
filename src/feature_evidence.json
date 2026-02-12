@@ -2,12 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-improve-frontend-onboarding-error-handling-to-avoid-masking-the-underlying-backend-error-preserve-the-raw-backend-error-message-for-debugging-at-least-in-console-logs-and-show-a-more-specific-ui-message-when-available-instead-of-always-showing-the-generic-registration-failed-please-contact-an-admin-for-assistance",
-      "featureTitle": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
+      "featureId": "feature-re-add-pin-section-to-the-existing-profile-page-ui-so-users-can-create-a-pin-if-none-exists-or-update-their-pin-if-already-set-directly-from-the-profile-page-without-requiring-re-onboarding-or-re-registration",
+      "featureTitle": "Re-add PIN section to the existing Profile page UI so users can create a PIN (if none exists) or update their PIN (if already set) directly from the Profile page, without requiring re-onboarding or re-registration.",
       "files": [
-        "frontend/src/hooks/useOnboarding.ts",
-        "frontend/src/pages/OnboardingPage.tsx",
-        "frontend/src/utils/normalizeActorError.ts"
+        "frontend/src/hooks/usePin.ts",
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -25,11 +24,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-onboarding-submission-reliably-triggers-a-backend-call-and-is-debuggable-from-devtools-network-add-lightweight-request-tracing-start-finish-around-the-submit-flow-so-it-is-obvious-when-the-mutation-is-invoked-and-whether-it-reached-the-actor-call",
-      "featureTitle": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
+      "featureId": "feature-ensure-existing-users-stored-profile-data-remains-intact-when-introducing-the-profile-page-pin-ui-and-pin-status-query-and-avoid-any-requirement-for-users-to-register-again",
+      "featureTitle": "Ensure existing users’ stored profile data remains intact when introducing the Profile-page PIN UI and PIN-status query, and avoid any requirement for users to register again.",
       "files": [
-        "frontend/src/hooks/useOnboarding.ts",
-        "frontend/src/pages/OnboardingPage.tsx"
+        "frontend/src/pages/ProfilePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",

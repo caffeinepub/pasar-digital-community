@@ -131,8 +131,10 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getUserVehicles(): Promise<Array<Vehicle>>;
     getVehicle(vehicleId: string): Promise<Vehicle>;
+    hasPIN(callerToCheck: Principal | null): Promise<boolean>;
     initiateTransfer(vehicleId: string, pin: string): Promise<string>;
     isAllowlistAdmin(): Promise<boolean>;
+    isCallerActivatedForVehicleRegistration(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     isOnboardingAllowed(): Promise<boolean>;
     markNotificationRead(notificationId: string): Promise<void>;

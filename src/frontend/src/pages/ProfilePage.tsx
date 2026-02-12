@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useProfile';
 import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
+import { useHasPIN, useSetupPIN, useUpdatePIN } from '../hooks/usePin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LogOut, User, Mail, MapPin, Globe, Info, Edit2, Save, X } from 'lucide-react';
+import { LogOut, User, Mail, MapPin, Globe, Info, Edit2, Save, X, Lock } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
@@ -16,7 +17,10 @@ export default function ProfilePage() {
   const { clear, identity } = useInternetIdentity();
   const { data: userProfile, isLoading } = useGetCallerUserProfile();
   const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
+  const { data: hasPIN, isLoading: pinLoading } = useHasPIN();
   const saveProfile = useSaveCallerUserProfile();
+  const setupPIN = useSetupPIN();
+  const updatePIN = useUpdatePIN();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,6 +28,13 @@ export default function ProfilePage() {
     email: '',
     city: '',
     country: '',
+  });
+
+  // PIN form state
+  const [pinFormData, setPinFormData] = useState({
+    newPin: '',
+    confirmPin: '',
+    oldPin: '',
   });
 
   const handleLogout = async () => {
@@ -63,6 +74,58 @@ export default function ProfilePage() {
       toast.success('Profile updated successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to update profile');
+    }
+  };
+
+  const handleCreatePIN = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (pinFormData.newPin.length < 4) {
+      toast.error('PIN must be at least 4 characters');
+      return;
+    }
+
+    if (pinFormData.newPin !== pinFormData.confirmPin) {
+      toast.error('PINs do not match');
+      return;
+    }
+
+    try {
+      await setupPIN.mutateAsync(pinFormData.newPin);
+      setPinFormData({ newPin: '', confirmPin: '', oldPin: '' });
+      toast.success('PIN created successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create PIN');
+    }
+  };
+
+  const handleUpdatePIN = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (pinFormData.newPin.length < 4) {
+      toast.error('New PIN must be at least 4 characters');
+      return;
+    }
+
+    if (pinFormData.newPin !== pinFormData.confirmPin) {
+      toast.error('New PINs do not match');
+      return;
+    }
+
+    if (!pinFormData.oldPin) {
+      toast.error('Please enter your old PIN');
+      return;
+    }
+
+    try {
+      await updatePIN.mutateAsync({
+        oldPin: pinFormData.oldPin,
+        newPin: pinFormData.newPin,
+      });
+      setPinFormData({ newPin: '', confirmPin: '', oldPin: '' });
+      toast.success('PIN updated successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update PIN');
     }
   };
 
@@ -192,6 +255,109 @@ export default function ProfilePage() {
                   Profile information is not available. Please complete onboarding.
                 </AlertDescription>
               </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Security PIN
+            </CardTitle>
+            <CardDescription>
+              {hasPIN ? 'Update your security PIN' : 'Create a security PIN for vehicle transfers'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {pinLoading ? (
+              <div className="animate-pulse space-y-4">
+                <div className="h-10 bg-muted rounded"></div>
+                <div className="h-10 bg-muted rounded"></div>
+              </div>
+            ) : hasPIN ? (
+              <form onSubmit={handleUpdatePIN} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="oldPin">Current PIN</Label>
+                  <Input
+                    id="oldPin"
+                    type="password"
+                    value={pinFormData.oldPin}
+                    onChange={(e) => setPinFormData({ ...pinFormData, oldPin: e.target.value })}
+                    placeholder="Enter current PIN"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newPin">New PIN</Label>
+                  <Input
+                    id="newPin"
+                    type="password"
+                    value={pinFormData.newPin}
+                    onChange={(e) => setPinFormData({ ...pinFormData, newPin: e.target.value })}
+                    placeholder="Enter new PIN (min 4 characters)"
+                    minLength={4}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPin">Confirm New PIN</Label>
+                  <Input
+                    id="confirmPin"
+                    type="password"
+                    value={pinFormData.confirmPin}
+                    onChange={(e) => setPinFormData({ ...pinFormData, confirmPin: e.target.value })}
+                    placeholder="Confirm new PIN"
+                    minLength={4}
+                    required
+                  />
+                </div>
+
+                <Button type="submit" disabled={updatePIN.isPending} className="w-full">
+                  {updatePIN.isPending ? 'Updating...' : 'Update PIN'}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleCreatePIN} className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    A PIN is required to initiate vehicle transfers. Choose a secure PIN with at least 4 characters.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label htmlFor="createPin">Create PIN</Label>
+                  <Input
+                    id="createPin"
+                    type="password"
+                    value={pinFormData.newPin}
+                    onChange={(e) => setPinFormData({ ...pinFormData, newPin: e.target.value })}
+                    placeholder="Enter PIN (min 4 characters)"
+                    minLength={4}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmCreatePin">Confirm PIN</Label>
+                  <Input
+                    id="confirmCreatePin"
+                    type="password"
+                    value={pinFormData.confirmPin}
+                    onChange={(e) => setPinFormData({ ...pinFormData, confirmPin: e.target.value })}
+                    placeholder="Confirm PIN"
+                    minLength={4}
+                    required
+                  />
+                </div>
+
+                <Button type="submit" disabled={setupPIN.isPending} className="w-full">
+                  {setupPIN.isPending ? 'Creating...' : 'Create PIN'}
+                </Button>
+              </form>
             )}
           </CardContent>
         </Card>

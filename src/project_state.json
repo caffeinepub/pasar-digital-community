@@ -1,30 +1,24 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "User onboarding/registration flow: users can register without an invite token; registering a vehicle requires admin activation. Current issue: registration is failing and appears not to send the completeOnboarding request to the backend, making debugging difficult.",
+  "summary": "New project",
   "architectural_notes": [
-    "Onboarding: inviteToken is not required (send empty string / backend ignores it).",
-    "Access control: vehicle registration is gated by admin activation of the user account.",
-    "Onboarding supports first-admin claim path (canClaimFirstAdmin -> isFirstAdminClaim) with redirect to /admin, otherwise redirect to /."
+    "Profile data/schema update must be backward-compatible: existing users keep data; PIN can be added via profile update (no re-registration required)."
   ],
-  "known_issues": [
-    "Registration failing during onboarding; Network tab shows no completeOnboarding request being sent when clicking Register (likely frontend submit/handler issue).",
-    "Frontend (useCompleteOnboarding/useOnboarding hook) may normalize/mask backend errors into a generic 'Registration failed' message, reducing observability."
-  ],
+  "known_issues": [],
   "isFixRequest": true,
-  "imageRequirements": "## Required Images\n- Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_192x192.png, 192x192)\n- Square app icon with a clean marketplace/community emblem, dark text on light background (pwa-icon.dim_512x512.png, 512x512)\n- Square maskable app icon with safe padding and centered emblem (pwa-maskable.dim_512x512.png, 512x512)\n- Apple touch icon with centered emblem and balanced margins (apple-touch-icon.dim_180x180.png, 180x180)",
   "existing_features": [
     {
-      "id": "feature-improve-frontend-onboarding-error-handling-to-avoid-masking-the-underlying-backend-error-preserve-the-raw-backend-error-message-for-debugging-at-least-in-console-logs-and-show-a-more-specific-ui-message-when-available-instead-of-always-showing-the-generic-registration-failed-please-contact-an-admin-for-assistance",
-      "title": "Improve frontend onboarding error handling to avoid masking the underlying backend error: preserve the raw backend error message for debugging (at least in console logs) and show a more specific UI message when available instead of always showing the generic 'Registration failed. Please contact an admin for assistance.'",
+      "id": "feature-re-add-pin-section-to-the-existing-profile-page-ui-so-users-can-create-a-pin-if-none-exists-or-update-their-pin-if-already-set-directly-from-the-profile-page-without-requiring-re-onboarding-or-re-registration",
+      "title": "Re-add PIN section to the existing Profile page UI so users can create a PIN (if none exists) or update their PIN (if already set) directly from the Profile page, without requiring re-onboarding or re-registration.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-onboarding-submission-reliably-triggers-a-backend-call-and-is-debuggable-from-devtools-network-add-lightweight-request-tracing-start-finish-around-the-submit-flow-so-it-is-obvious-when-the-mutation-is-invoked-and-whether-it-reached-the-actor-call",
-      "title": "Ensure the onboarding submission reliably triggers a backend call and is debuggable from DevTools Network: add lightweight request tracing (start/finish) around the submit flow so it is obvious when the mutation is invoked and whether it reached the actor call.",
+      "id": "feature-ensure-existing-users-stored-profile-data-remains-intact-when-introducing-the-profile-page-pin-ui-and-pin-status-query-and-avoid-any-requirement-for-users-to-register-again",
+      "title": "Ensure existing users’ stored profile data remains intact when introducing the Profile-page PIN UI and PIN-status query, and avoid any requirement for users to register again.",
       "reqIds": [
         "REQ-3"
       ],
@@ -34,22 +28,20 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix backend onboarding so non-admin users can successfully complete onboarding (create profile) without requiring an invite token or an already-onboarded allowlist admin, while keeping the special case where the allowlist admin can claim the first admin role.",
+      "summary": "Re-add PIN field to user Profile and allow existing users to set/update PIN without losing existing account data; keep other features unaffected",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Expose a backend API to let the frontend determine whether the caller has a PIN set, without returning the PIN value, so existing users can set/update a PIN via their existing account profile without re-registering.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Fix PWA icon assets so the manifest icons load as valid PNG images without console warnings. Regenerate the PWA icon files referenced by index.html and manifest.webmanifest and ensure they are placed at the expected paths under frontend/public/assets/generated.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "status": "pending"
     }
   ],
-  "projectName": "Fix onboarding registration failure and improve error observability",
+  "projectName": "Re-add PIN management to Profile page without affecting existing users",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

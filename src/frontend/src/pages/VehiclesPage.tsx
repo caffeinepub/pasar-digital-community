@@ -1,14 +1,17 @@
 import { useGetUserVehicles } from '../hooks/useVehicles';
+import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Car, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Car, AlertTriangle, CheckCircle, Lock } from 'lucide-react';
 import type { VehicleStatus } from '../backend';
 
 export default function VehiclesPage() {
   const navigate = useNavigate();
   const { data: vehicles, isLoading } = useGetUserVehicles();
+  const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
 
   const getStatusBadge = (status: VehicleStatus) => {
     if (status.__kind__ === 'STOLEN') {
@@ -51,7 +54,7 @@ export default function VehiclesPage() {
     );
   };
 
-  if (isLoading) {
+  if (isLoading || activationLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">Loading...</div>
@@ -66,11 +69,31 @@ export default function VehiclesPage() {
           <h1 className="text-3xl font-bold tracking-tight">My Vehicles</h1>
           <p className="text-muted-foreground">Manage and monitor your registered vehicles</p>
         </div>
-        <Button onClick={() => navigate({ to: '/vehicles/register' })} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Register Vehicle
-        </Button>
+        {isActivated ? (
+          <Button onClick={() => navigate({ to: '/vehicles/register' })} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Register Vehicle
+          </Button>
+        ) : (
+          <Button
+            onClick={() => navigate({ to: '/vehicles/register' })}
+            variant="outline"
+            className="gap-2"
+          >
+            <Lock className="h-4 w-4" />
+            Activate to Register
+          </Button>
+        )}
       </div>
+
+      {!isActivated && (
+        <Alert>
+          <Lock className="h-4 w-4" />
+          <AlertDescription>
+            Vehicle registration requires activation. Click "Activate to Register" to complete activation with an admin-provided token.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {vehicles && vehicles.length === 0 ? (
         <Card>
@@ -78,9 +101,17 @@ export default function VehiclesPage() {
             <Car className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No Vehicles Yet</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Register your first vehicle to start using the security system
+              {isActivated
+                ? 'Register your first vehicle to start using the security system'
+                : 'Complete activation to register your first vehicle'}
             </p>
-            <Button onClick={() => navigate({ to: '/vehicles/register' })}>Register Now</Button>
+            {isActivated ? (
+              <Button onClick={() => navigate({ to: '/vehicles/register' })}>Register Now</Button>
+            ) : (
+              <Button onClick={() => navigate({ to: '/vehicles/register' })} variant="outline">
+                Activate Account
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
