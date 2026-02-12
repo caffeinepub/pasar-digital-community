@@ -1,78 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Add vehicle ownership revocation with mandatory PIN confirmation",
+  "title": "Expose ownership revocation from main menu and improve discoverability of Vehicle Detail page",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a backend canister method to revoke a vehicle’s ownership, requiring the caller to provide their PIN.\n\nDetails:\n- Add a new public shared method (e.g., `revokeVehicleOwnership(vehicleId: Text, pin: Text) : async ()`) in `backend/main.mo`.\n- Authorization rules:\n  - Caller must be authenticated (not anonymous) and have user permission (same guards as other vehicle mutations).\n  - Vehicle must exist.\n  - Caller must be the current vehicle owner.\n  - PIN must be verified using the existing PIN store/verification logic.\n- Behavior on success:\n  - Update the vehicle record so it is no longer owned by the caller (set `owner` to the anonymous principal `Principal.fromText(\"2vxsx-fae\")`).\n  - Clear any existing `transferCode` (set to `null`).\n- Error handling:\n  - If the user has no PIN set, trap with a clear message (e.g., \"No PIN set for this user\").\n  - If PIN is wrong, trap with a clear message (e.g., \"Incorrect PIN\").\n  - Preserve existing behavior for all other methods (no functional changes).\n\nNote: Do not change the `Vehicle` type schema; implement revocation without introducing new fields/variants to avoid migrations and regressions.",
-      "target": "backend",
+      "text": "Add a main-menu entry point for the existing ownership revocation flow so users can access it from the primary navigation (menu utama), not only from the Vehicle Detail page. This must be user-visible in the top navigation (AppHeader) and must use English labeling (e.g., \"Revoke Ownership\").",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-user-2026-02-12-1"
         ],
         "quotes": [
-          "sekarang bagaimana pemilik akan mencabut kepemilikan kendaraan? ... Dan ketika mau mencabut kepemilika wajib memasukan PIN ... jangan ganggu fitur-fitur yang sudah berrjalan normal. fokus saja ke fitur mencabut kepemilikan."
+          "bagusnya sih di tampilkan di menu utama saja ya."
         ]
       },
       "acceptanceCriteria": [
-        "Calling `revokeVehicleOwnership(vehicleId, pin)` as the current owner with the correct PIN succeeds and returns `()`.",
-        "After revocation, `getUserVehicles()` for the previous owner no longer includes the revoked vehicle.",
-        "After revocation, `getVehicle(vehicleId)` returns a vehicle whose `owner` is the anonymous principal and whose `transferCode` is `null`.",
-        "Calling `revokeVehicleOwnership` with an incorrect PIN traps with an error that clearly indicates the PIN is incorrect.",
-        "Calling `revokeVehicleOwnership` by a non-owner traps with an authorization error.",
-        "No existing backend methods change signature or behavior (other than adding the new method)."
+        "A new navigation item is visible in the main app navigation (header menu) labeled in English (e.g., \"Revoke Ownership\").",
+        "Clicking the new navigation item takes the user to a screen that allows them to proceed toward revoking ownership (it may reuse existing pages/flows), without requiring the user to first find VehicleDetailPage manually.",
+        "No protected/immutable auth hooks are modified."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Expose the new backend method to the frontend by updating the generated/type declarations and actor interface used by the React app.\n\nDetails:\n- Update the frontend backend type declarations (per change-control policy, `frontend/src/backend.d.ts`) to include the new method signature.\n- Ensure the frontend actor creation continues to work without changes to the auth/bootstrap flow.",
-      "target": "both",
+      "text": "Add a Dashboard (home) \"Quick Action\" entry point for ownership revocation, placed alongside existing Dashboard quick actions, with English user-facing text. The action must guide the user into a revoke flow by first selecting a vehicle (if needed) and then continuing to the existing PIN-verified revocation process.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-user-2026-02-12-1"
         ],
         "quotes": [
-          "wajib memasukan PIN ... jangan ganggu fitur-fitur yang sudah berrjalan normal. fokus saja ke fitur mencabut kepemilikan."
+          "di tampilkan di menu utama saja ya"
         ]
       },
       "acceptanceCriteria": [
-        "TypeScript compilation succeeds with the new actor method available.",
-        "No changes are made to protected auth/bootstrap files or route structure."
+        "Dashboard shows an additional quick action card/button labeled in English (e.g., \"Revoke Ownership\").",
+        "From that quick action, a user can reach a vehicle-selection step (if applicable) and then proceed to the existing PIN prompt + revocation mutation.",
+        "The existing revocation behavior remains PIN-gated and continues to invalidate the same React Query caches as before."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add a frontend UI flow for owners to revoke vehicle ownership from the Vehicle Detail page, using a PIN prompt.\n\nDetails:\n- In `frontend/src/pages/VehicleDetailPage.tsx`, within the existing \"Owner Actions\" area, add a new destructive action button labeled \"Revoke Ownership\".\n- Only show the button when:\n  - The viewer is the owner (`isOwner`), and\n  - The vehicle status is `ACTIVE` (match existing owner-actions gating).\n- Clicking the button must require PIN entry using the existing `PinPromptDialog` component.\n- If the user does not have a PIN set (use `useHasPIN()`), block the revoke flow and show user-facing guidance in English (e.g., toast \"You must set a PIN before revoking ownership\") and provide a direct navigation path to `/security`.\n- On successful revocation:\n  - Show a success toast in English (e.g., \"Ownership revoked\")\n  - Invalidate relevant React Query caches (vehicle detail + user vehicles list)\n  - Navigate back to `/vehicles`.\n- On failure:\n  - Show an error toast in English using the existing error normalization patterns.\n\nImplementation note:\n- Add a new React Query mutation hook (e.g., `useRevokeVehicleOwnership`) in `frontend/src/hooks/useVehicles.ts` (or a clearly appropriate existing hook file) that calls the new actor method and handles cache invalidation.",
+      "text": "Improve discoverability of the existing Vehicle Detail page so users can clearly find and open it from the vehicle list and immediately after registering a vehicle. Do not change the existing route path (`/vehicles/$vehicleId`).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-user-2026-02-12-1"
         ],
         "quotes": [
-          "ketika mau mencabut kepemilika wajib memasukan PIN ... fokus saja ke fitur mencabut kepemilikan."
+          "Dan saya juga tidak melihat fitur Halaman Detail Kendaraan (Vehicle Detail Page)."
         ]
       },
       "acceptanceCriteria": [
-        "As the current owner of an ACTIVE vehicle, clicking \"Revoke Ownership\" opens a PIN dialog and requires PIN input before submission.",
-        "With a correct PIN, the revoke action completes, the vehicle disappears from the owner’s Vehicles list, and the UI navigates back to `/vehicles`.",
-        "With an incorrect PIN, the dialog shows an error and the vehicle remains owned; no navigation occurs.",
-        "If the user has no PIN set, the UI prevents revocation and directs the user to set a PIN in `/security`.",
-        "No existing owner actions (Mark Lost, Transfer Ownership) are broken or changed in behavior."
+        "Vehicles list makes it explicit how to open vehicle details (e.g., an explicit \"View Details\" button/affordance on each vehicle card, in English).",
+        "After successful vehicle registration, the UI offers a clear path to the newly registered vehicle’s detail screen (e.g., redirect to the detail page, or success toast with a \"View Details\" action), without removing the existing ability to go back to /vehicles.",
+        "Vehicle detail route remains `/vehicles/$vehicleId` and continues to render the existing revoke-ownership button under the existing owner gating (owner + ACTIVE)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify or break any existing working features; changes must be scoped strictly to the ownership revocation feature.",
-    "Do not add, remove, or change any existing frontend routes listed in `frontend/src/App.tsx` (per `frontend/CHANGE_CONTROL_POLICY.md`).",
-    "Do not change the existing `Vehicle` schema/type; implement revocation without adding new fields or variants to avoid migrations.",
-    "Do not edit files under `frontend/src/components/ui` and do not edit immutable hook paths listed in SYSTEM_CONTEXT."
+    "Backend must remain single-actor; do not introduce additional canisters/services.",
+    "Do not edit files under frontend immutable paths: `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, and anything under `frontend/src/components/ui`.",
+    "Do not change existing route paths in `frontend/src/App.tsx` for `/vehicles/$vehicleId` (Vehicle Detail). If any new route is added, it must be documented per `frontend/CHANGE_CONTROL_POLICY.md`.",
+    "All new/updated user-facing text must be in English."
   ],
   "nonGoals": [
-    "Do not redesign the transfer-ownership feature; revocation is a separate action.",
-    "Do not add third-party authentication or non-Internet-Identity auth.",
-    "Do not add admin workflows or analytics around revocations unless explicitly requested.",
-    "Do not implement real-time updates or notifications for revocation."
+    "Implementing a new backend revocation API or changing the backend revocation rules (PIN validation, authorization, status gating).",
+    "Adding third-party auth or any non-Internet-Identity login options.",
+    "Redesigning the vehicle registration form fields or validation beyond what’s necessary to add a clearer post-registration navigation path."
   ],
   "imageRequirements": {
     "required": [],

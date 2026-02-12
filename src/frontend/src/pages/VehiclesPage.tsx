@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Car, AlertTriangle, CheckCircle, Lock } from 'lucide-react';
+import { Plus, Car, AlertTriangle, CheckCircle, Lock, Eye } from 'lucide-react';
 import type { VehicleStatus } from '../backend';
 
 export default function VehiclesPage() {
@@ -75,11 +75,7 @@ export default function VehiclesPage() {
             Register Vehicle
           </Button>
         ) : (
-          <Button
-            onClick={() => navigate({ to: '/vehicles/register' })}
-            variant="outline"
-            className="gap-2"
-          >
+          <Button onClick={() => navigate({ to: '/vehicles/register' })} variant="outline" className="gap-2">
             <Lock className="h-4 w-4" />
             Activate to Register
           </Button>
@@ -90,7 +86,8 @@ export default function VehiclesPage() {
         <Alert>
           <Lock className="h-4 w-4" />
           <AlertDescription>
-            Vehicle registration requires activation. Click "Activate to Register" to complete activation with an admin-provided token.
+            Vehicle registration requires activation. Click "Activate to Register" to complete activation with an
+            admin-provided token.
           </AlertDescription>
         </Alert>
       )}
@@ -117,11 +114,7 @@ export default function VehiclesPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {vehicles?.map((vehicle) => (
-            <Card
-              key={vehicle.id}
-              className="cursor-pointer hover:border-primary transition-colors"
-              onClick={() => navigate({ to: '/vehicles/$vehicleId', params: { vehicleId: vehicle.id } })}
-            >
+            <Card key={vehicle.id} className="hover:border-primary transition-colors">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -133,22 +126,25 @@ export default function VehiclesPage() {
                   {getStatusBadge(vehicle.status)}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="aspect-video bg-muted rounded-md overflow-hidden">
-                  <img
-                    src={vehicle.vehiclePhoto.getDirectURL()}
-                    alt={`${vehicle.brand} ${vehicle.model}`}
-                    className="w-full h-full object-cover"
-                  />
+              <CardContent className="space-y-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Engine Number:</span>
+                    <span className="font-medium">{vehicle.engineNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Location:</span>
+                    <span className="font-medium">{vehicle.location}</span>
+                  </div>
                 </div>
-                <div className="text-sm space-y-1">
-                  <p className="text-muted-foreground">
-                    <span className="font-medium">Engine No:</span> {vehicle.engineNumber}
-                  </p>
-                  <p className="text-muted-foreground">
-                    <span className="font-medium">Location:</span> {vehicle.location}
-                  </p>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => navigate({ to: '/vehicles/$vehicleId', params: { vehicleId: vehicle.id } })}
+                >
+                  <Eye className="h-4 w-4" />
+                  View Details
+                </Button>
               </CardContent>
             </Card>
           ))}

@@ -1,43 +1,78 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Vehicle ownership revocation UI with PIN confirmation",
+  "title": "Ownership revocation entry points and improved Vehicle Detail discoverability",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Expose revokeVehicleOwnership on the frontend actor TypeScript declarations without changing auth/bootstrap or routes.",
+      "id": "REQ-1",
+      "summary": "Expose ownership revocation from the primary top navigation (AppHeader) with an English-labeled entry point that starts the existing PIN-gated revoke flow without requiring manual discovery of Vehicle Detail first.",
       "acceptanceCriteria": [
-        "TypeScript compilation succeeds with the new actor method available.",
-        "No changes are made to protected auth/bootstrap files or route structure."
+        "A new navigation item is visible in the main app navigation (header menu) labeled in English (e.g., \"Revoke Ownership\").",
+        "Clicking the new navigation item takes the user to a screen that allows them to proceed toward revoking ownership (it may reuse existing pages/flows), without requiring the user to first find VehicleDetailPage manually.",
+        "No protected/immutable auth hooks are modified."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/backend.d.ts",
+          "path": "frontend/src/components/nav/AppHeader.tsx",
           "operation": "modify",
-          "description": "Update the frontend backend type declarations to include the revokeVehicleOwnership(vehicleId: string, pin: string): Promise<void> method signature on backendInterface, keeping existing declarations and bootstrap compatibility intact."
+          "description": "Add a new top navigation item labeled \"Revoke Ownership\" that navigates to a new revoke-ownership entry screen/route."
+        },
+        {
+          "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "operation": "create",
+          "description": "Create a revoke-ownership entry screen that lets users select one of their vehicles and proceed into the existing PIN-prompt + ownership revocation mutation flow (reuse existing React Query hooks and the existing PIN dialog)."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Register a new route for the revoke-ownership entry screen and wire it into the route tree (keep existing `/vehicles/$vehicleId` route path unchanged)."
+        },
+        {
+          "path": "frontend/CHANGELOG.md",
+          "operation": "modify",
+          "description": "Document the new route addition and navigation entry per frontend/CHANGE_CONTROL_POLICY.md (route structure is a protected interface)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add a Dashboard \"Quick Action\" for ownership revocation that guides users into a vehicle-selection step and then continues to the existing PIN-verified revocation process while preserving existing cache invalidation behavior.",
+      "acceptanceCriteria": [
+        "Dashboard shows an additional quick action card/button labeled in English (e.g., \"Revoke Ownership\").",
+        "From that quick action, a user can reach a vehicle-selection step (if applicable) and then proceed to the existing PIN prompt + revocation mutation.",
+        "The existing revocation behavior remains PIN-gated and continues to invalidate the same React Query caches as before."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/DashboardPage.tsx",
+          "operation": "modify",
+          "description": "Add a new Quick Actions card/button labeled \"Revoke Ownership\" alongside existing actions that navigates to the revoke-ownership entry screen/route."
+        },
+        {
+          "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the vehicle-selection + PIN-gated revoke flow is fully supported from this page using existing hooks (including the existing revoke mutation so the same React Query caches are invalidated) and the existing PIN prompt dialog."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add a PIN-confirmed “Revoke Ownership” destructive action on Vehicle Detail for ACTIVE vehicles owned by the viewer, including no-PIN guidance and post-success navigation/cache invalidation.",
+      "summary": "Make Vehicle Detail discoverable from the vehicles list and immediately after successful vehicle registration without changing the existing Vehicle Detail route path (`/vehicles/$vehicleId`).",
       "acceptanceCriteria": [
-        "As the current owner of an ACTIVE vehicle, clicking \"Revoke Ownership\" opens a PIN dialog and requires PIN input before submission.",
-        "With a correct PIN, the revoke action completes, the vehicle disappears from the owner’s Vehicles list, and the UI navigates back to `/vehicles`.",
-        "With an incorrect PIN, the dialog shows an error and the vehicle remains owned; no navigation occurs.",
-        "If the user has no PIN set, the UI prevents revocation and directs the user to set a PIN in `/security`.",
-        "No existing owner actions (Mark Lost, Transfer Ownership) are broken or changed in behavior."
+        "Vehicles list makes it explicit how to open vehicle details (e.g., an explicit \"View Details\" button/affordance on each vehicle card, in English).",
+        "After successful vehicle registration, the UI offers a clear path to the newly registered vehicle’s detail screen (e.g., redirect to the detail page, or success toast with a \"View Details\" action), without removing the existing ability to go back to /vehicles.",
+        "Vehicle detail route remains `/vehicles/$vehicleId` and continues to render the existing revoke-ownership button under the existing owner gating (owner + ACTIVE)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useVehicles.ts",
+          "path": "frontend/src/pages/VehiclesPage.tsx",
           "operation": "modify",
-          "description": "Add a new React Query mutation hook (e.g., useRevokeVehicleOwnership) that calls actor.revokeVehicleOwnership(vehicleId, pin) and invalidates relevant caches (at minimum: ['vehicle', vehicleId] and ['userVehicles']) on success, following existing mutation patterns used by transfer/lost flows."
+          "description": "Add an explicit per-vehicle \"View Details\" affordance (English) on each vehicle card while keeping existing navigation behavior intact (do not change the `/vehicles/$vehicleId` route path)."
         },
         {
-          "path": "frontend/src/pages/VehicleDetailPage.tsx",
+          "path": "frontend/src/pages/RegisterVehiclePage.tsx",
           "operation": "modify",
-          "description": "Within the existing \"Owner Actions\" area (gated by isOwner and ACTIVE), add a new destructive button labeled \"Revoke Ownership\". On click: if useHasPIN() indicates no PIN, block the flow, show an English toast guiding the user to set a PIN, and provide a direct navigation path to /security; otherwise open the existing PinPromptDialog to collect the PIN and submit via the new revoke mutation. On success: show an English success toast, ensure relevant React Query caches are invalidated, and navigate back to /vehicles. On failure: show an English error toast using existing error normalization patterns, and keep the user on the detail page with no state corruption."
+          "description": "After successful registration, use the returned vehicle id to provide a clear path to the newly registered vehicle’s detail screen (e.g., redirect to `/vehicles/$vehicleId` and keep an obvious way to return to `/vehicles`)."
         }
       ]
     }

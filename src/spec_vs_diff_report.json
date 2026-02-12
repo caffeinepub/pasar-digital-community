@@ -1,66 +1,83 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T01:33:18.842Z",
-  "summary": "Frontend added a React Query mutation hook (useRevokeVehicleOwnership) and started wiring a revoke flow into VehicleDetailPage, but key requirements are missing/incorrect: backend method implementation is not evidenced, frontend backend type declarations were not updated to include the new actor method, the no-PIN guidance navigates to the wrong route (/profile instead of /security), and failure handling does not show an error toast/normalized error. UI button/dialog integration is not evidenced in the truncated diff.",
+  "generatedAt": "2026-02-12T01:58:07.055Z",
+  "summary": "REQ-1 and REQ-2 appear implemented via a new /revoke-ownership route, an AppHeader nav item, and a Dashboard quick action that routes into a vehicle-selection + PIN-gated revoke flow. REQ-3 is partially evidenced (post-registration navigation to Vehicle Detail is added), but the diff summary does not clearly show the required explicit 'View Details' affordance on each vehicle in the vehicles list. The diff also includes several unrelated/unrequested changes (i18n/provider wiring, PWA/service worker/manifest edits, admin/profile/about/auth refactors), including modifications to files listed as immutable in the constraints.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Add backend canister method revokeVehicleOwnership(vehicleId, pin) with auth/ownership checks, PIN verification, and on success set owner to anonymous principal and clear transferCode.",
-      "reason": "backend/main.mo is truncated and does not show any new revokeVehicleOwnership method or the specified behavior (owner set to Principal.fromText(\"2vxsx-fae\"), transferCode cleared) or required trap messages.",
-      "evidence": [
-        "backend/main.mo (truncated; no revokeVehicleOwnership shown)"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Update frontend/src/backend.d.ts actor/type declarations to include revokeVehicleOwnership(vehicleId: string, pin: string): Promise<void> (or equivalent), making the method available to the React actor with TS compilation succeeding.",
-      "reason": "No diff evidence shows frontend/src/backend.d.ts being modified to add revokeVehicleOwnership; the only backend.d.ts mention in the provided summaries refers to activation-token methods, not revocation.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions backend.d.ts changes for activation tokens only; no revokeVehicleOwnership)",
-        "Modified files list does not include frontend/src/backend.d.ts"
-      ]
-    },
-    {
       "id": "REQ-3",
-      "requirement": "If the user does not have a PIN set, block revoke flow, show guidance toast, and provide direct navigation path to /security.",
-      "reason": "The implemented no-PIN path navigates to /profile rather than /security.",
+      "requirement": "Vehicles list makes it explicit how to open vehicle details (e.g., an explicit \"View Details\" button/affordance on each vehicle card, in English).",
+      "reason": "The VehiclesPage.tsx diff excerpt is truncated before the vehicle list rendering, and the visible portion does not show any per-vehicle \"View Details\" UI or navigation to `/vehicles/$vehicleId`. Without explicit evidence in the provided diff summary, this acceptance criterion cannot be confirmed as implemented.",
       "evidence": [
-        "frontend/src/pages/VehicleDetailPage.tsx: navigate({ to: '/profile' });"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "On failure, show an error toast in English using existing error normalization patterns (and do not navigate).",
-      "reason": "The catch block rethrows a new Error instead of showing an error toast/normalized error message; no toast call is present in the failure path shown.",
-      "evidence": [
-        "frontend/src/pages/VehicleDetailPage.tsx: catch (...) { const errorMessage = ...; throw new Error(errorMessage); }"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Add a destructive \"Revoke Ownership\" button in the existing Owner Actions area, only for isOwner + ACTIVE, and wire it to PinPromptDialog.",
-      "reason": "The diff is truncated and does not show the actual Owner Actions UI, the presence of the button label, gating by ACTIVE status, or rendering/usage of PinPromptDialog (only import/state/handlers are visible).",
-      "evidence": [
-        "frontend/src/pages/VehicleDetailPage.tsx (truncated; UI section not shown)"
+        "frontend/src/pages/VehiclesPage.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Redirecting users without a PIN to /profile instead of the required /security route.",
-      "reason": "BuildRequest explicitly requires a direct navigation path to /security when no PIN is set; the implementation uses /profile.",
+      "description": "Introduced or re-wired app-wide i18n / I18nProvider support (including wrapping the app entry point).",
+      "reason": "Not requested by any REQ; also conflicts with the constraint forbidding edits to `frontend/src/main.tsx`.",
       "evidence": [
-        "frontend/src/pages/VehicleDetailPage.tsx: navigate({ to: '/profile' });"
+        "frontend-file-summaries.txt: \"frontend/src/main.tsx\": \"Application entry point wrapping the app with I18nProvider...\""
+      ]
+    },
+    {
+      "description": "Modified protected/immutable authentication/actor hook files (useActor.ts and possibly others).",
+      "reason": "Not requested and explicitly disallowed by constraints (do not edit `frontend/src/hooks/useActor.ts` and other immutable auth hooks).",
+      "evidence": [
+        "frontend-file-summaries.txt: \"frontend/src/hooks/useActor.ts\": \"Actor initialization hook...\""
+      ]
+    },
+    {
+      "description": "Added/changed PWA/service-worker/manifest and index.html metadata behavior (cache strategy, manifest icon rules, meta description).",
+      "reason": "Not requested by REQ-1/2/3; unrelated to exposing revocation entry points or Vehicle Detail discoverability.",
+      "evidence": [
+        "frontend-file-summaries.txt: \"frontend/public/sw.js\"",
+        "frontend-file-summaries.txt: \"frontend/public/manifest.webmanifest\"",
+        "frontend-file-summaries.txt: \"frontend/index.html\""
+      ]
+    },
+    {
+      "description": "Added/expanded About page content and admin contact details.",
+      "reason": "Not requested by REQ-1/2/3.",
+      "evidence": [
+        "frontend-file-summaries.txt: \"frontend/src/pages/AboutPage.tsx\""
+      ]
+    },
+    {
+      "description": "Admin token management and admin dashboard stats features (invite tokens page, system stats hook).",
+      "reason": "Not requested by REQ-1/2/3 and outside the described scope.",
+      "evidence": [
+        "frontend-file-summaries.txt: \"frontend/src/pages/admin/AdminInviteTokensPage.tsx\"",
+        "frontend-file-summaries.txt: \"frontend/src/pages/admin/AdminDashboardPage.tsx\"",
+        "frontend-file-summaries.txt: \"frontend/src/hooks/useAdmin.ts\""
+      ]
+    },
+    {
+      "description": "Profile page redesign/feature expansion (PIN create/update UI and account management changes).",
+      "reason": "Not requested by REQ-1/2/3.",
+      "evidence": [
+        "frontend-file-summaries.txt: \"frontend/src/pages/ProfilePage.tsx\""
+      ]
+    },
+    {
+      "description": "Backend API contract/type changes for activation tokens (generate/redeem activation token methods).",
+      "reason": "Not requested by REQ-1/2/3 and potentially conflicts with the constraint to avoid backend/service changes (even though this is a frontend type contract change).",
+      "evidence": [
+        "frontend-file-summaries.txt: \"frontend/src/backend.d.ts\": \"...generateActivationToken and redeemActivationToken methods added...\""
       ]
     }
   ],
-  "confidence": 0.63,
+  "confidence": 0.66,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useVehicles.ts",
-    "frontend/src/pages/VehicleDetailPage.tsx",
+    "frontend/CHANGELOG.md",
+    "frontend/src/App.tsx",
+    "frontend/src/components/nav/AppHeader.tsx",
+    "frontend/src/pages/DashboardPage.tsx",
+    "frontend/src/pages/RegisterVehiclePage.tsx",
+    "frontend/src/pages/RevokeOwnershipPage.tsx",
+    "frontend/src/pages/VehiclesPage.tsx",
     "project_state.json"
   ]
 }

@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, User, LogOut, Shield, Bell, Car, Home, Search, FileSearch, MapPin } from 'lucide-react';
+import { Menu, User, LogOut, Shield, Bell, Car, Home, Search, FileSearch, MapPin, ShieldAlert } from 'lucide-react';
 import AppLogo from '../brand/AppLogo';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -36,6 +36,7 @@ export default function AppHeader() {
     { label: 'Lost Vehicles', path: '/lost-vehicles', icon: Search },
     { label: 'Vehicle Check', path: '/vehicle-check', icon: FileSearch },
     { label: 'Report Found Vehicle', path: '/report-found', icon: MapPin },
+    { label: 'Revoke Ownership', path: '/revoke-ownership', icon: ShieldAlert },
     { label: 'Notifications', path: '/notifications', icon: Bell },
   ];
 

@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExternalBlob } from '../backend';
 import { toast } from 'sonner';
-import { Upload, ArrowLeft, AlertCircle, ExternalLink } from 'lucide-react';
+import { Upload, ArrowLeft, AlertCircle, ExternalLink, Eye } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
 import { normalizeActorError } from '../utils/normalizeActorError';
@@ -56,7 +56,7 @@ export default function RegisterVehiclePage() {
         setUploadProgress(percentage);
       });
 
-      await registerVehicle.mutateAsync({
+      const vehicleId = await registerVehicle.mutateAsync({
         engineNumber,
         chassisNumber,
         brand,
@@ -66,8 +66,14 @@ export default function RegisterVehiclePage() {
         vehiclePhoto: blob,
       });
 
-      toast.success('Vehicle registered successfully');
-      navigate({ to: '/vehicles' });
+      toast.success('Vehicle registered successfully', {
+        action: {
+          label: 'View Details',
+          onClick: () => navigate({ to: '/vehicles/$vehicleId', params: { vehicleId } }),
+        },
+      });
+
+      navigate({ to: '/vehicles/$vehicleId', params: { vehicleId } });
     } catch (error: any) {
       const normalized = normalizeActorError(error, 'registerVehicle');
       toast.error(normalized.userMessage);
@@ -103,7 +109,8 @@ export default function RegisterVehiclePage() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Vehicle registration is not activated for your account. Please redeem an activation token from the admin to activate your account.
+              Vehicle registration is not activated for your account. Please redeem an activation token from the admin
+              to activate your account.
             </AlertDescription>
           </Alert>
 

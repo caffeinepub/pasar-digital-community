@@ -4,7 +4,7 @@ import { useGetMyNotifications } from '../hooks/useNotifications';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Car, Bell, Search, Plus, AlertTriangle, FileSearch, MapPin } from 'lucide-react';
+import { Car, Bell, Search, Plus, AlertTriangle, FileSearch, MapPin, ShieldAlert } from 'lucide-react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -27,6 +27,13 @@ export default function DashboardPage() {
       icon: Plus,
       action: () => navigate({ to: '/vehicles/register' }),
       variant: 'default' as const,
+    },
+    {
+      title: 'Revoke Ownership',
+      description: 'Remove vehicle ownership from your account',
+      icon: ShieldAlert,
+      action: () => navigate({ to: '/revoke-ownership' }),
+      variant: 'destructive' as const,
     },
     {
       title: 'Report Found Vehicle',
@@ -96,7 +103,7 @@ export default function DashboardPage() {
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {quickActions.map((action) => (
               <Card key={action.title} className="hover:shadow-md transition-shadow cursor-pointer">
                 <CardHeader>
