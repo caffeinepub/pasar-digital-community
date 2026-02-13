@@ -1,104 +1,76 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Installable PWA support (Android/iOS) + Pasar Digital favicon/icon branding",
+  "title": "Fix PWA base-path asset URLs, install CTA, and SW caching for reliable mobile installation",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Ensure the app registers the existing service worker and serves a valid manifest + icons so it is installable as a PWA on Android and iOS.",
+      "summary": "Make manifest, service worker, and icon URLs base-path-safe so PWA installs correctly (standalone) and shows the correct home-screen icon from any served base path.",
       "acceptanceCriteria": [
-        "On first load in a production build, the app registers the existing service worker at `/sw.js` without console errors.",
-        "In Chrome/Edge, the site meets installability checks (valid manifest, service worker controlling the page) and shows an install prompt (where supported).",
-        "In iOS Safari, the app can be added via “Add to Home Screen” and launches in standalone mode using the manifest metadata/icons.",
-        "No existing application routes, auth flow, or backend interactions are broken by the PWA changes."
+        "Update `frontend/index.html` to reference the manifest and PWA icon assets using base-path-safe URLs (e.g., relative URLs) rather than hard-coded absolute `/...` paths.",
+        "Update `frontend/public/manifest.webmanifest` to use base-path-safe `start_url` and `scope` values (e.g., relative `./`) and ensure all `icons[].src` values are base-path-safe.",
+        "Update `frontend/src/pwa/registerServiceWorker.ts` to register the service worker with a base-path-safe URL (avoid hard-coded `'/sw.js'`).",
+        "Verify the installed app (launched from home screen) opens without browser UI (standalone) on Android Chrome/Edge when installable criteria are met.",
+        "Verify the home-screen icon is displayed correctly after installation on Android and iOS (using the existing generated icons in `/assets/generated/*`)."
       ],
       "file_operations": [
         {
+          "path": "frontend/index.html",
+          "operation": "modify",
+          "description": "Replace hard-coded absolute `/...` URLs with base-path-safe relative references for the manifest, favicons, apple-touch-icon, PWA icons, and the main module script so they resolve correctly when served from a non-root base path."
+        },
+        {
+          "path": "frontend/public/manifest.webmanifest",
+          "operation": "modify",
+          "description": "Update `start_url` and `scope` to base-path-safe relative values (e.g., `./`) and change all `icons[].src` entries to base-path-safe relative paths pointing to the existing generated icon assets under `frontend/public/assets/generated/`."
+        },
+        {
           "path": "frontend/src/pwa/registerServiceWorker.ts",
-          "operation": "create",
-          "description": "Add a small helper that registers the existing service worker at `/sw.js` only in production builds, avoids noisy console errors, and safely no-ops when Service Workers are unsupported."
-        },
-        {
-          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Wire service worker registration into the running app (e.g., call the new `registerServiceWorker()` from a React effect) without changing any existing route paths or authentication/bootstrap logic."
-        },
-        {
-          "path": "frontend/public/sw.js",
-          "operation": "modify",
-          "description": "Adjust service worker caching rules as needed for installability and correctness (e.g., ensure manifest + app icons are consistently fetchable and not served stale), without changing app routes or adding new features like push/background sync."
+          "description": "Register the service worker using a base-path-safe URL derived from the app’s runtime base (e.g., `import.meta.env.BASE_URL`) instead of a hard-coded root path, ensuring SW registration works under any base path."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Update favicon and platform icons so Pasar Digital logo is used consistently across browser favicon(s), Apple touch icon, and manifest icons.",
+      "summary": "Add a dismissible in-app Install call-to-action that appears only when `beforeinstallprompt` is available and triggers the browser install prompt.",
       "acceptanceCriteria": [
-        "Browser tabs show the Pasar Digital logo as the favicon (at least 16x16 and 32x32 sizes).",
-        "`frontend/index.html` references the generated favicon(s) and Apple touch icon from `/assets/generated/` and no longer relies on non-logo placeholders.",
-        "`frontend/public/manifest.webmanifest` icons point to generated logo-based icons and remain valid JSON.",
-        "Generated icons are stored as static assets under `frontend/public/assets/generated/` and are referenced directly by the frontend (not routed through the backend)."
+        "When `beforeinstallprompt` fires, show a small non-blocking UI element (e.g., banner/button) labeled \"Install\" / \"Install app\" that the user can tap to trigger the prompt.",
+        "The install UI does not appear on browsers that do not support `beforeinstallprompt` (e.g., iOS Safari).",
+        "The install UI can be dismissed and does not block navigation/authentication or any existing features.",
+        "No backend changes are required for this feature."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/assets/generated/favicon.dim_32x32.png",
+          "path": "frontend/src/pwa/usePwaInstallPrompt.ts",
           "operation": "create",
-          "description": "Add the generated Pasar Digital logo favicon asset at `frontend/public/assets/generated/favicon.dim_32x32.png`."
+          "description": "Create a small hook that listens for the `beforeinstallprompt` event, stores the deferred prompt event, exposes `isInstallable`, `promptInstall()`, and `dismiss()` state (including a persisted dismissal flag) without affecting existing navigation/auth flows."
         },
         {
-          "path": "frontend/public/assets/generated/favicon.dim_16x16.png",
+          "path": "frontend/src/components/pwa/InstallAppBanner.tsx",
           "operation": "create",
-          "description": "Add the generated Pasar Digital logo favicon asset at `frontend/public/assets/generated/favicon.dim_16x16.png`."
+          "description": "Create a compact, non-blocking banner/button UI that uses the hook to show an \"Install\" CTA only when installable; include a dismiss control. Use the shadcn-ui `Button` component to keep styling consistent. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "operation": "create",
-          "description": "Ensure the generated Apple touch icon exists at `frontend/public/assets/generated/apple-touch-icon.dim_180x180.png` (add/replace as needed to use the Pasar Digital logo)."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-          "operation": "create",
-          "description": "Ensure the generated PWA icon exists at `frontend/public/assets/generated/pwa-icon.dim_192x192.png` (add/replace as needed to use the Pasar Digital logo)."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "operation": "create",
-          "description": "Ensure the generated PWA icon exists at `frontend/public/assets/generated/pwa-icon.dim_512x512.png` (add/replace as needed to use the Pasar Digital logo)."
-        },
-        {
-          "path": "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-          "operation": "create",
-          "description": "Ensure the generated maskable PWA icon exists at `frontend/public/assets/generated/pwa-maskable.dim_512x512.png` (add/replace as needed to use the Pasar Digital logo)."
-        },
-        {
-          "path": "frontend/index.html",
+          "path": "frontend/src/components/layout/AppLayout.tsx",
           "operation": "modify",
-          "description": "Update favicon + Apple touch icon `<link>` tags to reference the generated logo assets from `frontend/public/assets/generated/` (specifically: `frontend/public/assets/generated/favicon.dim_16x16.png`, `frontend/public/assets/generated/favicon.dim_32x32.png`, and `frontend/public/assets/generated/apple-touch-icon.dim_180x180.png`) while keeping the existing manifest link intact."
-        },
-        {
-          "path": "frontend/public/manifest.webmanifest",
-          "operation": "modify",
-          "description": "Verify/adjust manifest icon entries to point to the generated logo-based icons (including `frontend/public/assets/generated/pwa-icon.dim_192x192.png`, `frontend/public/assets/generated/pwa-icon.dim_512x512.png`, `frontend/public/assets/generated/pwa-maskable.dim_512x512.png`) and keep the manifest valid JSON."
-        },
-        {
-          "path": "frontend/public/sw.js",
-          "operation": "modify",
-          "description": "Update the service worker allow/deny caching lists so favicon/manifest/icon files (including `frontend/public/assets/generated/favicon.dim_16x16.png` and `frontend/public/assets/generated/favicon.dim_32x32.png`) are always served correctly and do not get stuck with stale cached versions."
+          "description": "Wire the `InstallAppBanner` into the authenticated app shell (layout) in a way that does not block content (e.g., fixed/stacked banner area) and respects dismissal so it won’t reappear unnecessarily."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Document a minimal manual verification checklist for PWA installability (Android Chrome + iOS Safari) in CHANGELOG.md without changing app behavior.",
+      "summary": "Adjust service worker caching behavior so manifest/icons are fetched reliably and updates are picked up without masking failures as synthetic 404s.",
       "acceptanceCriteria": [
-        "CHANGELOG.md includes an entry documenting PWA enablement and the manual install verification steps for Android and iOS.",
-        "No protected route paths are changed as part of this update."
+        "`frontend/public/sw.js` must not return a synthetic 404 response for manifest/icon fetch failures; if the network is unavailable, it should fall back to cache (if available) or allow the request to fail normally without masking the error as a 404.",
+        "Service worker caching rules must continue to avoid stale PWA metadata (manifest/icons) while not breaking normal asset loading.",
+        "After a hard reload and reinstall attempt on mobile, the manifest and icon URLs resolve with HTTP 200 and correct content types from the static frontend."
       ],
       "file_operations": [
         {
-          "path": "frontend/CHANGELOG.md",
+          "path": "frontend/public/sw.js",
           "operation": "modify",
-          "description": "Add a new changelog entry (English) describing PWA enablement, plus a short manual install verification checklist for Android Chrome and iOS Safari, explicitly noting that route paths were not changed."
+          "description": "Update the SW fetch handling for manifest/icons to avoid returning a synthetic 404 on network failure; instead, attempt network fetch (no-cache/no-store as appropriate), fall back to cache if present, otherwise let the request fail normally. Keep rules that prevent stale PWA metadata while preserving existing cache-first behavior for normal static assets; also ensure any pre-cached static asset paths used during install are compatible with non-root base paths."
         }
       ]
     }

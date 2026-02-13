@@ -1,12 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Make the frontend installable as a PWA on Android and iOS, and ensure the favicon/app icons consistently use the Pasar Digital logo.
+**Goal:** Fix PWA installation behavior and home-screen icon display on mobile by making PWA assets and registration work from any base path, and add an in-app “Install” entry point when supported.
 
 **Planned changes:**
-- Ensure the existing service worker at `/sw.js` is registered in production and properly controls the page for PWA installability.
-- Verify and update `manifest.webmanifest` so it is correctly served and references logo-based app icons from `/assets/generated/`.
-- Update `frontend/index.html` to reference Pasar Digital logo favicon(s) and Apple touch icon from `/assets/generated/`.
-- Add a minimal manual verification checklist to `CHANGELOG.md` for Android Chrome and iOS Safari PWA install/installability checks.
+- Update `frontend/index.html` to reference `manifest.webmanifest` and PWA icon assets using base-path-safe URLs (avoid hard-coded absolute `/...` paths).
+- Update `frontend/public/manifest.webmanifest` to use base-path-safe `start_url`, `scope`, and `icons[].src` so installs work correctly when not served from domain root.
+- Update `frontend/src/pwa/registerServiceWorker.ts` to register the service worker using a base-path-safe URL (avoid hard-coded `'/sw.js'`).
+- Adjust `frontend/public/sw.js` caching behavior so manifest/icon requests are not masked by synthetic 404s, and updated PWA metadata (manifest/icons) can be picked up reliably.
+- Add a small, non-blocking in-app “Install” UI that appears only when the `beforeinstallprompt` event is available, can be dismissed, and does not disrupt existing flows.
 
-**User-visible outcome:** Users can install the web app to their Android/iOS home screen, open it in standalone mode, and see the Pasar Digital logo as the browser favicon and app icon.
+**User-visible outcome:** On supported mobile browsers (e.g., Android Chrome/Edge), the app shows an in-app “Install” call-to-action when available; after installation, launching from the home screen opens in standalone mode and the correct app icon appears on Android/iOS.

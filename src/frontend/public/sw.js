@@ -1,23 +1,34 @@
 const CACHE_NAME = 'pasar-digital-v4';
+
+// Determine base path from service worker location
+const getBasePath = () => {
+  const swPath = self.location.pathname;
+  return swPath.substring(0, swPath.lastIndexOf('/') + 1);
+};
+
+const BASE_PATH = getBasePath();
+
 const STATIC_ASSETS = [
-  '/assets/Logo Pasar Digital Community-1.png',
+  `${BASE_PATH}assets/Logo Pasar Digital Community-1.png`,
 ];
 
 // Assets that should never be cached (always fetch fresh)
-const NEVER_CACHE = [
-  '/assets/generated/favicon.dim_16x16.png',
-  '/assets/generated/favicon.dim_32x32.png',
-  '/assets/generated/pwa-icon.dim_192x192.png',
-  '/assets/generated/pwa-icon.dim_512x512.png',
-  '/assets/generated/pwa-maskable.dim_512x512.png',
-  '/assets/generated/apple-touch-icon.dim_180x180.png',
-  '/manifest.webmanifest',
+const NEVER_CACHE_PATTERNS = [
+  'favicon.dim_16x16.png',
+  'favicon.dim_32x32.png',
+  'pwa-icon.dim_192x192.png',
+  'pwa-icon.dim_512x512.png',
+  'pwa-maskable.dim_512x512.png',
+  'apple-touch-icon.dim_180x180.png',
+  'manifest.webmanifest',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('Failed to cache some static assets:', err);
+      });
     })
   );
   self.skipWaiting();
@@ -27,10 +38,20 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
   // Never cache PWA icons, favicons, and manifest - always fetch fresh
-  if (NEVER_CACHE.some(path => url.pathname.includes(path))) {
+  // If network fails, let it fail naturally (don't return synthetic 404)
+  if (NEVER_CACHE_PATTERNS.some(pattern => url.pathname.includes(pattern))) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response('', { status: 404 });
+      fetch(event.request, {
+        cache: 'no-store',
+      }).catch(() => {
+        // Try cache as fallback, but if not in cache, let request fail naturally
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Let the request fail naturally instead of returning synthetic 404
+          throw new Error('Network request failed and no cache available');
+        });
       })
     );
     return;
@@ -38,7 +59,7 @@ self.addEventListener('fetch', (event) => {
 
   // Network-first for HTML/navigation requests to ensure fresh app shell
   if (event.request.mode === 'navigate' || event.request.destination === 'document' || 
-      url.pathname === '/' || url.pathname.endsWith('.html')) {
+      url.pathname === BASE_PATH || url.pathname.endsWith('.html')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {

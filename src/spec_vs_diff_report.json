@@ -1,14 +1,32 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T02:30:56.605Z",
-  "summary": "Diff implements core PWA pieces (service worker registration helper, manifest + favicon/apple-touch-icon links, and a CHANGELOG checklist). However, it also includes multiple unrelated frontend feature/UI/auth/admin changes and edits to files marked immutable in the BuildRequest constraints. The diff summary does not show the required generated icon image assets being added under frontend/public/assets/generated/.",
+  "generatedAt": "2026-02-13T12:33:04.491Z",
+  "summary": "REQ-1/2/3 appear largely implemented: base-path-safe manifest/icons and SW registration were updated; an in-app install banner and hook were added for beforeinstallprompt; service worker caching was adjusted to avoid synthetic 404s for manifest/icons. However, the diff also includes multiple unrelated frontend feature/UI/auth/admin changes and backend type additions not requested by the PWA-only BuildRequest. Some acceptance criteria about manual verification cannot be confirmed from code changes alone.",
   "missing_requirements": [
     {
       "id": "REQ-2",
-      "requirement": "Generated icons are stored as static assets under `frontend/public/assets/generated/` (favicon 16x16/32x32, apple-touch-icon 180x180, PWA 192x192/512x512, maskable 512x512) and referenced directly by the frontend.",
-      "reason": "The diff updates `index.html` and `manifest.webmanifest` to reference `/assets/generated/...`, but the diff summary does not include additions of the actual image files under `frontend/public/assets/generated/`.",
+      "requirement": "Install call-to-action should be available on supported mobile browsers when beforeinstallprompt is available, without being gated by unrelated app state (e.g., authentication).",
+      "reason": "The install banner is only rendered when `isAuthenticated` is true, which may prevent the CTA from appearing in otherwise-supported scenarios (e.g., installable but not signed in). The BuildRequest did not specify an auth requirement for showing the install entry point.",
       "evidence": [
+        "frontend/src/components/layout/AppLayout.tsx"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Verify the installed app launches in standalone mode and the home-screen icon is displayed correctly on Android/iOS after installation.",
+      "reason": "This is an explicit acceptance criterion but represents a manual verification step; the diff contains no test plan, documentation, or automated checks demonstrating verification.",
+      "evidence": [
+        "frontend/index.html",
+        "frontend/public/manifest.webmanifest"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "After a hard reload and reinstall attempt on mobile, the manifest and icon URLs resolve with HTTP 200 and correct content types from the static frontend.",
+      "reason": "This is an explicit acceptance criterion that requires runtime/server validation; the diff shows code changes but no evidence of validation steps or checks confirming HTTP 200/content-type behavior.",
+      "evidence": [
+        "frontend/public/sw.js",
         "frontend/index.html",
         "frontend/public/manifest.webmanifest"
       ]
@@ -16,52 +34,30 @@
   ],
   "hallucinated_features": [
     {
-      "description": "Edits to files explicitly marked immutable by constraints (`frontend/src/main.tsx`, `frontend/src/hooks/useActor.ts`).",
-      "reason": "BuildRequest constraints state these paths must not be edited; diff summary indicates they were modified.",
+      "description": "Added/modified various non-PWA app features (admin dashboard/system stats hooks, admin invite tokens page, navigation item \"Revoke Ownership\", profile/bootstrap/auth UI text/i18n changes, etc.).",
+      "reason": "BuildRequest constraints specify PWA-only fixes isolated to PWA/asset/metadata/UI entry points and to not change existing routes/auth/working features. These appear unrelated to PWA install prompt/icon fixes.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions modifications to `frontend/src/main.tsx` and `frontend/src/hooks/useActor.ts`)"
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "New route/feature and navigation related to \"Revoke Ownership\".",
-      "reason": "BuildRequest scope is strictly PWA installability and favicon/icon branding; new route and nav item are unrelated.",
+      "description": "Added backend type/interface changes (e.g., generateActivationToken/redeemActivationToken methods) in frontend TypeScript declarations.",
+      "reason": "BuildRequest explicitly says not to modify backend canister logic or data structures and keep changes PWA-only. Even if this is only types, it is not part of the requested PWA work.",
       "evidence": [
-        "frontend/CHANGELOG.md (v1.0.0 entries for `/revoke-ownership` and related UI)",
-        "frontend-file-summaries.txt (mentions AppHeader navigation item and RevokeOwnershipPage)"
-      ]
-    },
-    {
-      "description": "Admin activation/token management features and related backend type additions (e.g., generate/redeem activation tokens).",
-      "reason": "BuildRequest explicitly says keep backend as-is and limit changes strictly to PWA installability and branding; adding backend typings/features is unrelated.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions `frontend/src/backend.d.ts` additions and AdminInviteTokens/AdminDashboard changes)"
-      ]
-    },
-    {
-      "description": "Authentication/access-denied behavior and sign-in UI/i18n related changes.",
-      "reason": "Non-goal/scope limit indicates no changes to authentication providers/flows; diff summary describes significant auth UI/behavior updates and i18n provider wiring.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions SignInScreen translation via i18n hook, AccessDeniedScreen simplification, and `frontend/src/main.tsx` wrapping with I18nProvider)"
-      ]
-    },
-    {
-      "description": "Service worker behavior changes beyond installability (cache version bump to v4, caching strategy changes).",
-      "reason": "BuildRequest is focused on installability and icon branding; changing caching strategy/cache version is additional behavior not explicitly requested (though related to SW).",
-      "evidence": [
-        "frontend/public/sw.js",
-        "frontend/CHANGELOG.md (Technical Notes mention v4 and caching strategies)"
+        "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/CHANGELOG.md",
     "frontend/index.html",
     "frontend/public/manifest.webmanifest",
     "frontend/public/sw.js",
-    "frontend/src/App.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/pwa/InstallAppBanner.tsx",
     "frontend/src/pwa/registerServiceWorker.ts",
+    "frontend/src/pwa/usePwaInstallPrompt.ts",
     "project_state.json"
   ]
 }

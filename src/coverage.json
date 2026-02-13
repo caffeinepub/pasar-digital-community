@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T02:30:56.609Z",
+  "generatedAt": "2026-02-13T12:33:04.495Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,55 +12,43 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Make the frontend fully installable as a Progressive Web App (PWA) on Android and iOS by ensuring the service worker is registered in the app and that the manifest + app icons are correctly served from the frontend static assets.",
+        "summary": "Fix PWA asset addressing so the manifest, service worker, and all icon URLs work correctly when the app is served from any base path (not only domain root), ensuring the installed app launches in standalone mode and the app icon appears on the home screen.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pwa/registerServiceWorker.ts",
-          "frontend/src/App.tsx",
-          "frontend/public/sw.js"
+          "frontend/index.html",
+          "frontend/public/manifest.webmanifest",
+          "frontend/src/pwa/registerServiceWorker.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pwa/registerServiceWorker.ts",
-          "frontend/src/App.tsx",
-          "frontend/public/sw.js"
+          "frontend/index.html",
+          "frontend/public/manifest.webmanifest",
+          "frontend/src/pwa/registerServiceWorker.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update PWA metadata so that the favicon and platform icons use the Pasar Digital logo consistently, including browser favicon(s), Apple touch icon, and manifest icons.",
+        "summary": "Add an in-app install entry point that displays an “Install” call-to-action on supported mobile browsers when the `beforeinstallprompt` event is available, without impacting existing app flows.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/public/assets/generated/favicon.dim_32x32.png",
-          "frontend/public/assets/generated/favicon.dim_16x16.png",
-          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-          "frontend/index.html",
-          "frontend/public/manifest.webmanifest",
-          "frontend/public/sw.js"
+          "frontend/src/pwa/usePwaInstallPrompt.ts",
+          "frontend/src/components/pwa/InstallAppBanner.tsx",
+          "frontend/src/components/layout/AppLayout.tsx"
         ],
         "matchedFiles": [
-          "frontend/public/assets/generated/favicon.dim_32x32.png",
-          "frontend/public/assets/generated/favicon.dim_16x16.png",
-          "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-          "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-          "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-          "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
-          "frontend/index.html",
-          "frontend/public/manifest.webmanifest",
-          "frontend/public/sw.js"
+          "frontend/src/pwa/usePwaInstallPrompt.ts",
+          "frontend/src/components/pwa/InstallAppBanner.tsx",
+          "frontend/src/components/layout/AppLayout.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Add a minimal verification checklist (documented in CHANGELOG.md) for PWA installability covering Android Chrome and iOS Safari, without changing existing feature behavior.",
+        "summary": "Ensure PWA-related static assets (manifest and icons) are served reliably and are not broken by service worker caching behavior, so updated icons/manifest are picked up correctly on mobile.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/CHANGELOG.md"
+          "frontend/public/sw.js"
         ],
         "matchedFiles": [
-          "frontend/CHANGELOG.md"
+          "frontend/public/sw.js"
         ]
       }
     ]
@@ -70,18 +58,13 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/CHANGELOG.md",
     "frontend/index.html",
-    "frontend/public/assets/generated/apple-touch-icon.dim_180x180.png",
-    "frontend/public/assets/generated/favicon.dim_16x16.png",
-    "frontend/public/assets/generated/favicon.dim_32x32.png",
-    "frontend/public/assets/generated/pwa-icon.dim_192x192.png",
-    "frontend/public/assets/generated/pwa-icon.dim_512x512.png",
-    "frontend/public/assets/generated/pwa-maskable.dim_512x512.png",
     "frontend/public/manifest.webmanifest",
     "frontend/public/sw.js",
-    "frontend/src/App.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/pwa/InstallAppBanner.tsx",
     "frontend/src/pwa/registerServiceWorker.ts",
+    "frontend/src/pwa/usePwaInstallPrompt.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

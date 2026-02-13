@@ -1,36 +1,34 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Build and publish an Internet Computer app named Pasar Digital Community (Pasar Digital) with vehicle registration/status checking and ownership management; current focus includes enabling installable PWA support for Android/iOS and ensuring the favicon uses the Pasar Digital logo.",
+  "summary": "Focus on improving the app's PWA mobile install experience (install prompt and icons) without changing currently working features.",
   "architectural_notes": [
-    "Target delivery as an installable Progressive Web App (PWA) with proper manifest/service worker support for Android and iOS.",
-    "Branding requirement: favicon must use the Pasar Digital logo."
+    "Do not modify or disrupt existing working features while addressing PWA install behavior (minimal, isolated changes)."
   ],
   "known_issues": [
-    "PWA installability is not currently working/implemented as expected (user reports app is not yet a PWA)."
+    "On mobile, PWA still behaves like a normal browser tab after adding to home screen; install prompt text does not appear and app icon/logo is not showing correctly."
   ],
-  "isFixRequest": false,
-  "imageRequirements": "## Required Images\n- Browser favicon using the Pasar Digital logo (favicon.dim_32x32.png)\n- Browser favicon using the Pasar Digital logo (favicon.dim_16x16.png)\n- Apple touch icon using the Pasar Digital logo (apple-touch-icon.dim_180x180.png)\n- PWA app icon using the Pasar Digital logo (pwa-icon.dim_192x192.png)\n- PWA app icon using the Pasar Digital logo (pwa-icon.dim_512x512.png)\n- Maskable PWA icon using the Pasar Digital logo (pwa-maskable.dim_512x512.png)",
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-make-the-frontend-fully-installable-as-a-progressive-web-app-pwa-on-android-and-ios-by-ensuring-the-service-worker-is-registered-in-the-app-and-that-the-manifest-app-icons-are-correctly-served-from-the-frontend-static-assets",
-      "title": "Make the frontend fully installable as a Progressive Web App (PWA) on Android and iOS by ensuring the service worker is registered in the app and that the manifest + app icons are correctly served from the frontend static assets.",
+      "id": "feature-fix-pwa-asset-addressing-so-the-manifest-service-worker-and-all-icon-urls-work-correctly-when-the-app-is-served-from-any-base-path-not-only-domain-root-ensuring-the-installed-app-launches-in-standalone-mode-and-the-app-icon-appears-on-the-home-screen",
+      "title": "Fix PWA asset addressing so the manifest, service worker, and all icon URLs work correctly when the app is served from any base path (not only domain root), ensuring the installed app launches in standalone mode and the app icon appears on the home screen.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-pwa-metadata-so-that-the-favicon-and-platform-icons-use-the-pasar-digital-logo-consistently-including-browser-favicon-s-apple-touch-icon-and-manifest-icons",
-      "title": "Update PWA metadata so that the favicon and platform icons use the Pasar Digital logo consistently, including browser favicon(s), Apple touch icon, and manifest icons.",
+      "id": "feature-add-an-in-app-install-entry-point-that-displays-an-install-call-to-action-on-supported-mobile-browsers-when-the-beforeinstallprompt-event-is-available-without-impacting-existing-app-flows",
+      "title": "Add an in-app install entry point that displays an “Install” call-to-action on supported mobile browsers when the `beforeinstallprompt` event is available, without impacting existing app flows.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-a-minimal-verification-checklist-documented-in-changelog-md-for-pwa-installability-covering-android-chrome-and-ios-safari-without-changing-existing-feature-behavior",
-      "title": "Add a minimal verification checklist (documented in CHANGELOG.md) for PWA installability covering Android Chrome and iOS Safari, without changing existing feature behavior.",
+      "id": "feature-ensure-pwa-related-static-assets-manifest-and-icons-are-served-reliably-and-are-not-broken-by-service-worker-caching-behavior-so-updated-icons-manifest-are-picked-up-correctly-on-mobile",
+      "title": "Ensure PWA-related static assets (manifest and icons) are served reliably and are not broken by service worker caching behavior, so updated icons/manifest are picked up correctly on mobile.",
       "reqIds": [
         "REQ-3"
       ],
@@ -40,13 +38,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Enable installable PWA (Android/iOS) for the web app and set the favicon to the Pasar Digital logo.",
+      "summary": "Fix/improve PWA mobile install experience: ensure install prompt appears and app icon/logo shows correctly when added to home screen; avoid impacting existing working features.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Pasar Digital Community",
+  "projectName": "Fix PWA install prompt and home-screen icon on mobile (Android/iOS)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

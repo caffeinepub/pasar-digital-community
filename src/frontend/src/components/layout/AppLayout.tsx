@@ -3,6 +3,7 @@ import AppHeader from '../nav/AppHeader';
 import { useGetCallerUserProfile } from '../../hooks/useProfile';
 import { useNavigate } from '@tanstack/react-router';
 import { APP_VERSION } from '../../version';
+import InstallAppBanner from '../pwa/InstallAppBanner';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </footer>
       )}
+      {/* Install app banner - only shows when installable and not dismissed */}
+      {isAuthenticated && <InstallAppBanner />}
     </div>
   );
 }

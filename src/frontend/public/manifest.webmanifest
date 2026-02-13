@@ -2,26 +2,26 @@
   "name": "Pasar Digital Community",
   "short_name": "Pasar Digital",
   "description": "Sistem Keamanan Kendaraan Berbasis Blockchain",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#145B9E",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/assets/generated/pwa-icon.dim_192x192.png",
+      "src": "./assets/generated/pwa-icon.dim_192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/generated/pwa-icon.dim_512x512.png",
+      "src": "./assets/generated/pwa-icon.dim_512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/generated/pwa-maskable.dim_512x512.png",
+      "src": "./assets/generated/pwa-maskable.dim_512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -30,6 +30,6 @@
   "categories": ["security", "utilities", "productivity"],
   "lang": "id",
   "dir": "ltr",
-  "scope": "/",
+  "scope": "./",
   "prefer_related_applications": false
 }

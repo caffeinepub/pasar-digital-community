@@ -1,6 +1,6 @@
 /**
  * Service Worker registration helper for PWA support.
- * Registers the service worker only in production builds.
+ * Registers the service worker only in production builds using base-path-safe URL.
  */
 
 export function registerServiceWorker(): void {
@@ -16,8 +16,11 @@ export function registerServiceWorker(): void {
   }
 
   window.addEventListener('load', () => {
+    // Use base-path-safe URL for service worker registration
+    const swUrl = `${import.meta.env.BASE_URL}sw.js`;
+    
     navigator.serviceWorker
-      .register('/sw.js')
+      .register(swUrl)
       .then((registration) => {
         console.info('Service Worker registered successfully:', registration.scope);
 

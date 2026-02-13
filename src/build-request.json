@@ -1,88 +1,84 @@
 {
   "kind": "build_request",
-  "title": "Enable installable PWA (Android/iOS) and set favicon to Pasar Digital logo",
+  "title": "Fix PWA install prompt and home-screen icon on mobile (Android/iOS)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Make the frontend fully installable as a Progressive Web App (PWA) on Android and iOS by ensuring the service worker is registered in the app and that the manifest + app icons are correctly served from the frontend static assets.",
+      "text": "Fix PWA asset addressing so the manifest, service worker, and all icon URLs work correctly when the app is served from any base path (not only domain root), ensuring the installed app launches in standalone mode and the app icon appears on the home screen.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-20"
+          "user-1"
         ],
         "quotes": [
-          "Aplikasi ini belum anda jadikan web aplikasi (PWA) supaya bisa di buka di hp android dan IOS dan langsung bisa di install."
+          "ok. Kita sekarang  fokus ke Web App (PWA) nya, karena saya buka di handphone masih bentuk nya browser setelah tampilkan di layar utama, belum muncul teks Install dan juga logo nya juga tidak muncul,  untuk tampilan di layar handphone."
         ]
       },
       "acceptanceCriteria": [
-        "On first load in a production build, the app registers the existing service worker at `/sw.js` without console errors.",
-        "In Chrome/Edge, the site meets installability checks (valid manifest, service worker controlling the page) and shows an install prompt (where supported).",
-        "In iOS Safari, the app can be added via “Add to Home Screen” and launches in standalone mode using the manifest metadata/icons.",
-        "No existing application routes, auth flow, or backend interactions are broken by the PWA changes."
+        "Update `frontend/index.html` to reference the manifest and PWA icon assets using base-path-safe URLs (e.g., relative URLs) rather than hard-coded absolute `/...` paths.",
+        "Update `frontend/public/manifest.webmanifest` to use base-path-safe `start_url` and `scope` values (e.g., relative `./`) and ensure all `icons[].src` values are base-path-safe.",
+        "Update `frontend/src/pwa/registerServiceWorker.ts` to register the service worker with a base-path-safe URL (avoid hard-coded `'/sw.js'`).",
+        "Verify the installed app (launched from home screen) opens without browser UI (standalone) on Android Chrome/Edge when installable criteria are met.",
+        "Verify the home-screen icon is displayed correctly after installation on Android and iOS (using the existing generated icons in `/assets/generated/*`)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update PWA metadata so that the favicon and platform icons use the Pasar Digital logo consistently, including browser favicon(s), Apple touch icon, and manifest icons.",
+      "text": "Add an in-app install entry point that displays an “Install” call-to-action on supported mobile browsers when the `beforeinstallprompt` event is available, without impacting existing app flows.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-20"
+          "user-1"
         ],
         "quotes": [
-          "Jangan lupa pavicon gunakan logo Pasar Digital."
+          "belum muncul teks Install"
         ]
       },
       "acceptanceCriteria": [
-        "Browser tabs show the Pasar Digital logo as the favicon (at least 16x16 and 32x32 sizes).",
-        "`frontend/index.html` references the generated favicon(s) and Apple touch icon from `/assets/generated/` and no longer relies on non-logo placeholders.",
-        "`frontend/public/manifest.webmanifest` icons point to generated logo-based icons and remain valid JSON.",
-        "Generated icons are stored as static assets under `frontend/public/assets/generated/` and are referenced directly by the frontend (not routed through the backend)."
+        "When `beforeinstallprompt` fires, show a small non-blocking UI element (e.g., banner/button) labeled \"Install\" / \"Install app\" that the user can tap to trigger the prompt.",
+        "The install UI does not appear on browsers that do not support `beforeinstallprompt` (e.g., iOS Safari).",
+        "The install UI can be dismissed and does not block navigation/authentication or any existing features.",
+        "No backend changes are required for this feature."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add a minimal verification checklist (documented in CHANGELOG.md) for PWA installability covering Android Chrome and iOS Safari, without changing existing feature behavior.",
+      "text": "Ensure PWA-related static assets (manifest and icons) are served reliably and are not broken by service worker caching behavior, so updated icons/manifest are picked up correctly on mobile.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-20"
+          "user-1"
+        ],
+        "quotes": [
+          "logo nya juga tidak muncul"
         ]
       },
       "acceptanceCriteria": [
-        "CHANGELOG.md includes an entry documenting PWA enablement and the manual install verification steps for Android and iOS.",
-        "No protected route paths are changed as part of this update."
+        "`frontend/public/sw.js` must not return a synthetic 404 response for manifest/icon fetch failures; if the network is unavailable, it should fall back to cache (if available) or allow the request to fail normally without masking the error as a 404.",
+        "Service worker caching rules must continue to avoid stale PWA metadata (manifest/icons) while not breaking normal asset loading.",
+        "After a hard reload and reinstall attempt on mobile, the manifest and icon URLs resolve with HTTP 200 and correct content types from the static frontend."
       ]
     }
   ],
   "constraints": [
-    "Do not change or break any existing working features; limit changes strictly to PWA installability and favicon/icon branding.",
-    "Do not edit files under `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useActor.ts`, or `frontend/src/main.tsx` (immutable paths).",
-    "Keep the backend as-is; no Motoko API changes are required for PWA support."
+    "Do not modify backend canister logic or data structures; this request is PWA-only.",
+    "Do not change existing routes, authentication behavior, or currently working features; PWA fixes must be isolated to PWA/asset/metadata/UI entry points.",
+    "Do not edit files under `frontend/src/components/ui` or any other immutable paths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
+    "Guaranteeing that every mobile browser will display a native install prompt (some platforms, especially iOS Safari, do not provide an automatic prompt).",
     "Adding push notifications or background sync.",
-    "Adding third-party analytics or external services.",
-    "Changing authentication providers (must remain Internet Identity)."
+    "Changing app branding beyond fixing the existing icon/logo visibility and install metadata behavior."
   ],
   "imageRequirements": {
-    "required": [
-      "Browser favicon using the Pasar Digital logo (favicon.dim_32x32.png)",
-      "Browser favicon using the Pasar Digital logo (favicon.dim_16x16.png)",
-      "Apple touch icon using the Pasar Digital logo (apple-touch-icon.dim_180x180.png)",
-      "PWA app icon using the Pasar Digital logo (pwa-icon.dim_192x192.png)",
-      "PWA app icon using the Pasar Digital logo (pwa-icon.dim_512x512.png)",
-      "Maskable PWA icon using the Pasar Digital logo (pwa-maskable.dim_512x512.png)"
-    ],
+    "required": [],
     "edits": []
   },
   "userProfileUpdate": {
     "goalsToAdd": [],
     "goalsToRemove": [],
-    "preferencesToAdd": [
-      "Use English for user-facing text in build artifacts and documentation."
-    ],
+    "preferencesToAdd": [],
     "preferencesToRemove": [],
     "miscToAdd": [],
     "miscToRemove": [],
