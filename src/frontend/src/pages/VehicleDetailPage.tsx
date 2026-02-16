@@ -1,3 +1,8 @@
+/**
+ * Vehicle detail page with comprehensive status display and owner actions
+ * Includes revoke ownership button with PIN confirmation dialog
+ */
+
 import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useGetVehicle, useRevokeVehicleOwnership } from '../hooks/useVehicles';
@@ -30,7 +35,8 @@ export default function VehicleDetailPage() {
 
     if (!hasPIN) {
       toast.error('PIN Required', {
-        description: 'You must set up a PIN before revoking vehicle ownership. Please go to Security settings to create a PIN.',
+        description:
+          'You must set up a PIN before revoking vehicle ownership. Please go to Security settings to create a PIN.',
       });
       navigate({ to: '/profile' });
       return;
@@ -248,7 +254,11 @@ export default function VehicleDetailPage() {
               <div className="space-y-4">
                 <h3 className="font-semibold">Owner Actions</h3>
                 <div className="flex flex-wrap gap-2">
-                  <MarkLostDialog vehicleId={vehicle.id} />
+                  <MarkLostDialog
+                    vehicleId={vehicle.id}
+                    vehicleBrand={vehicle.brand}
+                    vehicleModel={vehicle.model}
+                  />
                   <InitiateTransferPanel vehicleId={vehicle.id} />
                   <Button variant="destructive" onClick={handleRevokeClick} className="gap-2">
                     <Trash2 className="h-4 w-4" />
@@ -264,9 +274,10 @@ export default function VehicleDetailPage() {
       <PinPromptDialog
         open={showRevokePinDialog}
         onOpenChange={setShowRevokePinDialog}
-        onSubmit={handleRevokeSubmit}
+        onConfirm={handleRevokeSubmit}
         title="Confirm Ownership Revocation"
         description="Enter your PIN to revoke ownership of this vehicle. This action will remove the vehicle from your account."
+        isPending={revokeOwnership.isPending}
       />
     </div>
   );

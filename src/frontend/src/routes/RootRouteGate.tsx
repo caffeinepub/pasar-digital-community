@@ -1,6 +1,6 @@
 /**
- * Root route gate component that handles authentication and bootstrapping with continuous retry support
- * This component runs inside the router context with English-only status messaging
+ * Root route gate component that handles authentication and bootstrapping
+ * Renders visible UI immediately for authenticated users, showing inline errors instead of blocking
  */
 
 import { useEffect, useRef } from 'react';
@@ -9,24 +9,26 @@ import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from '../hooks/useProfile';
 import { useActorBootstrapStatus } from '../hooks/useActorBootstrapStatus';
 import SignInScreen from '../components/auth/SignInScreen';
-import ProfileBootstrapError from '../components/auth/ProfileBootstrapError';
-import StartupBootstrapError from '../components/auth/StartupBootstrapError';
 import AppLayout from '../components/layout/AppLayout';
+import StartupBootstrapError from '../components/auth/StartupBootstrapError';
+import ProfileBootstrapError from '../components/auth/ProfileBootstrapError';
 
 export default function RootRouteGate() {
   const { identity, isInitializing } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched, isError, error, refetch } = useGetCallerUserProfile();
   const {
-    isError: actorError,
-    error: actorErrorObj,
-    retry: retryActor,
-    isRetrying,
-    autoRetryStatus,
-    cancelContinuousRetry,
-  } = useActorBootstrapStatus();
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched: profileFetched,
+    isError: profileError,
+    error: profileErrorObj,
+    refetch: refetchProfile,
+  } = useGetCallerUserProfile();
+  const actorBootstrap = useActorBootstrapStatus();
   const navigate = useNavigate();
   const hasRedirectedRef = useRef(false);
   const lastIdentityRef = useRef<string | null>(null);
+
+  const isAuthenticated = !!identity;
 
   // Reset redirect flag when identity changes
   useEffect(() => {
@@ -37,84 +39,107 @@ export default function RootRouteGate() {
     }
   }, [identity]);
 
-  // Redirect to onboarding if authenticated but no profile
+  // Redirect to onboarding if authenticated, profile fetched successfully, and profile is null
   useEffect(() => {
-    if (!identity || !isFetched || hasRedirectedRef.current) return;
+    if (!isAuthenticated || !profileFetched || hasRedirectedRef.current) return;
 
     if (userProfile === null) {
       hasRedirectedRef.current = true;
       navigate({ to: '/onboarding' });
     }
-  }, [identity, userProfile, isFetched, navigate]);
-
-  // Show auto-retry status screen (including continuous retry mode)
-  if (identity && autoRetryStatus) {
-    return (
-      <StartupBootstrapError
-        error={actorErrorObj || new Error('Connection failed')}
-        onRetry={retryActor}
-        isRetrying={false}
-        autoRetryStatus={autoRetryStatus}
-        onCancelContinuousRetry={cancelContinuousRetry}
-      />
-    );
-  }
-
-  // Show actor bootstrap error if actor initialization failed and auto-retries exhausted/cancelled
-  if (identity && actorError && actorErrorObj && !autoRetryStatus) {
-    return <StartupBootstrapError error={actorErrorObj} onRetry={retryActor} isRetrying={isRetrying} />;
-  }
-
-  // Show loading during manual retry
-  if (identity && isRetrying) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Retrying connection...</p>
-        </div>
-      </div>
-    );
-  }
+  }, [isAuthenticated, userProfile, profileFetched, navigate]);
 
   // Show sign-in screen immediately for unauthenticated users
-  if (!identity && !isInitializing) {
+  if (!isAuthenticated && !isInitializing) {
     return <SignInScreen />;
   }
 
-  // Show loading only during initial auth check
+  // Show loading only during initial auth check (not for actor/profile)
   if (isInitializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Initializing...</p>
         </div>
       </div>
     );
   }
 
-  // Show loading while fetching profile for authenticated users
-  if (identity && profileLoading) {
+  // For authenticated users: check actor bootstrap status
+  if (isAuthenticated) {
+    // If actor bootstrap is in error state and not auto-retrying, show error screen
+    if (actorBootstrap.isError && !actorBootstrap.autoRetryStatus) {
+      return (
+        <StartupBootstrapError
+          error={actorBootstrap.error!}
+          onRetry={actorBootstrap.retry}
+          isRetrying={actorBootstrap.isRetrying}
+          autoRetryStatus={actorBootstrap.autoRetryStatus}
+          onCancelContinuousRetry={actorBootstrap.cancelContinuousRetry}
+        />
+      );
+    }
+
+    // If actor bootstrap is auto-retrying, show retry screen
+    if (actorBootstrap.autoRetryStatus) {
+      return (
+        <StartupBootstrapError
+          error={actorBootstrap.error!}
+          onRetry={actorBootstrap.retry}
+          isRetrying={actorBootstrap.isRetrying}
+          autoRetryStatus={actorBootstrap.autoRetryStatus}
+          onCancelContinuousRetry={actorBootstrap.cancelContinuousRetry}
+        />
+      );
+    }
+
+    // If actor is still loading (initial bootstrap), show minimal loading
+    if (actorBootstrap.isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Connecting...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Actor is available - now check profile status
+    // If profile query errored, show profile error inside AppLayout (non-blocking)
+    if (profileError && profileErrorObj) {
+      return (
+        <AppLayout>
+          <div className="container mx-auto p-4 max-w-2xl">
+            <ProfileBootstrapError error={profileErrorObj} onRetry={refetchProfile} />
+          </div>
+        </AppLayout>
+      );
+    }
+
+    // If profile is still loading (but actor is ready), show inline loading inside AppLayout
+    if (profileLoading && !profileFetched) {
+      return (
+        <AppLayout>
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground">Loading profile...</p>
+            </div>
+          </div>
+        </AppLayout>
+      );
+    }
+
+    // Profile fetched successfully - render app layout with outlet
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading profile...</p>
-        </div>
-      </div>
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
     );
   }
 
-  // Show error screen if profile fetch failed
-  if (identity && isError && error) {
-    return <ProfileBootstrapError error={error} onRetry={refetch} />;
-  }
-
-  // Render app layout with outlet for authenticated users
-  return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
-  );
+  // Fallback: should never reach here, but render sign-in as safe default
+  return <SignInScreen />;
 }

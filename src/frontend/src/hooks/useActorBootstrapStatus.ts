@@ -1,6 +1,7 @@
 /**
- * Hook to monitor actor bootstrap status with continuous retry for STOPPED-canister errors
+ * Hook to monitor actor bootstrap status with continuous retry for service-unavailable errors
  * Implements exponential backoff with bounded retries for normal errors, but continuous retry for stopped canisters
+ * Integrates backend health check to avoid misclassifying reachable backend errors as service-unavailable
  */
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,6 +9,7 @@ import { useInternetIdentity } from './useInternetIdentity';
 import { getActorQueryKey } from '../utils/actorQueryKey';
 import { useState, useEffect, useRef } from 'react';
 import { classifyBootstrapError } from '../utils/bootstrapError';
+import { useBackendHealth } from './useBackendHealth';
 
 const MAX_AUTO_RETRY_ATTEMPTS = 3;
 const RETRY_DELAYS = [2000, 5000, 10000]; // 2s, 5s, 10s
@@ -32,7 +34,8 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
   const queryClient = useQueryClient();
   const { identity } = useInternetIdentity();
   const identityPrincipal = identity?.getPrincipal().toString();
-  
+  const { isLoading: healthLoading, isReachable } = useBackendHealth();
+
   const [isManualRetrying, setIsManualRetrying] = useState(false);
   const [autoRetryAttempt, setAutoRetryAttempt] = useState(0);
   const [nextRetryIn, setNextRetryIn] = useState<number | undefined>(undefined);
@@ -61,20 +64,28 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
     };
   }, []);
 
-  // Auto-retry logic with continuous mode for STOPPED-canister errors
+  // Auto-retry logic with continuous mode for service-unavailable errors
   useEffect(() => {
-    if (!isError || !error || isCancelled) {
+    if (!isError || !error || isCancelled || healthLoading) {
       return;
     }
 
-    // Classify the error to determine if it's a stopped canister
-    const classification = classifyBootstrapError(error);
-    const isStoppedCanister = classification.type === 'canister-stopped';
+    // Classify the error with backend health hint to avoid false positives
+    const healthHint = { isReachable };
+    const classification = classifyBootstrapError(error, healthHint);
+    const isServiceUnavailable = classification.type === 'service-unavailable';
+
+    // If backend is reachable, don't enter continuous retry mode
+    // This prevents users from being trapped when the backend is actually working
+    if (isReachable && autoRetryAttempt >= MAX_AUTO_RETRY_ATTEMPTS) {
+      // Backend is reachable but we've exhausted retries - stop auto-retry
+      return;
+    }
 
     // Determine if we should continue retrying
-    const shouldContinueRetrying = 
-      autoRetryAttempt < MAX_AUTO_RETRY_ATTEMPTS || 
-      (isStoppedCanister && autoRetryAttempt >= MAX_AUTO_RETRY_ATTEMPTS);
+    const shouldContinueRetrying =
+      autoRetryAttempt < MAX_AUTO_RETRY_ATTEMPTS ||
+      (isServiceUnavailable && !isReachable && autoRetryAttempt >= MAX_AUTO_RETRY_ATTEMPTS);
 
     if (!shouldContinueRetrying) {
       return;
@@ -83,13 +94,13 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
     // Determine delay and mode
     let delay: number;
     let continuous = false;
-    
+
     if (autoRetryAttempt < MAX_AUTO_RETRY_ATTEMPTS) {
       // Bounded retry phase
       delay = RETRY_DELAYS[autoRetryAttempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
       continuous = false;
     } else {
-      // Continuous retry phase (only for stopped canisters)
+      // Continuous retry phase (only for service-unavailable with unreachable backend)
       delay = CONTINUOUS_RETRY_DELAY;
       continuous = true;
     }
@@ -103,7 +114,7 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, delay - elapsed);
       setNextRetryIn(remaining);
-      
+
       if (remaining === 0 && countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
@@ -112,14 +123,14 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
 
     // Schedule retry
     retryTimeoutRef.current = setTimeout(async () => {
-      setAutoRetryAttempt(prev => prev + 1);
-      
+      setAutoRetryAttempt((prev) => prev + 1);
+
       try {
         await queryClient.cancelQueries({ queryKey: actorQueryKey });
         queryClient.removeQueries({ queryKey: actorQueryKey });
-        await queryClient.refetchQueries({ 
+        await queryClient.refetchQueries({
           queryKey: actorQueryKey,
-          type: 'active'
+          type: 'active',
         });
       } catch (err) {
         console.error('Auto-retry failed:', err);
@@ -136,7 +147,7 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
         countdownIntervalRef.current = null;
       }
     };
-  }, [isError, error, autoRetryAttempt, actorQueryKey, queryClient, isCancelled]);
+  }, [isError, error, autoRetryAttempt, actorQueryKey, queryClient, isCancelled, healthLoading, isReachable]);
 
   // Reset auto-retry counter when error clears
   useEffect(() => {
@@ -155,7 +166,7 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
     setNextRetryIn(undefined);
     setIsContinuousMode(false);
     setIsCancelled(false);
-    
+
     // Clear any pending auto-retries
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current);
@@ -165,19 +176,19 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
       clearInterval(countdownIntervalRef.current);
       countdownIntervalRef.current = null;
     }
-    
+
     try {
       await queryClient.cancelQueries({ queryKey: actorQueryKey });
       queryClient.removeQueries({ queryKey: actorQueryKey });
-      await queryClient.refetchQueries({ 
+      await queryClient.refetchQueries({
         queryKey: actorQueryKey,
-        type: 'active'
+        type: 'active',
       });
-      
+
       // Invalidate dependent queries after successful retry
       queryClient.invalidateQueries({
         predicate: (query) => {
-          return !query.queryKey.some(key => key === 'actor');
+          return !query.queryKey.some((key) => key === 'actor');
         },
       });
     } finally {
@@ -190,7 +201,7 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
     setIsCancelled(true);
     setIsContinuousMode(false);
     setNextRetryIn(undefined);
-    
+
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current);
       retryTimeoutRef.current = null;
@@ -203,13 +214,15 @@ export function useActorBootstrapStatus(): ActorBootstrapStatus {
 
   // Determine if we should show auto-retry status
   const shouldShowAutoRetry = autoRetryAttempt > 0 && !isCancelled;
-  
-  const autoRetryStatus = shouldShowAutoRetry ? {
-    attempt: autoRetryAttempt,
-    maxAttempts: isContinuousMode ? Infinity : MAX_AUTO_RETRY_ATTEMPTS,
-    nextRetryIn: nextRetryIn,
-    isContinuous: isContinuousMode,
-  } : undefined;
+
+  const autoRetryStatus = shouldShowAutoRetry
+    ? {
+        attempt: autoRetryAttempt,
+        maxAttempts: isContinuousMode ? Infinity : MAX_AUTO_RETRY_ATTEMPTS,
+        nextRetryIn: nextRetryIn,
+        isContinuous: isContinuousMode,
+      }
+    : undefined;
 
   return {
     isLoading,

@@ -1,90 +1,84 @@
 /**
- * Utility to extract and normalize error details from actor calls.
- * Preserves raw payload for logs while returning a user-safe message.
+ * Utility to extract and normalize error details from actor calls
+ * User-facing messages avoid "canister stopped" wording
  */
 
-export interface NormalizedError {
-  userMessage: string;
-  rawError: any;
-  errorType: 'actor-unavailable' | 'already-onboarded' | 'unauthorized' | 'activation-required' | 'generic';
+export interface NormalizedActorError {
+  message: string;
+  technicalDetails?: string;
 }
 
-export function normalizeActorError(error: any, context?: string): NormalizedError {
-  const rawError = error;
-  const errorMessage = error?.message || String(error);
+/**
+ * Normalizes actor call errors into user-friendly messages
+ * Avoids "canister stopped" wording in user-facing messages
+ */
+export function normalizeActorError(error: unknown, context?: string): NormalizedActorError {
+  let message = 'An unexpected error occurred';
+  let technicalDetails: string | undefined;
 
-  // Actor not available
-  if (!error || errorMessage.includes('Actor not available')) {
-    return {
-      userMessage: 'Unable to connect to the backend. Please refresh the page and try again.',
-      rawError,
-      errorType: 'actor-unavailable',
-    };
-  }
+  if (error instanceof Error) {
+    technicalDetails = error.message;
 
-  // Already onboarded
-  if (errorMessage.includes('Already onboarded')) {
-    return {
-      userMessage: 'You have already completed onboarding. Please refresh the page.',
-      rawError,
-      errorType: 'already-onboarded',
-    };
-  }
+    // Check for specific error patterns
+    const errorMsg = error.message.toLowerCase();
 
-  // Vehicle registration activation errors
-  if (
-    context === 'registerVehicle' &&
-    (errorMessage.includes('Vehicle registration blocked') || 
-     errorMessage.includes('not activated') ||
-     errorMessage.includes('Account not activated'))
-  ) {
-    return {
-      userMessage: 'Vehicle registration requires activation. Please complete activation with an admin-provided token before registering vehicles.',
-      rawError,
-      errorType: 'activation-required',
-    };
-  }
-
-  // Unauthorized / Permission errors
-  if (
-    errorMessage.includes('Unauthorized') ||
-    errorMessage.includes('Only admins') ||
-    errorMessage.includes('Permission denied') ||
-    errorMessage.includes('Only users can')
-  ) {
-    // Special handling for onboarding context
-    if (context === 'completeOnboarding') {
-      // For onboarding, show the actual backend error without the "contact admin" message
-      // Remove technical prefixes like "Unauthorized:" or "Call failed:" for cleaner display
-      let cleanMessage = errorMessage
-        .replace(/^(Unauthorized|Call failed|Error):\s*/i, '')
-        .trim();
-
-      // If the message is about anonymous users, make it more user-friendly
-      if (cleanMessage.includes('Anonymous users cannot complete onboarding')) {
-        cleanMessage = 'You must be logged in to complete registration. Please sign in and try again.';
-      }
-
-      return {
-        userMessage: cleanMessage || 'Registration failed. Please try again.',
-        rawError,
-        errorType: 'unauthorized',
-      };
+    // Service unavailable (avoid "canister stopped" wording)
+    if (
+      errorMsg.includes('ic0508') ||
+      (errorMsg.includes('canister') && errorMsg.includes('stopped')) ||
+      errorMsg.includes('service unavailable')
+    ) {
+      message = 'The service is temporarily unavailable. Please try again later.';
     }
-
-    // For other contexts, show the generic admin contact message
-    return {
-      userMessage:
-        'Authorization failed. Your account may not have the required permissions. Please contact an admin for assistance.',
-      rawError,
-      errorType: 'unauthorized',
-    };
+    // Vehicle registration activation errors
+    else if (context === 'vehicle-registration' && errorMsg.includes('blocked')) {
+      message = 'Vehicle registration requires activation. Please activate your account first.';
+    }
+    // Revoke ownership errors
+    else if (context === 'revoke-ownership') {
+      if (errorMsg.includes('vehicle not found')) {
+        message = 'Vehicle not found. It may have already been removed.';
+      } else if (errorMsg.includes('unauthorized') || errorMsg.includes('only the owner')) {
+        message = 'You are not authorized to revoke ownership of this vehicle.';
+      } else if (errorMsg.includes('no pin set') || errorMsg.includes('please set up a pin')) {
+        message = 'No PIN set. Please set up a PIN in Security Settings before revoking ownership.';
+      } else if (errorMsg.includes('incorrect pin')) {
+        message = 'Incorrect PIN. Please try again.';
+      } else {
+        message = error.message.length < 200 ? error.message : 'Failed to revoke ownership. Please try again.';
+      }
+    }
+    // Onboarding errors
+    else if (context === 'onboarding') {
+      if (errorMsg.includes('already onboarded')) {
+        message = 'You have already completed onboarding.';
+      } else if (errorMsg.includes('unauthorized')) {
+        message = 'You are not authorized to complete onboarding.';
+      } else {
+        message = 'Failed to complete onboarding. Please try again.';
+      }
+    }
+    // Authorization errors
+    else if (errorMsg.includes('unauthorized') || errorMsg.includes('permission')) {
+      message = 'You do not have permission to perform this action.';
+    }
+    // Network errors
+    else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('timeout')) {
+      message = 'Network error. Please check your connection and try again.';
+    }
+    // Generic error with message
+    else if (error.message && error.message.length < 200) {
+      message = error.message;
+    }
+  } else if (typeof error === 'string') {
+    technicalDetails = error;
+    if (error.length < 200) {
+      message = error;
+    }
   }
 
-  // Generic error
   return {
-    userMessage: `Operation failed: ${errorMessage}`,
-    rawError,
-    errorType: 'generic',
+    message,
+    technicalDetails,
   };
 }

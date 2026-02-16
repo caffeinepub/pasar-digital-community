@@ -20,7 +20,10 @@ export function useGetCallerUserProfile() {
   return {
     ...query,
     isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
+    isFetched: !!actor && !actorFetching && query.isFetched,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   };
 }
 

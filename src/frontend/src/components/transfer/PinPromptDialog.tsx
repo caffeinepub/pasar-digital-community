@@ -1,4 +1,9 @@
-import { useState } from 'react';
+/**
+ * PIN prompt dialog with backend availability gating
+ * Disables PIN-based confirmation submissions when backend is unavailable
+ */
+
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,57 +12,75 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { useBackendConnectionStatus } from '../../hooks/useBackendConnectionStatus';
 
 interface PinPromptDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (pin: string) => Promise<void>;
-  title?: string;
-  description?: string;
+  onConfirm?: (pin: string) => Promise<void>;
+  onSubmit?: (pin: string) => Promise<void>;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  isPending?: boolean;
 }
 
 export default function PinPromptDialog({
   open,
   onOpenChange,
+  onConfirm,
   onSubmit,
-  title = 'Enter PIN',
-  description = 'PIN is required to continue',
+  title,
+  description,
+  confirmLabel = 'Confirm',
+  isPending = false,
 }: PinPromptDialogProps) {
   const [pin, setPin] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isDegraded } = useBackendConnectionStatus();
+
+  // Reset PIN when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setPin('');
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
-    // Client-side validation
-    if (!pin || pin.trim().length === 0) {
-      setError('PIN cannot be empty');
+    if (!pin.trim()) {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      await onSubmit(pin.trim());
+      // Support both onConfirm and onSubmit for backward compatibility
+      if (onSubmit) {
+        await onSubmit(pin.trim());
+      } else if (onConfirm) {
+        await onConfirm(pin.trim());
+      }
+      // Don't reset PIN here - let parent component control dialog state
+    } catch (error) {
+      // Error handling is done by the parent component
+      // Don't reset PIN on error so user can retry
+    }
+  };
+
+  const handleCancel = () => {
+    if (!isPending) {
       setPin('');
       onOpenChange(false);
-    } catch (err: any) {
-      setError(err.message || 'Incorrect PIN or an error occurred');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onPointerDownOutside={(e) => isPending && e.preventDefault()}>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -65,8 +88,17 @@ export default function PinPromptDialog({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {isDegraded && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  This action is currently unavailable. Please check the connection banner and retry.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="pin">PIN</Label>
+              <Label htmlFor="pin">Security PIN *</Label>
               <Input
                 id="pin"
                 type="password"
@@ -74,24 +106,25 @@ export default function PinPromptDialog({
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="Enter your PIN"
                 required
+                disabled={isPending || isDegraded}
                 autoFocus
               />
             </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={isPending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !pin.trim()}>
-              {isSubmitting ? 'Verifying...' : 'Continue'}
+            <Button type="submit" disabled={!pin.trim() || isPending || isDegraded}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                confirmLabel
+              )}
             </Button>
           </DialogFooter>
         </form>

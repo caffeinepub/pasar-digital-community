@@ -1,3 +1,8 @@
+/**
+ * Compact dismissible banner that only appears when a valid install prompt is available
+ * Displays install CTA and triggers native browser install prompt
+ */
+
 import { X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePwaInstallPrompt } from '../../pwa/usePwaInstallPrompt';
@@ -8,6 +13,10 @@ export default function InstallAppBanner() {
   if (!isInstallable) {
     return null;
   }
+
+  const handleInstall = async () => {
+    await promptInstall();
+  };
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md">
@@ -20,7 +29,7 @@ export default function InstallAppBanner() {
           <p className="text-xs text-muted-foreground">Add to home screen for quick access</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={promptInstall} className="flex-shrink-0">
+          <Button size="sm" onClick={handleInstall} className="flex-shrink-0">
             Install
           </Button>
           <Button size="sm" variant="ghost" onClick={dismiss} className="flex-shrink-0 p-2">

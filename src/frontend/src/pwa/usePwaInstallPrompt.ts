@@ -1,3 +1,8 @@
+/**
+ * React hook for PWA install prompt with strict installability check
+ * Only shows install banner when beforeinstallprompt fires and app is not in standalone mode
+ */
+
 import { useState, useEffect } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -14,6 +19,13 @@ export function usePwaInstallPrompt() {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
+    // Check if already running in standalone mode (installed)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone) {
+      setIsInstallable(false);
+      return;
+    }
+
     // Check if user has dismissed the prompt recently
     const dismissedAt = localStorage.getItem(DISMISSAL_KEY);
     if (dismissedAt) {
@@ -56,24 +68,31 @@ export function usePwaInstallPrompt() {
 
   const promptInstall = async () => {
     if (!deferredPrompt) {
+      console.warn(
+        'Install prompt not available - app may already be installed or browser does not support PWA installation'
+      );
       return;
     }
 
-    // Show the install prompt
-    await deferredPrompt.prompt();
+    try {
+      // Show the install prompt
+      await deferredPrompt.prompt();
 
-    // Wait for the user to respond to the prompt
-    const choiceResult = await deferredPrompt.userChoice;
+      // Wait for the user to respond to the prompt
+      const choiceResult = await deferredPrompt.userChoice;
 
-    if (choiceResult.outcome === 'accepted') {
-      console.info('User accepted the install prompt');
-    } else {
-      console.info('User dismissed the install prompt');
+      if (choiceResult.outcome === 'accepted') {
+        console.info('User accepted the install prompt');
+      } else {
+        console.info('User dismissed the install prompt');
+      }
+
+      // Clear the deferredPrompt
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    } catch (error) {
+      console.error('Error showing install prompt:', error);
     }
-
-    // Clear the deferredPrompt
-    setDeferredPrompt(null);
-    setIsInstallable(false);
   };
 
   const dismiss = () => {
@@ -83,8 +102,9 @@ export function usePwaInstallPrompt() {
     setIsInstallable(false);
   };
 
+  // Only installable if we have a deferred prompt, not dismissed, and not in standalone mode
   return {
-    isInstallable: isInstallable && !isDismissed,
+    isInstallable: isInstallable && !isDismissed && !!deferredPrompt,
     promptInstall,
     dismiss,
   };

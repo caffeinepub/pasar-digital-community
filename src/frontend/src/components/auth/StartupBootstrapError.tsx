@@ -1,6 +1,6 @@
 /**
- * Startup bootstrap error screen with STOPPED-canister detection, continuous retry, and backend health diagnostics
- * Displays when actor initialization fails during app startup with English-only messaging
+ * Startup bootstrap error screen with backend health diagnostics
+ * User-facing titles avoid "canister stopped" wording; technical details remain in expandable section
  */
 
 import { AlertCircle, RefreshCw, Copy, CheckCircle, X } from 'lucide-react';
@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { classifyBootstrapError, formatErrorForClipboard } from '../../utils/bootstrapError';
 import { useBackendHealth } from '../../hooks/useBackendHealth';
 import AppLogo from '../brand/AppLogo';
+
+const CONTINUOUS_RETRY_DELAY = 15000;
 
 interface StartupBootstrapErrorProps {
   error: Error;
@@ -27,16 +29,16 @@ interface StartupBootstrapErrorProps {
   onCancelContinuousRetry?: () => void;
 }
 
-export default function StartupBootstrapError({ 
-  error, 
-  onRetry, 
-  isRetrying, 
+export default function StartupBootstrapError({
+  error,
+  onRetry,
+  isRetrying,
   autoRetryStatus,
-  onCancelContinuousRetry 
+  onCancelContinuousRetry,
 }: StartupBootstrapErrorProps) {
   const [copied, setCopied] = useState(false);
   const { isLoading: healthLoading, isReachable, build } = useBackendHealth();
-  
+
   const healthHint = healthLoading ? undefined : { isReachable };
   const classification = classifyBootstrapError(error, healthHint);
 
@@ -57,7 +59,7 @@ export default function StartupBootstrapError({
   if (autoRetryStatus) {
     const secondsRemaining = autoRetryStatus.nextRetryIn ? Math.ceil(autoRetryStatus.nextRetryIn / 1000) : 0;
     const isContinuous = autoRetryStatus.isContinuous || false;
-    
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-accent/5 to-background">
         <div className="w-full max-w-md space-y-8">
@@ -82,13 +84,15 @@ export default function StartupBootstrapError({
                     {isContinuous ? (
                       <>Continuous retry mode - Attempt {autoRetryStatus.attempt}</>
                     ) : (
-                      <>Attempt {autoRetryStatus.attempt} of {autoRetryStatus.maxAttempts}</>
+                      <>
+                        Attempt {autoRetryStatus.attempt} of {autoRetryStatus.maxAttempts}
+                      </>
                     )}
                   </CardDescription>
                 </div>
                 {isContinuous && onCancelContinuousRetry && (
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="icon"
                     onClick={onCancelContinuousRetry}
                     className="flex-shrink-0"
@@ -104,12 +108,12 @@ export default function StartupBootstrapError({
                   Next retry in {secondsRemaining} second{secondsRemaining !== 1 ? 's' : ''}...
                 </p>
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-primary h-full transition-all duration-100"
-                    style={{ 
-                      width: isContinuous 
+                    style={{
+                      width: isContinuous
                         ? `${((CONTINUOUS_RETRY_DELAY - (autoRetryStatus.nextRetryIn || 0)) / CONTINUOUS_RETRY_DELAY) * 100}%`
-                        : `${((autoRetryStatus.maxAttempts - autoRetryStatus.attempt) / autoRetryStatus.maxAttempts) * 100}%` 
+                        : `${((autoRetryStatus.maxAttempts - autoRetryStatus.attempt) / autoRetryStatus.maxAttempts) * 100}%`,
                     }}
                   />
                 </div>
@@ -121,39 +125,22 @@ export default function StartupBootstrapError({
                 {healthLoading ? (
                   <Badge variant="outline">Checking...</Badge>
                 ) : isReachable ? (
-                  <Badge variant="default" className="bg-green-500">Reachable</Badge>
+                  <Badge variant="default" className="bg-green-500">
+                    Reachable
+                  </Badge>
                 ) : (
                   <Badge variant="destructive">Unreachable</Badge>
                 )}
               </div>
 
-              {build && (
-                <p className="text-xs text-center text-muted-foreground">
-                  Backend version: {build}
-                </p>
+              {build && isReachable && (
+                <p className="text-xs text-center text-muted-foreground">Backend version: {build}</p>
               )}
 
-              {isContinuous && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Continuous Retry Active</AlertTitle>
-                  <AlertDescription className="text-xs">
-                    The system will keep trying to connect. You can manually retry or cancel at any time.
-                  </AlertDescription>
-                </Alert>
-              )}
+              <p className="text-sm text-muted-foreground text-center">
+                {isContinuous ? 'Waiting for service to become available...' : 'Attempting to reconnect...'}
+              </p>
             </CardContent>
-            <CardFooter className="flex gap-2">
-              <Button onClick={onRetry} variant="outline" className="flex-1">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Retry Now
-              </Button>
-              {isContinuous && onCancelContinuousRetry && (
-                <Button onClick={onCancelContinuousRetry} variant="secondary" className="flex-1">
-                  Cancel Auto-Retry
-                </Button>
-              )}
-            </CardFooter>
           </Card>
         </div>
       </div>
@@ -188,11 +175,9 @@ export default function StartupBootstrapError({
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>
-                {classification.type === 'canister-stopped' ? 'Backend Canister Stopped' : 'Connection Error'}
+                {classification.type === 'service-unavailable' ? 'Service Unavailable' : 'Connection Error'}
               </AlertTitle>
-              <AlertDescription className="text-sm">
-                {classification.message}
-              </AlertDescription>
+              <AlertDescription className="text-sm">{classification.message}</AlertDescription>
             </Alert>
 
             {/* Backend health status */}
@@ -201,28 +186,49 @@ export default function StartupBootstrapError({
               {healthLoading ? (
                 <Badge variant="outline">Checking...</Badge>
               ) : isReachable ? (
-                <Badge variant="default" className="bg-green-500">Reachable</Badge>
+                <Badge variant="default" className="bg-green-500">
+                  Reachable
+                </Badge>
               ) : (
                 <Badge variant="destructive">Unreachable</Badge>
               )}
             </div>
 
             {build && isReachable && (
-              <p className="text-xs text-center text-muted-foreground">
-                Backend version: {build}
-              </p>
+              <p className="text-xs text-center text-muted-foreground">Backend version: {build}</p>
             )}
 
             <div className="text-sm space-y-2">
               <p className="font-medium text-foreground">
-                {classification.type === 'canister-stopped' ? 'Required actions:' : 'What you can try:'}
+                {classification.type === 'service-unavailable' ? 'Required actions:' : 'What you can try:'}
               </p>
-              <ol className={`${classification.type === 'canister-stopped' ? 'list-decimal' : 'list-disc'} list-inside space-y-1 ml-2 text-muted-foreground`}>
+              <ol
+                className={`${classification.type === 'service-unavailable' ? 'list-decimal' : 'list-disc'} list-inside space-y-1 ml-2 text-muted-foreground`}
+              >
                 {classification.guidance.map((step, index) => (
                   <li key={index}>{step}</li>
                 ))}
               </ol>
             </div>
+
+            {!isReachable && classification.type === 'service-unavailable' && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  The backend is currently unreachable. This confirms the service is unavailable.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isReachable && classification.type !== 'service-unavailable' && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  The backend is reachable but connection failed. This may be a temporary issue. Try refreshing the
+                  page.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <details className="text-xs">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">
@@ -235,17 +241,8 @@ export default function StartupBootstrapError({
           </CardContent>
           <CardFooter className="flex gap-2">
             <Button onClick={onRetry} disabled={isRetrying} className="flex-1" size="lg">
-              {isRetrying ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Retrying...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry Connection
-                </>
-              )}
+              <RefreshCw className={`mr-2 h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
+              {isRetrying ? 'Retrying...' : 'Retry'}
             </Button>
             <Button onClick={handleCopyError} variant="outline" size="lg" className="flex-shrink-0">
               {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -256,6 +253,3 @@ export default function StartupBootstrapError({
     </div>
   );
 }
-
-// Constant for progress bar calculation
-const CONTINUOUS_RETRY_DELAY = 15000;

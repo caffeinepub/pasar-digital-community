@@ -4,13 +4,13 @@ import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Car, AlertTriangle, CheckCircle, Lock, Eye } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Plus, Car, AlertTriangle, CheckCircle, Lock, Eye, RefreshCw, AlertCircle } from 'lucide-react';
 import type { VehicleStatus } from '../backend';
 
 export default function VehiclesPage() {
   const navigate = useNavigate();
-  const { data: vehicles, isLoading } = useGetUserVehicles();
+  const { data: vehicles, isLoading, isError, error, refetch } = useGetUserVehicles();
   const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
 
   const getStatusBadge = (status: VehicleStatus) => {
@@ -58,6 +58,39 @@ export default function VehiclesPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="border-destructive">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-destructive/10">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <div>
+                <CardTitle>Failed to Load Vehicles</CardTitle>
+                <CardDescription>Unable to retrieve your vehicle list</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription className="text-sm">
+                {error instanceof Error ? error.message : 'An unexpected error occurred'}
+              </AlertDescription>
+            </Alert>
+            <Button onClick={() => refetch()} className="w-full gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

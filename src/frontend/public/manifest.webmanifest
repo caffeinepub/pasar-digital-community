@@ -1,7 +1,7 @@
 {
   "name": "Pasar Digital Community",
   "short_name": "Pasar Digital",
-  "description": "Sistem Keamanan Kendaraan Berbasis Blockchain",
+  "description": "Blockchain-Based Vehicle Security System",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -28,8 +28,9 @@
     }
   ],
   "categories": ["security", "utilities", "productivity"],
-  "lang": "id",
+  "lang": "en",
   "dir": "ltr",
   "scope": "./",
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "id": "pasar-digital-community"
 }

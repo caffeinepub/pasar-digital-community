@@ -45,13 +45,13 @@ export function useCompleteOnboarding() {
         });
 
         // Normalize error for user display
-        const normalized = normalizeActorError(error, 'completeOnboarding');
+        const normalized = normalizeActorError(error, 'onboarding');
         console.error(`[${traceId}] 📋 Normalized error:`, {
-          userMessage: normalized.userMessage,
-          errorType: normalized.errorType,
+          message: normalized.message,
+          technicalDetails: normalized.technicalDetails,
         });
 
-        throw new Error(normalized.userMessage);
+        throw new Error(normalized.message);
       }
     },
     onMutate: (variables) => {

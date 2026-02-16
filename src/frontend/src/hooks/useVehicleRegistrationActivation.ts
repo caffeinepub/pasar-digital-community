@@ -10,7 +10,7 @@ export function useIsActivatedForVehicleRegistration() {
     queryKey: ['vehicleRegistrationActivation', identity?.getPrincipal().toString()],
     queryFn: async () => {
       if (!actor) return false;
-      
+
       try {
         // Call the real backend method to check activation status
         // Backend already handles allowlist admin check internally
@@ -33,7 +33,7 @@ export function useRedeemActivationToken() {
   return useMutation({
     mutationFn: async (token: string) => {
       if (!actor) throw new Error('Actor not available');
-      
+
       if (!token || token.trim().length === 0) {
         throw new Error('Activation token is required');
       }

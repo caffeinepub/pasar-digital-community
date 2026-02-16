@@ -16,7 +16,7 @@ export function useGetLostVehicles() {
   });
 }
 
-export function useMarkVehicleLost() {
+export function useMarkVehicleAsLostStolenOrPawned() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 

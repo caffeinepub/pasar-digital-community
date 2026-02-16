@@ -1,63 +1,81 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T12:33:04.491Z",
-  "summary": "REQ-1/2/3 appear largely implemented: base-path-safe manifest/icons and SW registration were updated; an in-app install banner and hook were added for beforeinstallprompt; service worker caching was adjusted to avoid synthetic 404s for manifest/icons. However, the diff also includes multiple unrelated frontend feature/UI/auth/admin changes and backend type additions not requested by the PWA-only BuildRequest. Some acceptance criteria about manual verification cannot be confirmed from code changes alone.",
+  "generatedAt": "2026-02-16T20:52:35.048Z",
+  "summary": "Frontend changes add principal-scoped React Query keys for user vehicles and add clearer error states on Vehicles/Revoke pages, plus error normalization for revoke failures. However, the diff evidence does not clearly show the required backend revoke/detach behavior changes, nor a backend fix for getUserVehicles ownership/listing consistency. The diff summary also indicates multiple unrelated additions/changes (PWA, i18n, admin pages, navigation changes, bootstrap screens) that are outside the requested scope and include edits to explicitly immutable frontend paths.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Install call-to-action should be available on supported mobile browsers when beforeinstallprompt is available, without being gated by unrelated app state (e.g., authentication).",
-      "reason": "The install banner is only rendered when `isAuthenticated` is true, which may prevent the CTA from appearing in otherwise-supported scenarios (e.g., installable but not signed in). The BuildRequest did not specify an auth requirement for showing the install entry point.",
-      "evidence": [
-        "frontend/src/components/layout/AppLayout.tsx"
-      ]
-    },
-    {
       "id": "REQ-1",
-      "requirement": "Verify the installed app launches in standalone mode and the home-screen icon is displayed correctly on Android/iOS after installation.",
-      "reason": "This is an explicit acceptance criterion but represents a manual verification step; the diff contains no test plan, documentation, or automated checks demonstrating verification.",
+      "requirement": "Fix the backend revoke/detach ownership flow so revokeVehicleOwnership no longer returns a generic error for valid owner+PIN and allows re-registering the same engine+chassis after revoke, with consistent checkVehicle behavior.",
+      "reason": "backend/main.mo is truncated and the diff summary does not show any concrete changes to revokeVehicleOwnership, record deletion/detachment, uniqueness constraints, or checkVehicle behavior needed to meet the acceptance criteria.",
       "evidence": [
-        "frontend/index.html",
-        "frontend/public/manifest.webmanifest"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-3",
-      "requirement": "After a hard reload and reinstall attempt on mobile, the manifest and icon URLs resolve with HTTP 200 and correct content types from the static frontend.",
-      "reason": "This is an explicit acceptance criterion that requires runtime/server validation; the diff shows code changes but no evidence of validation steps or checks confirming HTTP 200/content-type behavior.",
+      "id": "REQ-2",
+      "requirement": "Fix user vehicle listing inconsistency so getUserVehicles reliably returns vehicles owned by the signed-in principal (backend correctness), and the frontend reliably shows them.",
+      "reason": "Frontend query scoping is implemented, but there is no visible evidence in the diff summary that backend getUserVehicles logic was corrected to ensure vehicles whose owner matches caller are returned (the only backend file is truncated without showing getUserVehicles changes).",
       "evidence": [
-        "frontend/public/sw.js",
-        "frontend/index.html",
-        "frontend/public/manifest.webmanifest"
+        "backend/main.mo (truncated)",
+        "frontend/src/hooks/useVehicles.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added/modified various non-PWA app features (admin dashboard/system stats hooks, admin invite tokens page, navigation item \"Revoke Ownership\", profile/bootstrap/auth UI text/i18n changes, etc.).",
-      "reason": "BuildRequest constraints specify PWA-only fixes isolated to PWA/asset/metadata/UI entry points and to not change existing routes/auth/working features. These appear unrelated to PWA install prompt/icon fixes.",
+      "description": "PWA/service worker/manifest changes (service worker registration, manifest updates, caching strategy).",
+      "reason": "Not requested by any REQ and outside the stated scope (vehicle listing/revoke errors).",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (mentions frontend/public/sw.js, frontend/public/manifest.webmanifest, frontend/index.html, service worker registration in frontend/src/App.tsx)"
       ]
     },
     {
-      "description": "Added backend type/interface changes (e.g., generateActivationToken/redeemActivationToken methods) in frontend TypeScript declarations.",
-      "reason": "BuildRequest explicitly says not to modify backend canister logic or data structures and keep changes PWA-only. Even if this is only types, it is not part of the requested PWA work.",
+      "description": "App-wide i18n provider/wrapping and translation of sign-in UI text.",
+      "reason": "Not requested; REQ-3 only asks for minimal English error-state rendering for My Vehicles/Revoke flows, not an i18n system.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (mentions frontend/src/main.tsx wrapping with I18nProvider; frontend/src/components/auth/SignInScreen.tsx translated via i18n hook)"
+      ]
+    },
+    {
+      "description": "Admin activation-token management features/pages and related backend typings.",
+      "reason": "Not requested; introduces new admin functionality beyond the vehicle listing/revoke fixes.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions frontend/src/pages/admin/AdminInviteTokensPage.tsx, frontend/src/backend.d.ts additions generateActivationToken/redeemActivationToken, admin dashboard stats)"
+      ]
+    },
+    {
+      "description": "Navigation/UI restructuring such as adding a new 'Revoke Ownership' navigation item, new layout banner, logo changes, and other UI modifications unrelated to error-state rendering.",
+      "reason": "Non-goal: do not redesign UI/navigation beyond minimal error-state rendering required for these fixes.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions frontend/src/components/nav/AppHeader.tsx new nav item; frontend/src/components/layout/AppLayout.tsx banner; frontend/src/components/brand/AppLogo.tsx)"
+      ]
+    },
+    {
+      "description": "Edits to explicitly immutable frontend paths (useActor.ts and main.tsx).",
+      "reason": "Constraint explicitly forbids editing frontend/src/hooks/useActor.ts and frontend/src/main.tsx.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions modifications to frontend/src/hooks/useActor.ts and frontend/src/main.tsx)"
+      ]
+    },
+    {
+      "description": "Profile/security PIN management moved into Profile page and other profile bootstrap error components mentioned as changed/added behavior.",
+      "reason": "Not requested and outside the tightly scoped vehicle listing/revoke fixes.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions frontend/src/pages/ProfilePage.tsx PIN management dialog; frontend/src/components/auth/ProfileBootstrapError.tsx)",
+        "project_state.json (summary references startup blank-screen/boostrap error screens request unrelated to REQ-1..3)"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.62,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/public/manifest.webmanifest",
-    "frontend/public/sw.js",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/components/pwa/InstallAppBanner.tsx",
-    "frontend/src/pwa/registerServiceWorker.ts",
-    "frontend/src/pwa/usePwaInstallPrompt.ts",
+    "frontend/src/components/transfer/PinPromptDialog.tsx",
+    "frontend/src/hooks/useVehicles.ts",
+    "frontend/src/pages/RevokeOwnershipPage.tsx",
+    "frontend/src/pages/VehiclesPage.tsx",
+    "frontend/src/utils/normalizeActorError.ts",
     "project_state.json"
   ]
 }

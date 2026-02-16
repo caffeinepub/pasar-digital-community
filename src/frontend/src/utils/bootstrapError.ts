@@ -1,8 +1,9 @@
 /**
- * Utilities for handling and formatting bootstrap errors with STOPPED-canister detection
+ * Utilities for handling and formatting bootstrap errors
+ * User-facing messages avoid "canister stopped" wording; technical details remain in expandable section
  */
 
-export type BootstrapErrorType = 'canister-stopped' | 'network' | 'auth' | 'unknown';
+export type BootstrapErrorType = 'service-unavailable' | 'network' | 'auth' | 'unknown';
 
 export interface BootstrapErrorClassification {
   type: BootstrapErrorType;
@@ -18,37 +19,30 @@ export interface BackendHealthHint {
 /**
  * Detects if an error is a canister-stopped error using generic replica rejection patterns
  * Does NOT rely on any specific canister principal text
+ * Returns true only when there is strong evidence of a stopped canister
  */
 function isCanisterStoppedError(errorMessage: string): boolean {
   const lowerMessage = errorMessage.toLowerCase();
-  
-  // Check for IC0508 error code (canister stopped)
+
+  // Check for IC0508 error code (canister stopped) - this is definitive
   const hasIC0508 = lowerMessage.includes('ic0508');
-  
+
   // Check for reject code 5 (canister error)
-  const hasRejectCode5 = 
-    lowerMessage.includes('reject_code": 5') || 
+  const hasRejectCode5 =
+    lowerMessage.includes('reject_code": 5') ||
     lowerMessage.includes('reject_code: 5') ||
     lowerMessage.includes('reject code 5');
-  
+
   // Check for non_replicated_rejection
   const hasNonReplicatedRejection = lowerMessage.includes('non_replicated_rejection');
-  
+
   // Check for "canister" and "stopped" appearing together
   const hasCanisterAndStopped = lowerMessage.includes('canister') && lowerMessage.includes('stopped');
-  
-  // Check for "is stopped" pattern
-  const hasIsStoppedPattern = lowerMessage.includes('is stopped');
-  
-  // Classify as stopped if:
+
+  // Only classify as stopped if we have STRONG evidence:
   // 1. IC0508 is present (definitive stopped error code), OR
-  // 2. Reject code 5 AND canister+stopped co-occur, OR
-  // 3. Non-replicated rejection AND canister+stopped co-occur, OR
-  // 4. "is stopped" pattern appears with canister context
-  return hasIC0508 || 
-         (hasRejectCode5 && hasCanisterAndStopped) ||
-         (hasNonReplicatedRejection && hasCanisterAndStopped) ||
-         (hasIsStoppedPattern && lowerMessage.includes('canister'));
+  // 2. Reject code 5 AND non_replicated_rejection AND canister+stopped co-occur (triple confirmation)
+  return hasIC0508 || (hasRejectCode5 && hasNonReplicatedRejection && hasCanisterAndStopped);
 }
 
 /**
@@ -73,33 +67,37 @@ export function extractTechnicalError(error: unknown): string {
 }
 
 /**
- * Shared STOPPED-canister guidance steps (English only)
+ * Shared service-unavailable guidance steps (English only, no "canister stopped" wording)
  */
-const STOPPED_CANISTER_GUIDANCE = [
-  'The backend canister must be restarted by running "Build & Deploy" in Caffeine',
+const SERVICE_UNAVAILABLE_GUIDANCE = [
+  'The service must be restarted by running "Build & Deploy" in Caffeine',
   'Wait for the deployment to complete successfully',
-  'Then click "Retry" below or refresh this page',
+  'Then click "Retry" or refresh this page',
 ];
 
 /**
  * Classifies a bootstrap error and returns appropriate messaging with guidance
- * Optionally accepts a backend health hint to avoid misclassifying errors when backend is reachable
+ * User-facing messages avoid "canister stopped" wording; technical evidence remains in technicalDetails
  */
 export function classifyBootstrapError(
-  error: unknown, 
+  error: unknown,
   healthHint?: BackendHealthHint
 ): BootstrapErrorClassification {
   const technicalDetails = extractTechnicalError(error);
 
-  // If backend is reachable, don't classify as canister-stopped
-  const shouldCheckStopped = !healthHint || !healthHint.isReachable;
-  
-  if (shouldCheckStopped && isCanisterStoppedError(technicalDetails)) {
+  // CRITICAL: If backend is confirmed reachable, NEVER classify as service-unavailable
+  // This prevents false positives that trap users in error screens
+  const backendIsReachable = healthHint?.isReachable === true;
+
+  if (!backendIsReachable && isCanisterStoppedError(technicalDetails)) {
+    // Only show service-unavailable error when:
+    // 1. Backend health check confirms unreachable OR health is unknown
+    // 2. Error message has strong stopped-canister evidence
     return {
-      type: 'canister-stopped',
-      message: 'The backend canister is currently stopped and cannot process requests.',
+      type: 'service-unavailable',
+      message: 'The service is temporarily unavailable and cannot process requests.',
       technicalDetails,
-      guidance: STOPPED_CANISTER_GUIDANCE,
+      guidance: SERVICE_UNAVAILABLE_GUIDANCE,
     };
   }
 
@@ -153,6 +151,7 @@ export function classifyBootstrapError(
 
 /**
  * Formats error details for clipboard copy with structured information
+ * Technical details include IC error codes for debugging
  */
 export function formatErrorForClipboard(error: unknown): string {
   const classification = classifyBootstrapError(error);

@@ -1,18 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 import type { Vehicle } from '../backend';
 import { ExternalBlob } from '../backend';
+import { normalizeActorError } from '../utils/normalizeActorError';
 
 export function useGetUserVehicles() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
 
   return useQuery<Vehicle[]>({
-    queryKey: ['userVehicles'],
+    queryKey: ['userVehicles', principal],
     queryFn: async () => {
-      if (!actor) return [];
+      if (!actor) throw new Error('Actor not available');
       return actor.getUserVehicles();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!principal,
+    retry: 1,
   });
 }
 
@@ -31,7 +36,9 @@ export function useGetVehicle(vehicleId: string) {
 
 export function useRegisterVehicle() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
+  const principal = identity?.getPrincipal().toString();
 
   return useMutation({
     mutationFn: async (data: {
@@ -55,6 +62,7 @@ export function useRegisterVehicle() {
       );
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userVehicles', principal] });
       queryClient.invalidateQueries({ queryKey: ['userVehicles'] });
     },
   });
@@ -62,15 +70,23 @@ export function useRegisterVehicle() {
 
 export function useRevokeVehicleOwnership() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
+  const principal = identity?.getPrincipal().toString();
 
   return useMutation({
     mutationFn: async ({ vehicleId, pin }: { vehicleId: string; pin: string }) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.revokeVehicleOwnership(vehicleId, pin);
+      try {
+        await actor.revokeVehicleOwnership(vehicleId, pin);
+      } catch (error) {
+        const normalized = normalizeActorError(error, 'revoke-ownership');
+        throw new Error(normalized.message);
+      }
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['vehicle', variables.vehicleId] });
+      queryClient.invalidateQueries({ queryKey: ['userVehicles', principal] });
       queryClient.invalidateQueries({ queryKey: ['userVehicles'] });
     },
   });

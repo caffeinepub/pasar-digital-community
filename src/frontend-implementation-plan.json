@@ -1,76 +1,63 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix PWA base-path asset URLs, install CTA, and SW caching for reliable mobile installation",
+  "title": "Fix My Vehicles listing consistency and improve revoke/list error states",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Make manifest, service worker, and icon URLs base-path-safe so PWA installs correctly (standalone) and shows the correct home-screen icon from any served base path.",
-      "acceptanceCriteria": [
-        "Update `frontend/index.html` to reference the manifest and PWA icon assets using base-path-safe URLs (e.g., relative URLs) rather than hard-coded absolute `/...` paths.",
-        "Update `frontend/public/manifest.webmanifest` to use base-path-safe `start_url` and `scope` values (e.g., relative `./`) and ensure all `icons[].src` values are base-path-safe.",
-        "Update `frontend/src/pwa/registerServiceWorker.ts` to register the service worker with a base-path-safe URL (avoid hard-coded `'/sw.js'`).",
-        "Verify the installed app (launched from home screen) opens without browser UI (standalone) on Android Chrome/Edge when installable criteria are met.",
-        "Verify the home-screen icon is displayed correctly after installation on Android and iOS (using the existing generated icons in `/assets/generated/*`)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/index.html",
-          "operation": "modify",
-          "description": "Replace hard-coded absolute `/...` URLs with base-path-safe relative references for the manifest, favicons, apple-touch-icon, PWA icons, and the main module script so they resolve correctly when served from a non-root base path."
-        },
-        {
-          "path": "frontend/public/manifest.webmanifest",
-          "operation": "modify",
-          "description": "Update `start_url` and `scope` to base-path-safe relative values (e.g., `./`) and change all `icons[].src` entries to base-path-safe relative paths pointing to the existing generated icon assets under `frontend/public/assets/generated/`."
-        },
-        {
-          "path": "frontend/src/pwa/registerServiceWorker.ts",
-          "operation": "modify",
-          "description": "Register the service worker using a base-path-safe URL derived from the app’s runtime base (e.g., `import.meta.env.BASE_URL`) instead of a hard-coded root path, ensuring SW registration works under any base path."
-        }
-      ]
-    },
-    {
       "id": "REQ-2",
-      "summary": "Add a dismissible in-app Install call-to-action that appears only when `beforeinstallprompt` is available and triggers the browser install prompt.",
+      "summary": "Scope “My Vehicles” data to the signed-in principal and ensure list refreshes after registration/account switching without cache bleed.",
       "acceptanceCriteria": [
-        "When `beforeinstallprompt` fires, show a small non-blocking UI element (e.g., banner/button) labeled \"Install\" / \"Install app\" that the user can tap to trigger the prompt.",
-        "The install UI does not appear on browsers that do not support `beforeinstallprompt` (e.g., iOS Safari).",
-        "The install UI can be dismissed and does not block navigation/authentication or any existing features.",
-        "No backend changes are required for this feature."
+        "If a vehicle’s owner principal equals the current signed-in principal, getUserVehicles returns it and the Vehicles page renders it.",
+        "Vehicles list data is scoped to the signed-in principal (no cross-account React Query cache bleed); switching accounts cannot show another account’s cached vehicle list.",
+        "After registering a vehicle successfully, navigating to “My Vehicles” shows the vehicle without requiring a hard refresh."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pwa/usePwaInstallPrompt.ts",
-          "operation": "create",
-          "description": "Create a small hook that listens for the `beforeinstallprompt` event, stores the deferred prompt event, exposes `isInstallable`, `promptInstall()`, and `dismiss()` state (including a persisted dismissal flag) without affecting existing navigation/auth flows."
-        },
-        {
-          "path": "frontend/src/components/pwa/InstallAppBanner.tsx",
-          "operation": "create",
-          "description": "Create a compact, non-blocking banner/button UI that uses the hook to show an \"Install\" CTA only when installable; include a dismiss control. Use the shadcn-ui `Button` component to keep styling consistent. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "path": "frontend/src/hooks/useVehicles.ts",
           "operation": "modify",
-          "description": "Wire the `InstallAppBanner` into the authenticated app shell (layout) in a way that does not block content (e.g., fixed/stacked banner area) and respects dismissal so it won’t reappear unnecessarily."
+          "description": "Update React Query keys for getUserVehicles/register/revoke invalidation to be principal-scoped (e.g., include current identity principal in the query key) so cached vehicle lists cannot bleed across account switches; ensure post-register and post-revoke invalidation targets the correct principal-scoped key."
+        },
+        {
+          "path": "frontend/src/pages/VehiclesPage.tsx",
+          "operation": "modify",
+          "description": "Adjust VehiclesPage to use the updated principal-scoped vehicle list hook behavior (no route changes) and ensure the UI updates correctly after navigation from registration without requiring a hard refresh."
+        },
+        {
+          "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "operation": "modify",
+          "description": "Ensure RevokeOwnershipPage reads from the same principal-scoped vehicle list query and that successful revocation results in consistent list refresh for the signed-in principal (no route changes)."
+        },
+        {
+          "path": "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
+          "operation": "modify",
+          "description": "Add/extend a minimal test to guard against regressions where VehiclesPage could render stale vehicles across identity changes (e.g., by asserting query key scoping behavior via mocked hooks)."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Adjust service worker caching behavior so manifest/icons are fetched reliably and updates are picked up without masking failures as synthetic 404s.",
+      "summary": "Add minimal, safe error states (English) for “My Vehicles” and “Revoke Ownership” so failures are visible and actionable.",
       "acceptanceCriteria": [
-        "`frontend/public/sw.js` must not return a synthetic 404 response for manifest/icon fetch failures; if the network is unavailable, it should fall back to cache (if available) or allow the request to fail normally without masking the error as a 404.",
-        "Service worker caching rules must continue to avoid stale PWA metadata (manifest/icons) while not breaking normal asset loading.",
-        "After a hard reload and reinstall attempt on mobile, the manifest and icon URLs resolve with HTTP 200 and correct content types from the static frontend."
+        "VehiclesPage shows a clear error state when getUserVehicles fails (instead of rendering as empty/undefined data).",
+        "RevokeOwnershipPage shows a clear error state when getUserVehicles fails and shows the backend error message (normalized) when revoke fails.",
+        "All new/updated user-facing strings for these new error states are in English.",
+        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/sw.js",
+          "path": "frontend/src/pages/VehiclesPage.tsx",
           "operation": "modify",
-          "description": "Update the SW fetch handling for manifest/icons to avoid returning a synthetic 404 on network failure; instead, attempt network fetch (no-cache/no-store as appropriate), fall back to cache if present, otherwise let the request fail normally. Keep rules that prevent stale PWA metadata while preserving existing cache-first behavior for normal static assets; also ensure any pre-cached static asset paths used during install are compatible with non-root base paths."
+          "description": "Add an explicit error UI state when getUserVehicles fails (e.g., error card/alert with Retry action) using normalizeActorError to present a clear English message instead of falling back to an empty list."
+        },
+        {
+          "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "operation": "modify",
+          "description": "Add an explicit error UI state when getUserVehicles fails (with retry) and normalize/display revoke failures in English (use normalizeActorError so toast and any inline message avoid generic wording and show the most relevant backend-provided message)."
+        },
+        {
+          "path": "frontend/src/hooks/useVehicles.ts",
+          "operation": "modify",
+          "description": "Adjust getUserVehicles query function behavior to avoid silently returning an empty array on actor unavailability and to surface errors correctly to the pages’ error states (keep changes tightly scoped to vehicle listing and revoke flows)."
         }
       ]
     }

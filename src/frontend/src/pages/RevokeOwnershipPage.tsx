@@ -4,15 +4,15 @@ import { useGetUserVehicles, useRevokeVehicleOwnership } from '../hooks/useVehic
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, ArrowLeft, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, ArrowLeft, ShieldAlert, CheckCircle, RefreshCw } from 'lucide-react';
 import PinPromptDialog from '../components/transfer/PinPromptDialog';
 import { toast } from 'sonner';
 import type { VehicleStatus } from '../backend';
 
 export default function RevokeOwnershipPage() {
   const navigate = useNavigate();
-  const { data: vehicles, isLoading } = useGetUserVehicles();
+  const { data: vehicles, isLoading, isError, error, refetch } = useGetUserVehicles();
   const revokeOwnership = useRevokeVehicleOwnership();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [showPinDialog, setShowPinDialog] = useState(false);
@@ -39,6 +39,13 @@ export default function RevokeOwnershipPage() {
     }
   };
 
+  const handleDialogClose = (open: boolean) => {
+    if (!open && !revokeOwnership.isPending) {
+      setShowPinDialog(false);
+      setSelectedVehicleId(null);
+    }
+  };
+
   const getStatusBadge = (status: VehicleStatus) => {
     if (status.__kind__ === 'ACTIVE') {
       return (
@@ -55,6 +62,44 @@ export default function RevokeOwnershipPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Button variant="ghost" onClick={() => navigate({ to: '/' })} className="mb-6 gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+
+        <Card className="border-destructive">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-destructive/10">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <div>
+                <CardTitle>Failed to Load Vehicles</CardTitle>
+                <CardDescription>Unable to retrieve your vehicle list</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription className="text-sm">
+                {error instanceof Error ? error.message : 'An unexpected error occurred'}
+              </AlertDescription>
+            </Alert>
+            <Button onClick={() => refetch()} className="w-full gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -144,10 +189,11 @@ export default function RevokeOwnershipPage() {
 
       <PinPromptDialog
         open={showPinDialog}
-        onOpenChange={setShowPinDialog}
+        onOpenChange={handleDialogClose}
         onSubmit={handlePinSubmit}
         title="Confirm Ownership Revocation"
         description="Enter your PIN to permanently revoke ownership of this vehicle. This action cannot be undone."
+        isPending={revokeOwnership.isPending}
       />
     </div>
   );

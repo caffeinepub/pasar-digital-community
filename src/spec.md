@@ -1,13 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix PWA installation behavior and home-screen icon display on mobile by making PWA assets and registration work from any base path, and add an in-app “Install” entry point when supported.
+**Goal:** Fix vehicle ownership revoke/detach so vehicles can be re-registered, ensure “My Vehicles” reliably lists the signed-in user’s vehicles, and show clear (English) error states for these flows.
 
 **Planned changes:**
-- Update `frontend/index.html` to reference `manifest.webmanifest` and PWA icon assets using base-path-safe URLs (avoid hard-coded absolute `/...` paths).
-- Update `frontend/public/manifest.webmanifest` to use base-path-safe `start_url`, `scope`, and `icons[].src` so installs work correctly when not served from domain root.
-- Update `frontend/src/pwa/registerServiceWorker.ts` to register the service worker using a base-path-safe URL (avoid hard-coded `'/sw.js'`).
-- Adjust `frontend/public/sw.js` caching behavior so manifest/icon requests are not masked by synthetic 404s, and updated PWA metadata (manifest/icons) can be picked up reliably.
-- Add a small, non-blocking in-app “Install” UI that appears only when the `beforeinstallprompt` event is available, can be dismissed, and does not disrupt existing flows.
+- Backend: Fix revoke/detach ownership logic so revoking (“lepas/hapus”) consistently removes or detaches ownership without generic errors, and does not block re-registration of the same engine+chassis.
+- Backend + Frontend: Fix user vehicle listing so vehicles owned by the current principal reliably appear in “My Vehicles”, including immediately after registration.
+- Frontend: Prevent cross-account cached vehicle list leakage (React Query scoping), and add minimal, safe error UI for “My Vehicles” and “Revoke Ownership” that surfaces meaningful English error messages.
 
-**User-visible outcome:** On supported mobile browsers (e.g., Android Chrome/Edge), the app shows an in-app “Install” call-to-action when available; after installation, launching from the home screen opens in standalone mode and the correct app icon appears on Android/iOS.
+**User-visible outcome:** Users can revoke vehicle ownership without generic failures, re-register the same vehicle identifiers after a revoke, and see their vehicles consistently listed under “My Vehicles” with clear English error messages if something fails.

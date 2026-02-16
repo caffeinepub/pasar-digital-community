@@ -1,24 +1,29 @@
+/**
+ * Vehicle registration page with activation check and backend availability gating
+ * Disables registration when backend is unavailable with inline message
+ */
+
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useRegisterVehicle } from '../hooks/useVehicles';
-import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Upload, AlertCircle } from 'lucide-react';
+import { useRegisterVehicle } from '../hooks/useVehicles';
+import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
+import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
 import { ExternalBlob } from '../backend';
 import { toast } from 'sonner';
-import { Upload, ArrowLeft, AlertCircle, ExternalLink, Eye } from 'lucide-react';
-import { Link } from '@tanstack/react-router';
-import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
-import { normalizeActorError } from '../utils/normalizeActorError';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useBackendConnectionStatus } from '../hooks/useBackendConnectionStatus';
 
 export default function RegisterVehiclePage() {
   const navigate = useNavigate();
   const registerVehicle = useRegisterVehicle();
-  const { data: isActivated, isLoading: activationLoading, isFetched } = useIsActivatedForVehicleRegistration();
+  const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
+  const { isDegraded } = useBackendConnectionStatus();
+
   const [engineNumber, setEngineNumber] = useState('');
   const [chassisNumber, setChassisNumber] = useState('');
   const [brand, setBrand] = useState('');
@@ -27,7 +32,6 @@ export default function RegisterVehiclePage() {
   const [location, setLocation] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,16 +49,13 @@ export default function RegisterVehiclePage() {
     e.preventDefault();
 
     if (!photoFile) {
-      toast.error('Vehicle photo is required');
+      toast.error('Please upload a vehicle photo');
       return;
     }
 
     try {
-      const arrayBuffer = await photoFile.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const blob = ExternalBlob.fromBytes(uint8Array).withUploadProgress((percentage) => {
-        setUploadProgress(percentage);
-      });
+      const photoBytes = await photoFile.arrayBuffer();
+      const photoBlob = ExternalBlob.fromBytes(new Uint8Array(photoBytes));
 
       const vehicleId = await registerVehicle.mutateAsync({
         engineNumber,
@@ -63,133 +64,124 @@ export default function RegisterVehiclePage() {
         model,
         year: BigInt(year),
         location,
-        vehiclePhoto: blob,
+        vehiclePhoto: photoBlob,
       });
 
       toast.success('Vehicle registered successfully', {
         action: {
           label: 'View Details',
-          onClick: () => navigate({ to: '/vehicles/$vehicleId', params: { vehicleId } }),
+          onClick: () => navigate({ to: `/vehicles/${vehicleId}` }),
         },
       });
 
-      navigate({ to: '/vehicles/$vehicleId', params: { vehicleId } });
+      navigate({ to: `/vehicles/${vehicleId}` });
     } catch (error: any) {
-      const normalized = normalizeActorError(error, 'registerVehicle');
-      toast.error(normalized.userMessage);
+      toast.error(error.message || 'Failed to register vehicle');
     }
   };
 
+  // Show loading while checking activation status
   if (activationLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-64 bg-muted rounded"></div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     );
   }
 
-  // Show activation required screen when not activated
-  if (isFetched && !isActivated) {
+  // Show activation required screen if not activated
+  if (!isActivated) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Button variant="ghost" onClick={() => navigate({ to: '/vehicles' })} className="mb-6 gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Register New Vehicle</h1>
-            <p className="text-muted-foreground mt-1">Activation required to register vehicles</p>
-          </div>
-
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Vehicle registration is not activated for your account. Please redeem an activation token from the admin
-              to activate your account.
-            </AlertDescription>
-          </Alert>
-
-          <VehicleRegistrationActivationCard isActivated={false} isLoading={false} />
-
-          <div className="pt-4 border-t">
-            <Link to="/about" className="flex items-center gap-2 text-sm text-primary hover:underline">
-              <ExternalLink className="h-4 w-4" />
-              Contact Admin for Activation
-            </Link>
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Activation Required</CardTitle>
+            <CardDescription>You need to activate your account before registering vehicles</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <VehicleRegistrationActivationCard isActivated={false} />
+            <Button variant="outline" onClick={() => navigate({ to: '/vehicles' })} className="w-full">
+              Back to Vehicles
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
+
+  const isFormValid =
+    engineNumber && chassisNumber && brand && model && year && location && photoFile && !isDegraded;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <Button variant="ghost" onClick={() => navigate({ to: '/vehicles' })} className="mb-6 gap-2">
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </Button>
-
       <Card>
         <CardHeader>
           <CardTitle>Register New Vehicle</CardTitle>
-          <CardDescription>Complete vehicle information for maximum protection</CardDescription>
+          <CardDescription>Add a new vehicle to the blockchain registry</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="engineNumber">Engine Number *</Label>
-                <Input
-                  id="engineNumber"
-                  value={engineNumber}
-                  onChange={(e) => setEngineNumber(e.target.value)}
-                  placeholder="Vehicle engine number"
-                  required
-                />
-              </div>
+            {isDegraded && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Vehicle registration is currently unavailable. Please check the connection banner and retry.
+                </AlertDescription>
+              </Alert>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="chassisNumber">Chassis Number *</Label>
-                <Input
-                  id="chassisNumber"
-                  value={chassisNumber}
-                  onChange={(e) => setChassisNumber(e.target.value)}
-                  placeholder="Vehicle chassis number"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="engineNumber">Engine Number *</Label>
+              <Input
+                id="engineNumber"
+                value={engineNumber}
+                onChange={(e) => setEngineNumber(e.target.value)}
+                placeholder="Enter engine number"
+                required
+                disabled={isDegraded}
+              />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="chassisNumber">Chassis Number *</Label>
+              <Input
+                id="chassisNumber"
+                value={chassisNumber}
+                onChange={(e) => setChassisNumber(e.target.value)}
+                placeholder="Enter chassis number"
+                required
+                disabled={isDegraded}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="brand">Brand *</Label>
                 <Input
                   id="brand"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
-                  placeholder="Example: Honda, Toyota"
+                  placeholder="e.g., Honda"
                   required
+                  disabled={isDegraded}
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="model">Type/Model *</Label>
+                <Label htmlFor="model">Model *</Label>
                 <Input
                   id="model"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder="Example: Civic, Avanza"
+                  placeholder="e.g., Beat"
                   required
+                  disabled={isDegraded}
                 />
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="year">Year *</Label>
                 <Input
@@ -197,74 +189,65 @@ export default function RegisterVehiclePage() {
                   type="number"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  placeholder="2020"
-                  min="1900"
-                  max={new Date().getFullYear() + 1}
+                  placeholder="e.g., 2020"
                   required
+                  disabled={isDegraded}
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="location">Location *</Label>
                 <Input
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="City/Region"
+                  placeholder="e.g., Jakarta"
                   required
+                  disabled={isDegraded}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="photo">Vehicle Photo *</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
-                {photoPreview ? (
-                  <div className="space-y-4">
-                    <img src={photoPreview} alt="Preview" className="max-h-64 mx-auto rounded-lg" />
-                    <Button type="button" variant="outline" onClick={() => document.getElementById('photo')?.click()}>
-                      Change Photo
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('photo')?.click()}
-                      >
-                        Select Photo
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">PNG, JPG up to 10MB</p>
-                  </div>
-                )}
-                <input
+              <div className="flex items-center gap-4">
+                <Input
                   id="photo"
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoChange}
-                  className="hidden"
+                  className="flex-1"
                   required
+                  disabled={isDegraded}
                 />
+                <Upload className="h-5 w-5 text-muted-foreground" />
               </div>
+              {photoPreview && (
+                <div className="mt-2">
+                  <img src={photoPreview} alt="Preview" className="w-full h-48 object-cover rounded-md" />
+                </div>
+              )}
             </div>
 
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Uploading...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <Progress value={uploadProgress} />
-              </div>
-            )}
-
-            <Button type="submit" className="w-full" disabled={registerVehicle.isPending}>
-              {registerVehicle.isPending ? 'Registering...' : 'Register Vehicle'}
-            </Button>
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" disabled={!isFormValid || registerVehicle.isPending} className="flex-1">
+                {registerVehicle.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Registering...
+                  </>
+                ) : (
+                  'Register Vehicle'
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate({ to: '/vehicles' })}
+                disabled={registerVehicle.isPending}
+              >
+                Cancel
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

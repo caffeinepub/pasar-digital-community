@@ -160,7 +160,11 @@ export default function LostVehiclesPage() {
                     </div>
                   )}
 
-                  <ReportFoundDialog vehicleId={vehicle.id} vehicleName={`${vehicle.brand} ${vehicle.model}`} />
+                  <ReportFoundDialog
+                    vehicleId={vehicle.id}
+                    vehicleBrand={vehicle.brand}
+                    vehicleModel={vehicle.model}
+                  />
                 </CardContent>
               </Card>
             );

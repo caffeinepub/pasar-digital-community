@@ -1,70 +1,68 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T12:33:04.495Z",
+  "generatedAt": "2026-02-16T20:52:35.052Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 3,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix PWA asset addressing so the manifest, service worker, and all icon URLs work correctly when the app is served from any base path (not only domain root), ensuring the installed app launches in standalone mode and the app icon appears on the home screen.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/index.html",
-          "frontend/public/manifest.webmanifest",
-          "frontend/src/pwa/registerServiceWorker.ts"
-        ],
-        "matchedFiles": [
-          "frontend/index.html",
-          "frontend/public/manifest.webmanifest",
-          "frontend/src/pwa/registerServiceWorker.ts"
-        ]
+        "summary": "Fix the backend revoke/detach ownership flow so that when a user revokes ownership (\"lepas\" / \"hapus\" vehicle), the vehicle is consistently removed or detached in a way that allows the same engine+chassis to be registered again, and the operation no longer returns a generic error.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Add an in-app install entry point that displays an “Install” call-to-action on supported mobile browsers when the `beforeinstallprompt` event is available, without impacting existing app flows.",
+        "summary": "Fix the user vehicle listing inconsistency so that a vehicle that exists in the system (visible in admin totals and via Vehicle Check) reliably appears in the owning user’s “My Vehicles” list when the backend record owner matches the currently signed-in principal.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pwa/usePwaInstallPrompt.ts",
-          "frontend/src/components/pwa/InstallAppBanner.tsx",
-          "frontend/src/components/layout/AppLayout.tsx"
+          "frontend/src/hooks/useVehicles.ts",
+          "frontend/src/pages/VehiclesPage.tsx",
+          "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pwa/usePwaInstallPrompt.ts",
-          "frontend/src/components/pwa/InstallAppBanner.tsx",
-          "frontend/src/components/layout/AppLayout.tsx"
+          "frontend/src/hooks/useVehicles.ts",
+          "frontend/src/pages/VehiclesPage.tsx",
+          "frontend/src/pages/RevokeOwnershipPage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Ensure PWA-related static assets (manifest and icons) are served reliably and are not broken by service worker caching behavior, so updated icons/manifest are picked up correctly on mobile.",
+        "summary": "Add safe, minimal frontend error handling for “My Vehicles” and “Revoke Ownership” flows so that backend/query errors are displayed clearly (in English) instead of silently showing empty lists or a generic “something went wrong”, without changing unrelated features or routes.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/public/sw.js"
+          "frontend/src/pages/VehiclesPage.tsx",
+          "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "frontend/src/hooks/useVehicles.ts"
         ],
         "matchedFiles": [
-          "frontend/public/sw.js"
+          "frontend/src/pages/VehiclesPage.tsx",
+          "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "frontend/src/hooks/useVehicles.ts"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.html",
-    "frontend/public/manifest.webmanifest",
-    "frontend/public/sw.js",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/components/pwa/InstallAppBanner.tsx",
-    "frontend/src/pwa/registerServiceWorker.ts",
-    "frontend/src/pwa/usePwaInstallPrompt.ts",
+    "frontend/src/components/transfer/PinPromptDialog.tsx",
+    "frontend/src/config.ts",
+    "frontend/src/hooks/useVehicles.ts",
+    "frontend/src/pages/RevokeOwnershipPage.tsx",
+    "frontend/src/pages/VehiclesPage.tsx",
+    "frontend/src/utils/normalizeActorError.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

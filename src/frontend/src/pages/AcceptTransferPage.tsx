@@ -1,87 +1,102 @@
-import { useState, useEffect } from 'react';
+/**
+ * Accept transfer page with backend availability gating
+ * Disables accepting transfers when backend is unavailable
+ */
+
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useAcceptTransfer } from '../hooks/useTransfers';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Download, Loader2, AlertCircle } from 'lucide-react';
+import { useAcceptTransfer } from '../hooks/useTransfer';
 import { toast } from 'sonner';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useBackendConnectionStatus } from '../hooks/useBackendConnectionStatus';
 
 export default function AcceptTransferPage() {
   const navigate = useNavigate();
-  const acceptTransfer = useAcceptTransfer();
   const [transferCode, setTransferCode] = useState('');
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('code');
-    if (codeFromUrl) {
-      setTransferCode(codeFromUrl);
-    }
-  }, []);
+  const acceptTransfer = useAcceptTransfer();
+  const { isDegraded } = useBackendConnectionStatus();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!transferCode.trim()) {
-      toast.error('Kode transfer harus diisi');
+      toast.error('Please enter a transfer code');
       return;
     }
 
     try {
       await acceptTransfer.mutateAsync(transferCode.trim());
-      toast.success('Transfer berhasil! Kendaraan sekarang milik Anda');
+      toast.success('Transfer accepted successfully');
       navigate({ to: '/vehicles' });
     } catch (error: any) {
-      toast.error(error.message || 'Gagal menerima transfer');
+      toast.error(error.message || 'Failed to accept transfer');
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-lg">
+    <div className="container mx-auto px-4 py-8 max-w-md">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-primary" />
-            Terima Transfer Kendaraan
-          </CardTitle>
-          <CardDescription>Masukkan kode transfer untuk menerima kepemilikan kendaraan</CardDescription>
+          <div className="flex items-center gap-2">
+            <Download className="h-5 w-5 text-primary" />
+            <CardTitle>Accept Vehicle Transfer</CardTitle>
+          </div>
+          <CardDescription>Enter the transfer code provided by the current owner</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Pastikan Anda menerima kode transfer dari pemilik kendaraan yang sah. Proses ini tidak dapat dibatalkan.
-              </AlertDescription>
-            </Alert>
+            {isDegraded && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Transfer acceptance is currently unavailable. Please check the connection banner and retry.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor="transferCode">Kode Transfer</Label>
+              <Label htmlFor="transferCode">Transfer Code *</Label>
               <Input
                 id="transferCode"
                 value={transferCode}
                 onChange={(e) => setTransferCode(e.target.value)}
-                placeholder="Masukkan kode transfer"
+                placeholder="Enter transfer code"
                 required
+                disabled={isDegraded}
               />
             </div>
 
-            {acceptTransfer.isError && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{acceptTransfer.error?.message || 'Terjadi kesalahan'}</AlertDescription>
-              </Alert>
-            )}
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                Make sure you have received this code from the legitimate owner. Once accepted, you will become the new
+                owner of the vehicle.
+              </AlertDescription>
+            </Alert>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={acceptTransfer.isPending} className="flex-1">
-                {acceptTransfer.isPending ? 'Memproses...' : 'Terima Transfer'}
+              <Button type="submit" disabled={!transferCode.trim() || acceptTransfer.isPending || isDegraded} className="flex-1">
+                {acceptTransfer.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Accepting...
+                  </>
+                ) : (
+                  'Accept Transfer'
+                )}
               </Button>
-              <Button type="button" variant="outline" onClick={() => navigate({ to: '/' })}>
-                Batal
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate({ to: '/vehicles' })}
+                disabled={acceptTransfer.isPending}
+              >
+                Cancel
               </Button>
             </div>
           </form>

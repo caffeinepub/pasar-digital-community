@@ -164,7 +164,8 @@ export default function ReportFoundVehiclePage() {
                     </Alert>
                     <ReportFoundDialog
                       vehicleId={vehicleCheck.data.vehicle.id}
-                      vehicleName={`${vehicleCheck.data.vehicle.brand} ${vehicleCheck.data.vehicle.model}`}
+                      vehicleBrand={vehicleCheck.data.vehicle.brand}
+                      vehicleModel={vehicleCheck.data.vehicle.model}
                     />
                   </div>
                 ) : (

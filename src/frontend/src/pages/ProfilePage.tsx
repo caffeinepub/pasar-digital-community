@@ -1,403 +1,376 @@
-import { useState } from 'react';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useProfile';
-import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
-import { useHasPIN, useSetupPIN, useUpdatePIN } from '../hooks/usePin';
+/**
+ * Profile page with backend availability gating and inline PIN management
+ * Disables profile save and backend-dependent actions when backend is unavailable
+ */
+
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LogOut, User, Mail, MapPin, Globe, Info, Edit2, Save, X, Lock } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { Loader2, Save, Shield, AlertCircle } from 'lucide-react';
+import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useProfile';
+import { useHasPIN, useSetupPIN, useUpdatePIN } from '../hooks/usePin';
+import { useIsActivatedForVehicleRegistration } from '../hooks/useVehicleRegistrationActivation';
 import { toast } from 'sonner';
 import VehicleRegistrationActivationCard from '../components/activation/VehicleRegistrationActivationCard';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useBackendConnectionStatus } from '../hooks/useBackendConnectionStatus';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function ProfilePage() {
-  const { clear, identity } = useInternetIdentity();
   const { data: userProfile, isLoading } = useGetCallerUserProfile();
-  const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
   const { data: hasPIN, isLoading: pinLoading } = useHasPIN();
+  const { data: isActivated, isLoading: activationLoading } = useIsActivatedForVehicleRegistration();
   const saveProfile = useSaveCallerUserProfile();
   const setupPIN = useSetupPIN();
   const updatePIN = useUpdatePIN();
-  const queryClient = useQueryClient();
+  const { isDegraded } = useBackendConnectionStatus();
+
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    city: '',
-    country: '',
-  });
 
-  // PIN form state
-  const [pinFormData, setPinFormData] = useState({
-    newPin: '',
-    confirmPin: '',
-    oldPin: '',
-  });
+  // PIN dialog state
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [oldPin, setOldPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
 
-  const handleLogout = async () => {
-    await clear();
-    queryClient.clear();
-  };
-
-  const handleEdit = () => {
+  useEffect(() => {
     if (userProfile) {
-      setFormData({
-        fullName: userProfile.fullName,
-        email: userProfile.email,
-        city: userProfile.city,
-        country: userProfile.country,
-      });
-      setIsEditing(true);
+      setFullName(userProfile.fullName);
+      setEmail(userProfile.email);
+      setCity(userProfile.city);
+      setCountry(userProfile.country);
     }
-  };
+  }, [userProfile]);
 
-  const handleCancel = () => {
-    setIsEditing(false);
-    setFormData({
-      fullName: '',
-      email: '',
-      city: '',
-      country: '',
-    });
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleSave = async () => {
     try {
       await saveProfile.mutateAsync({
-        ...formData,
+        fullName,
+        email,
+        city,
+        country,
         onboarded: true,
       });
-      setIsEditing(false);
+
       toast.success('Profile updated successfully');
+      setIsEditing(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to update profile');
     }
   };
 
-  const handleCreatePIN = async (e: React.FormEvent) => {
+  const handlePinDialogOpen = () => {
+    setOldPin('');
+    setNewPin('');
+    setConfirmPin('');
+    setShowPinDialog(true);
+  };
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (pinFormData.newPin.length < 4) {
+    if (newPin !== confirmPin) {
+      toast.error(hasPIN ? 'New PINs do not match' : 'PINs do not match');
+      return;
+    }
+
+    if (newPin.length < 4) {
       toast.error('PIN must be at least 4 characters');
       return;
     }
 
-    if (pinFormData.newPin !== pinFormData.confirmPin) {
-      toast.error('PINs do not match');
-      return;
-    }
-
     try {
-      await setupPIN.mutateAsync(pinFormData.newPin);
-      setPinFormData({ newPin: '', confirmPin: '', oldPin: '' });
-      toast.success('PIN created successfully');
+      if (hasPIN) {
+        await updatePIN.mutateAsync({ oldPin, newPin });
+        toast.success('PIN updated successfully');
+      } else {
+        await setupPIN.mutateAsync(newPin);
+        toast.success('PIN created successfully');
+      }
+      setShowPinDialog(false);
+      setOldPin('');
+      setNewPin('');
+      setConfirmPin('');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create PIN');
+      toast.error(error.message || `Failed to ${hasPIN ? 'update' : 'create'} PIN`);
     }
   };
 
-  const handleUpdatePIN = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (pinFormData.newPin.length < 4) {
-      toast.error('New PIN must be at least 4 characters');
-      return;
-    }
-
-    if (pinFormData.newPin !== pinFormData.confirmPin) {
-      toast.error('New PINs do not match');
-      return;
-    }
-
-    if (!pinFormData.oldPin) {
-      toast.error('Please enter your old PIN');
-      return;
-    }
-
-    try {
-      await updatePIN.mutateAsync({
-        oldPin: pinFormData.oldPin,
-        newPin: pinFormData.newPin,
-      });
-      setPinFormData({ newPin: '', confirmPin: '', oldPin: '' });
-      toast.success('PIN updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update PIN');
-    }
-  };
-
-  if (isLoading) {
+  if (isLoading || pinLoading || activationLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-muted rounded w-1/3"></div>
-            <div className="h-64 bg-muted rounded"></div>
-          </div>
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Profile</h1>
-          <p className="text-muted-foreground mt-1">Manage your account information</p>
-        </div>
-
-        <VehicleRegistrationActivationCard isActivated={isActivated || false} isLoading={activationLoading} />
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Your profile details</CardDescription>
-              </div>
-              {!isEditing && userProfile && (
-                <Button onClick={handleEdit} variant="outline" size="sm">
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {userProfile ? (
-              <>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Full Name
-                  </Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      placeholder="Enter your full name"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{userProfile.fullName}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </Label>
-                  {isEditing ? (
-                    <Input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="Enter your email"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{userProfile.email || 'Not set'}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    City
-                  </Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      placeholder="Enter your city"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{userProfile.city || 'Not set'}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Country
-                  </Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                      placeholder="Enter your country"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{userProfile.country || 'Not set'}</p>
-                  )}
-                </div>
-
-                {isEditing && (
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleSave} disabled={saveProfile.isPending} className="flex-1">
-                      <Save className="h-4 w-4 mr-2" />
-                      {saveProfile.isPending ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                    <Button onClick={handleCancel} variant="outline" disabled={saveProfile.isPending}>
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Profile information is not available. Please complete onboarding.
+    <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>Manage your personal information</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isDegraded && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Profile updates are currently unavailable. Please check the connection banner and retry.
                 </AlertDescription>
               </Alert>
             )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              Security PIN
-            </CardTitle>
-            <CardDescription>
-              {hasPIN ? 'Update your security PIN' : 'Create a security PIN for vehicle transfers'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pinLoading ? (
-              <div className="animate-pulse space-y-4">
-                <div className="h-10 bg-muted rounded"></div>
-                <div className="h-10 bg-muted rounded"></div>
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={!isEditing || isDegraded}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={!isEditing || isDegraded}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={!isEditing || isDegraded}
+                  required
+                />
               </div>
-            ) : hasPIN ? (
-              <form onSubmit={handleUpdatePIN} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  disabled={!isEditing || isDegraded}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              {!isEditing ? (
+                <Button type="button" onClick={() => setIsEditing(true)} className="flex-1" disabled={isDegraded}>
+                  Edit Profile
+                </Button>
+              ) : (
+                <>
+                  <Button type="submit" disabled={saveProfile.isPending || isDegraded} className="flex-1">
+                    {saveProfile.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (userProfile) {
+                        setFullName(userProfile.fullName);
+                        setEmail(userProfile.email);
+                        setCity(userProfile.city);
+                        setCountry(userProfile.country);
+                      }
+                    }}
+                    disabled={saveProfile.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Vehicle Registration Activation Card */}
+      <VehicleRegistrationActivationCard isActivated={isActivated || false} isLoading={activationLoading} />
+
+      {/* Security PIN Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <CardTitle>Security PIN</CardTitle>
+          </div>
+          <CardDescription>Manage your security PIN for sensitive operations</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted rounded-md">
+              <div>
+                <p className="font-medium">PIN Status</p>
+                <p className="text-sm text-muted-foreground">
+                  {hasPIN ? 'PIN is configured' : 'No PIN configured'}
+                </p>
+              </div>
+              <Button variant={hasPIN ? 'outline' : 'default'} onClick={handlePinDialogOpen} disabled={isDegraded}>
+                {hasPIN ? 'Update PIN' : 'Create PIN'}
+              </Button>
+            </div>
+            {!hasPIN && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  A security PIN is required for sensitive operations like vehicle transfers and ownership revocation.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* PIN Management Dialog */}
+      <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+        <DialogContent>
+          <form onSubmit={handlePinSubmit}>
+            <DialogHeader>
+              <DialogTitle>{hasPIN ? 'Update Security PIN' : 'Create Security PIN'}</DialogTitle>
+              <DialogDescription>
+                {hasPIN
+                  ? 'Change your security PIN for sensitive operations'
+                  : 'Set up a security PIN for sensitive operations'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {isDegraded && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    PIN management is currently unavailable. Please check the connection banner and retry.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {hasPIN && (
                 <div className="space-y-2">
-                  <Label htmlFor="oldPin">Current PIN</Label>
+                  <Label htmlFor="oldPin">Current PIN *</Label>
                   <Input
                     id="oldPin"
                     type="password"
-                    value={pinFormData.oldPin}
-                    onChange={(e) => setPinFormData({ ...pinFormData, oldPin: e.target.value })}
+                    value={oldPin}
+                    onChange={(e) => setOldPin(e.target.value)}
                     placeholder="Enter current PIN"
                     required
+                    disabled={isDegraded}
                   />
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="newPin">New PIN</Label>
-                  <Input
-                    id="newPin"
-                    type="password"
-                    value={pinFormData.newPin}
-                    onChange={(e) => setPinFormData({ ...pinFormData, newPin: e.target.value })}
-                    placeholder="Enter new PIN (min 4 characters)"
-                    minLength={4}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPin">{hasPIN ? 'New PIN' : 'PIN'} *</Label>
+                <Input
+                  id="newPin"
+                  type="password"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  placeholder={hasPIN ? 'Enter new PIN' : 'Enter PIN (min. 4 characters)'}
+                  required
+                  minLength={4}
+                  disabled={isDegraded}
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPin">Confirm New PIN</Label>
-                  <Input
-                    id="confirmPin"
-                    type="password"
-                    value={pinFormData.confirmPin}
-                    onChange={(e) => setPinFormData({ ...pinFormData, confirmPin: e.target.value })}
-                    placeholder="Confirm new PIN"
-                    minLength={4}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPin">Confirm {hasPIN ? 'New ' : ''}PIN *</Label>
+                <Input
+                  id="confirmPin"
+                  type="password"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value)}
+                  placeholder="Confirm PIN"
+                  required
+                  minLength={4}
+                  disabled={isDegraded}
+                />
+              </div>
 
-                <Button type="submit" disabled={updatePIN.isPending} className="w-full">
-                  {updatePIN.isPending ? 'Updating...' : 'Update PIN'}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleCreatePIN} className="space-y-4">
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    A PIN is required to initiate vehicle transfers. Choose a secure PIN with at least 4 characters.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="space-y-2">
-                  <Label htmlFor="createPin">Create PIN</Label>
-                  <Input
-                    id="createPin"
-                    type="password"
-                    value={pinFormData.newPin}
-                    onChange={(e) => setPinFormData({ ...pinFormData, newPin: e.target.value })}
-                    placeholder="Enter PIN (min 4 characters)"
-                    minLength={4}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmCreatePin">Confirm PIN</Label>
-                  <Input
-                    id="confirmCreatePin"
-                    type="password"
-                    value={pinFormData.confirmPin}
-                    onChange={(e) => setPinFormData({ ...pinFormData, confirmPin: e.target.value })}
-                    placeholder="Confirm PIN"
-                    minLength={4}
-                    required
-                  />
-                </div>
-
-                <Button type="submit" disabled={setupPIN.isPending} className="w-full">
-                  {setupPIN.isPending ? 'Creating...' : 'Create PIN'}
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Internet Identity</CardTitle>
-            <CardDescription>Your decentralized authentication principal</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Principal ID</Label>
-              <p className="text-xs font-mono bg-muted p-2 rounded break-all">
-                {identity?.getPrincipal().toString()}
-              </p>
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Your PIN is required for sensitive operations like vehicle transfers and ownership revocation. Keep it
+                  secure and don't share it with anyone.
+                </AlertDescription>
+              </Alert>
             </div>
 
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Your Principal ID is your unique identifier on the Internet Computer blockchain. Keep it safe and never
-                share your Internet Identity credentials.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Actions</CardTitle>
-            <CardDescription>Manage your session</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleLogout} variant="destructive" className="w-full">
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPinDialog(false)}
+                disabled={setupPIN.isPending || updatePIN.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  (hasPIN ? !oldPin || !newPin || !confirmPin : !newPin || !confirmPin) ||
+                  setupPIN.isPending ||
+                  updatePIN.isPending ||
+                  isDegraded
+                }
+              >
+                {setupPIN.isPending || updatePIN.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {hasPIN ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>{hasPIN ? 'Update PIN' : 'Create PIN'}</>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

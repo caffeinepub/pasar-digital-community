@@ -1,3 +1,8 @@
+/**
+ * Logo component displaying the Pasar Digital Community logo with configurable sizes
+ * Uses the provided logo asset with proper aspect ratio preservation
+ */
+
 interface AppLogoProps {
   size?: 'small' | 'medium' | 'large';
   className?: string;
@@ -5,18 +10,16 @@ interface AppLogoProps {
 
 export default function AppLogo({ size = 'medium', className = '' }: AppLogoProps) {
   const sizeClasses = {
-    small: 'h-10 w-10',
-    medium: 'h-16 w-16',
-    large: 'h-24 w-24',
+    small: 'h-8 w-8',
+    medium: 'h-12 w-12',
+    large: 'h-20 w-20',
   };
 
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <img
-        src="/assets/Logo Pasar Digital Community-1.png"
-        alt="Pasar Digital Community Logo"
-        className={`${sizeClasses[size]} object-contain`}
-      />
-    </div>
+    <img
+      src="/assets/Logo Pasar Digital Community-2.png"
+      alt="Pasar Digital Community"
+      className={`${sizeClasses[size]} object-contain ${className}`}
+    />
   );
 }

@@ -73,7 +73,7 @@ actor {
   let userProfiles = Map.empty<Principal, UserProfile>();
   let userPINs = Map.empty<Principal, Text>();
   let notifications = Map.empty<Text, Notification>();
-  let vehicleState = Map.empty<Text, Vehicle>();
+  var vehicleState = Map.empty<Text, Vehicle>();
   let usedInviteTokens = Map.empty<Text, Principal>();
 
   let allowlistAdmin = Principal.fromText("dcama-lvxhu-qf6zb-u75wm-yapdd-dosl4-b3rvi-pxrax-sznjy-3yq47-bae");
@@ -89,7 +89,6 @@ actor {
   var activationTokens : Map.Map<Text, ActivationToken> = Map.empty<Text, ActivationToken>();
   var userActivations : Map.Map<Principal, Bool> = Map.empty<Principal, Bool>();
 
-  // Helper function to check if allowlist admin is onboarded
   func isAllowlistAdminOnboarded() : Bool {
     switch (userProfiles.get(allowlistAdmin)) {
       case (?profile) { profile.onboarded };
@@ -97,12 +96,10 @@ actor {
     };
   };
 
-  // Helper function to check if caller is allowlist admin (onboarded or not)
   func isCallerAllowlistAdmin(caller : Principal) : Bool {
     caller == allowlistAdmin;
   };
 
-  // Helper function to check if user is onboarded
   func isUserOnboarded(principal : Principal) : Bool {
     switch (userProfiles.get(principal)) {
       case (?profile) { profile.onboarded };
@@ -110,20 +107,18 @@ actor {
     };
   };
 
-  // Helper function to check if caller has admin permission (including allowlist admin)
   func hasAdminPermission(caller : Principal) : Bool {
     if (isCallerAllowlistAdmin(caller)) { return true };
     AccessControl.hasPermission(accessControlState, caller, #admin);
   };
 
-  // Helper function to check if caller has user permission (onboarded users or allowlist admin)
   func hasUserPermission(caller : Principal) : Bool {
     if (isCallerAllowlistAdmin(caller)) { return true };
     if (isUserOnboarded(caller)) { return true };
     AccessControl.hasPermission(accessControlState, caller, #user);
   };
 
-  // --------------------------------- Prefab Invite Links API (DO NOT REMOVE: router dependency) ---------------------------------
+  // Prefab Invite Links API (DO NOT REMOVE: router dependency)
   public shared ({ caller }) func generateInviteCode() : async Text {
     if (not hasAdminPermission(caller)) {
       Runtime.trap("Unauthorized: Only admins can generate invite codes");
@@ -163,7 +158,7 @@ actor {
     InviteLinksModule.getInviteCodes(inviteState);
   };
 
-  // --------------------------------- User Profile Management ---------------------------------
+  // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     // Anonymous principals cannot have profiles
     if (caller.isAnonymous()) {
@@ -173,17 +168,14 @@ actor {
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    // Admins can view any profile
     if (hasAdminPermission(caller)) {
       return userProfiles.get(user);
     };
 
-    // Users can only view their own profile
     if (caller != user) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
 
-    // Anonymous principals cannot view profiles
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot view profiles");
     };
@@ -192,12 +184,10 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    // Anonymous principals cannot save profiles
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot save profiles");
     };
 
-    // Only onboarded users can save profiles (must have completed onboarding first)
     if (not hasUserPermission(caller)) {
       Runtime.trap("Unauthorized: Only onboarded users can save profiles");
     };
@@ -205,9 +195,7 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // New onboarding - any authenticated principal can onboard
   public shared ({ caller }) func completeOnboarding(_inviteToken : Text, profile : UserProfile) : async () {
-    // Anonymous principals cannot onboard
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot complete onboarding");
     };
@@ -216,7 +204,6 @@ actor {
     let isClaimingFirstAdmin = isCallerAllowlistAdmin(caller) and isAllowlistAdminNotOnboarded;
 
     if (isClaimingFirstAdmin) {
-      // Special case: allowlist admin claiming first admin role
       let adminProfile = {
         fullName = profile.fullName;
         email = profile.email;
@@ -227,7 +214,6 @@ actor {
       userProfiles.add(caller, adminProfile);
       AccessControl.assignRole(accessControlState, caller, caller, #admin);
     } else {
-      // Regular onboarding for any authenticated principal
       switch (userProfiles.get(caller)) {
         case (?existingProfile) {
           if (existingProfile.onboarded) {
@@ -245,14 +231,10 @@ actor {
         onboarded = true;
       };
       userProfiles.add(caller, onboardedProfile);
-
-      // Note: We don't call AccessControl.assignRole here because it has admin-only guards.
-      // Instead, we rely on the onboarded flag in the profile and use hasUserPermission
-      // helper function to check authorization throughout the application.
     };
   };
 
-  // --------------------------------- PIN Management ---------------------------------
+  // PIN Management
   public query ({ caller }) func hasPIN(callerToCheck : ?Principal) : async Bool {
     let principalToCheck = switch (callerToCheck) {
       case (?p) { p };
@@ -300,9 +282,7 @@ actor {
     };
   };
 
-  // --------------------------------- Vehicle Registration ---------------------------------
-
-  // Admin method to generate activation token for a specific user
+  // Vehicle Registration
   public shared ({ caller }) func generateActivationToken(userId : Principal) : async Text {
     if (not hasAdminPermission(caller)) {
       Runtime.trap("Unauthorized: Only admins can generate activation tokens");
@@ -325,7 +305,6 @@ actor {
     token;
   };
 
-  // Method for user to redeem their activation token
   public shared ({ caller }) func redeemActivationToken(token : Text) : async () {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot redeem activation tokens");
@@ -353,19 +332,16 @@ actor {
     };
   };
 
-  // Query method to check caller activation status (with allowlist admin always activated)
   public query ({ caller }) func isCallerActivatedForVehicleRegistration() : async Bool {
     if (caller == allowlistAdmin) {
-      // Always return true for the allowlist admin
       return true;
     };
     switch (userActivations.get(caller)) {
-      case (null) { false }; // Not found means not activated
+      case (null) { false };
       case (?activated) { activated };
     };
   };
 
-  // Vehicle registration now gated by activation status
   public shared ({ caller }) func registerVehicle(
     engineNumber : Text,
     chassisNumber : Text,
@@ -383,7 +359,6 @@ actor {
       Runtime.trap("Unauthorized: Only onboarded users can register vehicles");
     };
 
-    // Check activation status (except for allowlist admin)
     if (not isCallerAllowlistAdmin(caller)) {
       switch (userActivations.get(caller)) {
         case (null) {
@@ -431,7 +406,10 @@ actor {
 
     let iter = vehicleState.values();
     let filtered = iter.filter(func(vehicle : Vehicle) : Bool { vehicle.owner == caller });
-    filtered.toArray();
+    let nonDefault = filtered.filter(func(vehicle : Vehicle) : Bool {
+      not vehicle.owner.isAnonymous()
+    });
+    nonDefault.toArray();
   };
 
   public query ({ caller }) func getVehicle(vehicleId : Text) : async Vehicle {
@@ -449,8 +427,6 @@ actor {
     };
   };
 
-  // Vehicle check API that returns the status based on engine number
-  // Public access for safety - anyone can check a vehicle's status
   public query func checkVehicle(engineNumber : Text) : async VehicleCheckStatus {
     switch (vehicleState.values().toArray().find(func(vehicle) { vehicle.engineNumber == engineNumber })) {
       case (null) { Runtime.trap("No vehicle matching engine number found") };
@@ -467,7 +443,6 @@ actor {
     };
   };
 
-  // Public access for community safety - anyone can see lost/stolen/pawned vehicles
   public query func getLostVehicles() : async [Vehicle] {
     let iter = vehicleState.values();
     let filtered = iter.filter(func(vehicle : Vehicle) : Bool {
@@ -497,7 +472,6 @@ actor {
     let vehicle = switch (vehicleState.get(vehicleId)) {
       case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) {
-        // Ownership check
         if (vehicle.owner != caller) {
           Runtime.trap("Unauthorized: Only the owner can update vehicle status");
         };
@@ -563,7 +537,6 @@ actor {
     vehicleState.add(vehicleId, vehicle);
   };
 
-  // --------------------------------- New Feature: Vehicle Ownership Revocation  ---------------------------------
   public shared ({ caller }) func revokeVehicleOwnership(vehicleId : Text, pin : Text) : async () {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot revoke vehicle ownership");
@@ -573,15 +546,13 @@ actor {
       Runtime.trap("Unauthorized: Only onboarded users can revoke vehicle ownership");
     };
 
-    let vehicle = switch (vehicleState.get(vehicleId)) {
+    switch (vehicleState.get(vehicleId)) {
       case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) {
-        // Ownership check
         if (vehicle.owner != caller) {
           Runtime.trap("Unauthorized: Only the owner can revoke their vehicle ownership");
         };
 
-        // PIN check (trap on missing PIN so message is clear)
         let pinCheckResult = switch (userPINs.get(caller)) {
           case (null) { Runtime.trap("No PIN set for this user. Please set up a PIN to revoke vehicle ownership."); };
           case (?storedPin) { storedPin == pin };
@@ -591,19 +562,12 @@ actor {
           Runtime.trap("Incorrect PIN");
         };
 
-        // Transfer code check (allow null or otherwise, always clear)
-        let clearedVehicle = {
-          vehicle with
-          owner = Principal.fromText("2vxsx-fae");
-          transferCode = null; // Always clear existing transfer code
-        };
-        clearedVehicle;
+        vehicleState.remove(vehicleId);
       };
     };
-    vehicleState.add(vehicleId, vehicle);
   };
 
-  // --------------------------------- Notifications ---------------------------------
+  // Notifications
   public query ({ caller }) func getMyNotifications() : async [Notification] {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot view notifications");
@@ -646,7 +610,7 @@ actor {
     };
   };
 
-  // --------------------------------- Transfer System ---------------------------------
+  // Transfer System
   public shared ({ caller }) func initiateTransfer(vehicleId : Text, pin : Text) : async Text {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot initiate transfers");
@@ -663,7 +627,6 @@ actor {
     let vehicle = switch (vehicleState.get(vehicleId)) {
       case (null) { Runtime.trap("Vehicle not found") };
       case (?vehicle) {
-        // Ownership check
         if (vehicle.owner != caller) {
           Runtime.trap("Unauthorized: Only the owner can transfer their vehicle");
         };
@@ -722,7 +685,7 @@ actor {
     };
   };
 
-  // --------------------------------- Admin Functions ---------------------------------
+  // Admin Functions
   public query ({ caller }) func getRegisteredVehicles() : async [Vehicle] {
     if (not hasAdminPermission(caller)) {
       Runtime.trap("Unauthorized: Only admins can view all vehicles");
@@ -833,27 +796,23 @@ actor {
     };
   };
 
-  // --------------------------------- Is Onboarding Allowed ---------------------------------
   public query ({ caller }) func isOnboardingAllowed() : async Bool {
-    // Any authenticated (non-anonymous) principal can onboard
     if (caller.isAnonymous()) {
       return false;
     };
     true;
   };
 
-  // --------------------------------- Internal Allowlist Check ---------------------------------
   public query ({ caller }) func isAllowlistAdmin() : async Bool {
     isCallerAllowlistAdmin(caller);
   };
 
-  // --------------------------------- Backend Health Diagnostics ---------------------------------
   public query func getBackendDiagnostics() : async {
     build : Text;
     time : Time.Time;
   } {
     {
-      build = "v0.1.4";
+      build = "v0.1.5";
       time = Time.now();
     };
   };
