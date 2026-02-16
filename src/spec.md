@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Fix vehicle ownership revoke/detach so vehicles can be re-registered, ensure “My Vehicles” reliably lists the signed-in user’s vehicles, and show clear (English) error states for these flows.
+**Goal:** Fix “My Vehicles” visibility issues and ownership revocation errors so vehicle registration and revocation update the UI correctly for the current Internet Identity principal, then ship a new build.
 
 **Planned changes:**
-- Backend: Fix revoke/detach ownership logic so revoking (“lepas/hapus”) consistently removes or detaches ownership without generic errors, and does not block re-registration of the same engine+chassis.
-- Backend + Frontend: Fix user vehicle listing so vehicles owned by the current principal reliably appear in “My Vehicles”, including immediately after registration.
-- Frontend: Prevent cross-account cached vehicle list leakage (React Query scoping), and add minimal, safe error UI for “My Vehicles” and “Revoke Ownership” that surfaces meaningful English error messages.
+- Fix the “My Vehicles” (and any reused vehicle-list query) data flow so vehicles owned by the currently signed-in principal reliably appear without manual refresh.
+- Correct React Query invalidation/refetch behavior after `registerVehicle` and `revokeVehicleOwnership` so listings and detail views update immediately and don’t leak stale results across account switches.
+- Fix the revoke (“lepas”) ownership workflow to use the correct `vehicleId`, prevent revoking vehicles not owned by the current principal, and show clear English error messages on failure cases (e.g., incorrect PIN, unauthorized, vehicle not found).
+- Produce and publish a new build containing only these targeted fixes while keeping existing routes unchanged and avoiding regressions in other working features.
 
-**User-visible outcome:** Users can revoke vehicle ownership without generic failures, re-register the same vehicle identifiers after a revoke, and see their vehicles consistently listed under “My Vehicles” with clear English error messages if something fails.
+**User-visible outcome:** After registering a vehicle, it appears in “My Vehicles” right away for the same signed-in account; after revoking ownership with the correct PIN, the vehicle is removed from relevant pages without generic errors; switching accounts shows the correct vehicle list for the active principal.

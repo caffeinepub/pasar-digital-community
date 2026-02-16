@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-02-17
+
+### Fixed
+- **My Vehicles visibility**: Fixed issue where newly registered vehicles did not appear in "My Vehicles" list without manual refresh
+- **React Query cache updates**: Improved vehicle query invalidation and refetch patterns to ensure immediate UI updates after registration and revocation
+- **Revoke ownership errors**: Enhanced error messages with clear English descriptions for PIN verification failures, unauthorized attempts, and vehicle not found scenarios
+- **Identity-scoped queries**: Added principal-based query keys to prevent cache bleed across account switches (login/logout)
+- **Optimistic cache updates**: Implemented immediate cache removal for revoked vehicles to prevent stale data display
+
+### Changed
+- Vehicle queries now use `refetchOnMount: 'always'` and `staleTime: 0` to ensure fresh data on page navigation
+- Revoke ownership now validates vehicle status (ACTIVE only) and ownership before allowing submission
+- Error normalization improved to extract and display backend trap messages clearly
+- Vehicle detail queries now include principal in query key for proper identity isolation
+
+### Technical
+- No routes or authentication flows modified (protected interface preserved)
+- All existing features remain fully functional
+- Quality gates (typecheck/lint/format) pass
+
+## [1.0.0] - 2026-02-12
+
 ### Added
 - **PWA Support**: Application is now installable as a Progressive Web App on Android and iOS devices
   - Service worker registration for offline capability and faster loading
@@ -39,8 +61,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Favicon and icon files added to NEVER_CACHE list to ensure fresh branding
 - No existing routes or authentication flows were modified
 - All existing features remain fully functional
-
-## [1.0.0] - 2026-02-12
 
 ### Added
 - New `/revoke-ownership` route for permanent vehicle ownership removal

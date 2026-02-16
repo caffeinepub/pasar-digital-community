@@ -18,19 +18,23 @@ export function useGetUserVehicles() {
     },
     enabled: !!actor && !isFetching && !!principal,
     retry: 1,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }
 
 export function useGetVehicle(vehicleId: string) {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
 
   return useQuery<Vehicle>({
-    queryKey: ['vehicle', vehicleId],
+    queryKey: ['vehicle', vehicleId, principal],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getVehicle(vehicleId);
     },
-    enabled: !!actor && !isFetching && !!vehicleId,
+    enabled: !!actor && !isFetching && !!vehicleId && !!principal,
   });
 }
 
@@ -85,7 +89,14 @@ export function useRevokeVehicleOwnership() {
       }
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['vehicle', variables.vehicleId] });
+      queryClient.removeQueries({ queryKey: ['vehicle', variables.vehicleId, principal] });
+      queryClient.removeQueries({ queryKey: ['vehicle', variables.vehicleId] });
+      
+      queryClient.setQueryData<Vehicle[]>(['userVehicles', principal], (old) => {
+        if (!old) return old;
+        return old.filter((v) => v.id !== variables.vehicleId);
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['userVehicles', principal] });
       queryClient.invalidateQueries({ queryKey: ['userVehicles'] });
     },

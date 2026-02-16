@@ -1,30 +1,46 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App experiencing startup blank-screen issues due to bootstrap error screens; user requests removal of StartupBootstrapError.tsx and ProfileBootstrapError.tsx. Additional functional bugs reported around vehicle reporting (lost/stolen/pawned) UI crash, and vehicle registration/listing/release inconsistencies between user and admin views. User requests fixes without impacting currently working features.",
+  "summary": "Vehicle registration/status app: users can register vehicles, view 'Check Vehicle Status', and manage vehicles in 'My Vehicles' (frontend React). Current focus is fixing 'My Vehicles' not showing registered vehicles and fixing ownership release errors, then producing a build.",
   "architectural_notes": [
-    "When applying fixes, avoid regressions: do not change features already working normally (limit scope to requested fixes)."
+    "Frontend (React) 'My Vehicles' must derive ownership using the authenticated Principal identity and match the backend ownerId format.",
+    "After vehicle registration and ownership changes, React Query cache should be invalidated/refetched to avoid stale data."
   ],
   "known_issues": [
-    "Startup blocked/blank screen due to bootstrap error screen components (StartupBootstrapError/ProfileBootstrapError) and retry delay behavior.",
-    "React DOM error on vehicle report (lost/stolen/pawned): \"Failed to execute 'removeChild' on 'Node'\".",
-    "Vehicle appears in admin and status-check but not in user's vehicle list; releasing/detaching vehicle shows generic error."
+    "Registered vehicle appears in 'Check Vehicle Status' but not in 'My Vehicles' (ownership filter/Principal mismatch or stale cache).",
+    "Error occurs when attempting to release/remove vehicle ownership (ownerId mismatch between frontend/backend)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-user-vehicle-listing-inconsistency-so-that-a-vehicle-that-exists-in-the-system-visible-in-admin-totals-and-via-vehicle-check-reliably-appears-in-the-owning-user-s-my-vehicles-list-when-the-backend-record-owner-matches-the-currently-signed-in-principal",
-      "title": "Fix the user vehicle listing inconsistency so that a vehicle that exists in the system (visible in admin totals and via Vehicle Check) reliably appears in the owning user’s “My Vehicles” list when the backend record owner matches the currently signed-in principal.",
+      "id": "feature-fix-the-my-vehicles-list-so-that-vehicles-registered-by-the-currently-signed-in-internet-identity-principal-reliably-appear-in-the-my-vehicles-page-and-related-pages-that-reuse-the-same-query-without-requiring-a-manual-refresh",
+      "title": "Fix the “My Vehicles” list so that vehicles registered by the currently signed-in Internet Identity principal reliably appear in the “My Vehicles” page (and related pages that reuse the same query), without requiring a manual refresh.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-react-query-cache-invalidation-refetch-behavior-is-correct-for-the-vehicle-workflows-so-ui-state-updates-immediately-after-successful-vehicle-registration-and-after-successful-ownership-revocation",
+      "title": "Ensure React Query cache invalidation/refetch behavior is correct for the vehicle workflows so UI state updates immediately after successful vehicle registration and after successful ownership revocation.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-safe-minimal-frontend-error-handling-for-my-vehicles-and-revoke-ownership-flows-so-that-backend-query-errors-are-displayed-clearly-in-english-instead-of-silently-showing-empty-lists-or-a-generic-something-went-wrong-without-changing-unrelated-features-or-routes",
-      "title": "Add safe, minimal frontend error handling for “My Vehicles” and “Revoke Ownership” flows so that backend/query errors are displayed clearly (in English) instead of silently showing empty lists or a generic “something went wrong”, without changing unrelated features or routes.",
+      "id": "feature-fix-the-ownership-revocation-lepas-revoke-flow-so-that-it-no-longer-fails-due-to-mismatched-identifiers-or-misleading-generic-errors-display-clear-english-error-messages-when-revocation-fails",
+      "title": "Fix the ownership revocation (“lepas” / revoke) flow so that it no longer fails due to mismatched identifiers or misleading generic errors; display clear English error messages when revocation fails.",
       "reqIds": [
         "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-produce-and-publish-a-new-build-after-implementing-the-requested-fixes-ensuring-the-app-passes-existing-quality-gates-and-does-not-modify-unrelated-working-features",
+      "title": "Produce and publish a new build after implementing the requested fixes, ensuring the app passes existing quality gates and does not modify unrelated working features.",
+      "reqIds": [
+        "REQ-4"
       ],
       "version": 1
     }
@@ -32,32 +48,29 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Remove/disable bootstrap error screens by deleting StartupBootstrapError.tsx and ProfileBootstrapError.tsx to prevent app startup being blocked/blank screen.",
+      "summary": "Fix 'My Vehicles' list not showing registered vehicles due to incorrect owner/Principal filtering",
       "reqIds": [],
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "id": "AR-2",
-      "summary": "Fix React UI crash on 'Lapor kendaraan hilang/dicuri/digadai' flow (removeChild DOM error) so reporting works without errors.",
+      "summary": "Fix error when releasing/removing vehicle ownership; ensure ownerId stored/read consistently",
       "reqIds": [],
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "id": "AR-3",
-      "summary": "Fix vehicle registration/listing inconsistency: vehicle shows in admin and status-check but not in user's 'Kendaraan saya' list; also fix errors when releasing/detaching vehicle ('lepas' action).",
+      "summary": "Invalidate/refresh React Query cache after vehicle registration so lists update correctly",
       "reqIds": [],
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "id": "AR-4",
-      "summary": "Fix the backend revoke/detach ownership flow so that when a user revokes ownership (\"lepas\" / \"hapus\" vehicle), the vehicle is consistently removed or detached in a way that allows the same engine+chassis to be registered again, and the operation no longer returns a generic error.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "status": "pending"
+      "summary": "Produce a new build after the above fixes are implemented",
+      "reqIds": [],
+      "status": "in_progress"
     }
   ],
-  "gameProjectType": "none",
   "projectName": "Pasar Digital",
   "clarification_mode": "instant",
   "clarification_rounds": 0

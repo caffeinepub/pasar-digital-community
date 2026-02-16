@@ -1,63 +1,105 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix My Vehicles listing consistency and improve revoke/list error states",
+  "title": "Pasar Digital: Fix My Vehicles visibility, React Query vehicle cache updates, and revoke ownership UX errors",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Scope “My Vehicles” data to the signed-in principal and ensure list refreshes after registration/account switching without cache bleed.",
+      "id": "REQ-1",
+      "summary": "Make “My Vehicles” reliably reflect vehicles owned by the currently signed-in principal without requiring manual refresh, including after account switching.",
       "acceptanceCriteria": [
-        "If a vehicle’s owner principal equals the current signed-in principal, getUserVehicles returns it and the Vehicles page renders it.",
-        "Vehicles list data is scoped to the signed-in principal (no cross-account React Query cache bleed); switching accounts cannot show another account’s cached vehicle list.",
-        "After registering a vehicle successfully, navigating to “My Vehicles” shows the vehicle without requiring a hard refresh."
+        "After registering a vehicle and returning to “My Vehicles”, the newly registered vehicle is visible for the same signed-in principal.",
+        "“My Vehicles” does not show an empty list when the backend has vehicles whose `owner` matches the current caller principal.",
+        "Switching accounts (login/logout) shows the correct vehicle list for the active principal (no cross-account leakage from stale cache)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useVehicles.ts",
           "operation": "modify",
-          "description": "Update React Query keys for getUserVehicles/register/revoke invalidation to be principal-scoped (e.g., include current identity principal in the query key) so cached vehicle lists cannot bleed across account switches; ensure post-register and post-revoke invalidation targets the correct principal-scoped key."
+          "description": "Harden the `useGetUserVehicles` React Query configuration for identity-scoped correctness and reliable refresh: ensure the queryKey is strictly principal-scoped, avoid fetching when the principal/actor is not ready, and configure mount-time refetch behavior so returning to “My Vehicles” does not reuse a stale empty cache. Also ensure `useGetVehicle` is identity-scoped so vehicle detail data cannot leak across account switches."
         },
         {
           "path": "frontend/src/pages/VehiclesPage.tsx",
           "operation": "modify",
-          "description": "Adjust VehiclesPage to use the updated principal-scoped vehicle list hook behavior (no route changes) and ensure the UI updates correctly after navigation from registration without requiring a hard refresh."
+          "description": "Ensure the “My Vehicles” page reacts correctly to identity-scoped query state: keep rendering tied to `useGetUserVehicles` state and (if needed) add a safe, non-looping refetch trigger when entering the page so newly registered vehicles appear without a manual refresh."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Fix React Query invalidation/refetch patterns so vehicle registration and ownership revocation immediately update all relevant UI views without refetch loops.",
+      "acceptanceCriteria": [
+        "After a successful `registerVehicle` mutation, the `getUserVehicles` query is invalidated/refetched such that “My Vehicles” reflects the new state without a hard reload.",
+        "After a successful `revokeVehicleOwnership` mutation, the revoked vehicle no longer appears in “My Vehicles”, “Vehicle Detail”, and “Revoke Ownership” listings for the same principal.",
+        "No unnecessary infinite refetch loops are introduced (queries settle after updates)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useVehicles.ts",
+          "operation": "modify",
+          "description": "Update vehicle mutation success handling to be key-safe and immediate: after `registerVehicle`, trigger a targeted refetch/invalidation for all `userVehicles` queries (principal-scoped) so the list updates on the next screen without a hard reload; after `revokeVehicleOwnership`, remove the revoked vehicle from any cached `userVehicles` lists (optimistic cache update) and clear/refetch the affected `vehicle` detail cache so detail and listings update immediately. Avoid broad invalidation that could cause unnecessary repeated refetches."
         },
         {
-          "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
+          "path": "frontend/src/pages/RegisterVehiclePage.tsx",
           "operation": "modify",
-          "description": "Ensure RevokeOwnershipPage reads from the same principal-scoped vehicle list query and that successful revocation results in consistent list refresh for the signed-in principal (no route changes)."
-        },
-        {
-          "path": "frontend/src/pages/__tests__/VehiclesPage.fetch-flow.test.tsx",
-          "operation": "modify",
-          "description": "Add/extend a minimal test to guard against regressions where VehiclesPage could render stale vehicles across identity changes (e.g., by asserting query key scoping behavior via mocked hooks)."
+          "description": "After successful registration navigation, rely on the corrected vehicle cache behavior so the next visited “My Vehicles” view reflects the new state. Keep navigation paths unchanged per change-control constraints."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add minimal, safe error states (English) for “My Vehicles” and “Revoke Ownership” so failures are visible and actionable.",
+      "summary": "Fix revoke-ownership flow identifier correctness and replace misleading generic failures with clear English error messages; prevent revocation attempts for vehicles not owned by the current principal.",
       "acceptanceCriteria": [
-        "VehiclesPage shows a clear error state when getUserVehicles fails (instead of rendering as empty/undefined data).",
-        "RevokeOwnershipPage shows a clear error state when getUserVehicles fails and shows the backend error message (normalized) when revoke fails.",
-        "All new/updated user-facing strings for these new error states are in English.",
-        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT."
+        "A user can revoke ownership of an ACTIVE vehicle they own by entering the correct PIN, and the operation succeeds end-to-end.",
+        "If revocation fails (e.g., incorrect PIN, unauthorized, vehicle not found), the UI surfaces a clear English error message (not a generic “something went wrong”).",
+        "The frontend uses the correct `vehicleId` when calling `revokeVehicleOwnership` and does not attempt to revoke ownership for vehicles not owned by the current principal.",
+        "Backend behavior remains consistent with removing the vehicle record on successful revocation (so it can be registered again)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/VehiclesPage.tsx",
+          "path": "frontend/src/hooks/useVehicles.ts",
           "operation": "modify",
-          "description": "Add an explicit error UI state when getUserVehicles fails (e.g., error card/alert with Retry action) using normalizeActorError to present a clear English message instead of falling back to an empty list."
+          "description": "Ensure `useRevokeVehicleOwnership` always calls revocation using the canonical `vehicleId` and surfaces clear English error messages by consistently applying `normalizeActorError(..., 'revoke-ownership')` across all failure paths. Also ensure post-success cache updates align with the corrected identity-scoped query keys so revoked vehicles disappear immediately."
         },
         {
           "path": "frontend/src/pages/RevokeOwnershipPage.tsx",
           "operation": "modify",
-          "description": "Add an explicit error UI state when getUserVehicles fails (with retry) and normalize/display revoke failures in English (use normalizeActorError so toast and any inline message avoid generic wording and show the most relevant backend-provided message)."
+          "description": "Add frontend guards before invoking revocation to avoid invalid attempts: only allow revocation for ACTIVE vehicles in the user-owned listing and prevent submission when no vehicle is selected. Ensure failure to revoke displays the normalized English message from the mutation error (no generic fallback), and do not rethrow errors in a way that causes generic UI handling to replace the specific message."
         },
         {
-          "path": "frontend/src/hooks/useVehicles.ts",
+          "path": "frontend/src/pages/VehicleDetailPage.tsx",
           "operation": "modify",
-          "description": "Adjust getUserVehicles query function behavior to avoid silently returning an empty array on actor unavailability and to surface errors correctly to the pages’ error states (keep changes tightly scoped to vehicle listing and revoke flows)."
+          "description": "Tighten the revoke action in the vehicle detail view: verify the current principal is the owner and the status is ACTIVE before allowing the revoke dialog to submit; if not allowed, show a clear English message and do not call revocation. Ensure any revocation failure shown from this page uses the normalized English message rather than a generic error."
+        },
+        {
+          "path": "frontend/src/utils/normalizeActorError.ts",
+          "operation": "modify",
+          "description": "Refine revoke-ownership error normalization to cover common trap/error strings reliably and keep all user-facing text in English (e.g., incorrect PIN, unauthorized, vehicle not found, and any identifier-related mismatch messaging) while preserving technical details for debugging."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Prepare a new frontend build with the fixes, keeping routes unchanged and ensuring existing quality gates pass without impacting unrelated features.",
+      "acceptanceCriteria": [
+        "A new build is generated with the fixes included.",
+        "Frontend quality gates (typecheck/lint/format as defined by the project) pass.",
+        "Manual verification confirms: register vehicle → appears in “My Vehicles”; revoke ownership → no errors and vehicle removed; “Check Vehicle Status” still works as before."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/version.ts",
+          "operation": "modify",
+          "description": "Bump the frontend `APP_VERSION` and `APP_BUILD_DATE` to reflect the new build containing the vehicle listing and revoke-ownership fixes."
+        },
+        {
+          "path": "frontend/CHANGELOG.md",
+          "operation": "modify",
+          "description": "Add a changelog entry documenting the My Vehicles visibility fix, improved vehicle workflow cache updates, and clearer revoke-ownership error messaging (English), without mentioning unrelated non-goals."
+        },
+        {
+          "path": "frontend/src/pages/VehicleCheckPage.tsx",
+          "operation": "modify",
+          "description": "Perform a minimal, no-behavior-change verification touchpoint if needed (e.g., ensure no shared query keys or invalidations from vehicle workflows affect Vehicle Check). Only adjust if a direct coupling is discovered during implementation; otherwise keep this file unchanged."
         }
       ]
     }

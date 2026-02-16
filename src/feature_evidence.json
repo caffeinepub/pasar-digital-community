@@ -2,12 +2,31 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-user-vehicle-listing-inconsistency-so-that-a-vehicle-that-exists-in-the-system-visible-in-admin-totals-and-via-vehicle-check-reliably-appears-in-the-owning-user-s-my-vehicles-list-when-the-backend-record-owner-matches-the-currently-signed-in-principal",
-      "featureTitle": "Fix the user vehicle listing inconsistency so that a vehicle that exists in the system (visible in admin totals and via Vehicle Check) reliably appears in the owning user’s “My Vehicles” list when the backend record owner matches the currently signed-in principal.",
+      "featureId": "feature-fix-the-my-vehicles-list-so-that-vehicles-registered-by-the-currently-signed-in-internet-identity-principal-reliably-appear-in-the-my-vehicles-page-and-related-pages-that-reuse-the-same-query-without-requiring-a-manual-refresh",
+      "featureTitle": "Fix the “My Vehicles” list so that vehicles registered by the currently signed-in Internet Identity principal reliably appear in the “My Vehicles” page (and related pages that reuse the same query), without requiring a manual refresh.",
       "files": [
-        "frontend/src/hooks/useVehicles.ts",
-        "frontend/src/pages/RevokeOwnershipPage.tsx",
-        "frontend/src/pages/VehiclesPage.tsx"
+        "frontend/src/hooks/useVehicles.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-react-query-cache-invalidation-refetch-behavior-is-correct-for-the-vehicle-workflows-so-ui-state-updates-immediately-after-successful-vehicle-registration-and-after-successful-ownership-revocation",
+      "featureTitle": "Ensure React Query cache invalidation/refetch behavior is correct for the vehicle workflows so UI state updates immediately after successful vehicle registration and after successful ownership revocation.",
+      "files": [
+        "frontend/src/hooks/useVehicles.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -25,12 +44,13 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-safe-minimal-frontend-error-handling-for-my-vehicles-and-revoke-ownership-flows-so-that-backend-query-errors-are-displayed-clearly-in-english-instead-of-silently-showing-empty-lists-or-a-generic-something-went-wrong-without-changing-unrelated-features-or-routes",
-      "featureTitle": "Add safe, minimal frontend error handling for “My Vehicles” and “Revoke Ownership” flows so that backend/query errors are displayed clearly (in English) instead of silently showing empty lists or a generic “something went wrong”, without changing unrelated features or routes.",
+      "featureId": "feature-fix-the-ownership-revocation-lepas-revoke-flow-so-that-it-no-longer-fails-due-to-mismatched-identifiers-or-misleading-generic-errors-display-clear-english-error-messages-when-revocation-fails",
+      "featureTitle": "Fix the ownership revocation (“lepas” / revoke) flow so that it no longer fails due to mismatched identifiers or misleading generic errors; display clear English error messages when revocation fails.",
       "files": [
         "frontend/src/hooks/useVehicles.ts",
         "frontend/src/pages/RevokeOwnershipPage.tsx",
-        "frontend/src/pages/VehiclesPage.tsx"
+        "frontend/src/pages/VehicleDetailPage.tsx",
+        "frontend/src/utils/normalizeActorError.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -44,6 +64,28 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-produce-and-publish-a-new-build-after-implementing-the-requested-fixes-ensuring-the-app-passes-existing-quality-gates-and-does-not-modify-unrelated-working-features",
+      "featureTitle": "Produce and publish a new build after implementing the requested fixes, ensuring the app passes existing quality gates and does not modify unrelated working features.",
+      "files": [
+        "frontend/CHANGELOG.md",
+        "frontend/src/version.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

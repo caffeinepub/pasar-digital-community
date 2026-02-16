@@ -190,7 +190,7 @@ export default function RevokeOwnershipPage() {
       <PinPromptDialog
         open={showPinDialog}
         onOpenChange={handleDialogClose}
-        onSubmit={handlePinSubmit}
+        onConfirm={handlePinSubmit}
         title="Confirm Ownership Revocation"
         description="Enter your PIN to permanently revoke ownership of this vehicle. This action cannot be undone."
         isPending={revokeOwnership.isPending}

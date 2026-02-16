@@ -3,5 +3,5 @@
  * This is the single source of truth for the app version.
  * Update this file when releasing a new version.
  */
-export const APP_VERSION = '1.0.0';
-export const APP_BUILD_DATE = '2026-02-11T23:45:00Z';
+export const APP_VERSION = '1.0.1';
+export const APP_BUILD_DATE = '2026-02-17T03:50:00Z';

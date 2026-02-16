@@ -1,8 +1,3 @@
-/**
- * Vehicle detail page with comprehensive status display and owner actions
- * Includes revoke ownership button with PIN confirmation dialog
- */
-
 import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useGetVehicle, useRevokeVehicleOwnership } from '../hooks/useVehicles';
@@ -29,6 +24,7 @@ export default function VehicleDetailPage() {
   const [showRevokePinDialog, setShowRevokePinDialog] = useState(false);
 
   const isOwner = vehicle && identity && vehicle.owner.toString() === identity.getPrincipal().toString();
+  const canRevoke = isOwner && vehicle?.status.__kind__ === 'ACTIVE';
 
   const handleRevokeClick = () => {
     if (pinLoading) return;
@@ -42,10 +38,21 @@ export default function VehicleDetailPage() {
       return;
     }
 
+    if (!canRevoke) {
+      toast.error('Cannot Revoke', {
+        description: 'Only active vehicles owned by you can be revoked.',
+      });
+      return;
+    }
+
     setShowRevokePinDialog(true);
   };
 
   const handleRevokeSubmit = async (pin: string) => {
+    if (!canRevoke) {
+      throw new Error('Cannot revoke ownership of this vehicle');
+    }
+
     try {
       await revokeOwnership.mutateAsync({ vehicleId, pin });
       toast.success('Ownership Revoked', {

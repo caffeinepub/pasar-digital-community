@@ -547,19 +547,19 @@ actor {
     };
 
     switch (vehicleState.get(vehicleId)) {
-      case (null) { Runtime.trap("Vehicle not found") };
+      case (null) { Runtime.trap("Vehicle not found. Please check the vehicle ID and try again.") };
       case (?vehicle) {
         if (vehicle.owner != caller) {
-          Runtime.trap("Unauthorized: Only the owner can revoke their vehicle ownership");
+          Runtime.trap("Unauthorized: Only the owner can revoke their vehicle ownership. Please ensure you are the registered owner of this vehicle.");
         };
 
         let pinCheckResult = switch (userPINs.get(caller)) {
-          case (null) { Runtime.trap("No PIN set for this user. Please set up a PIN to revoke vehicle ownership."); };
+          case (null) { Runtime.trap("No PIN set. Please set up a PIN to revoke vehicle ownership. If you have already set up a PIN, please ensure you are using the correct one.") };
           case (?storedPin) { storedPin == pin };
         };
 
         if (not pinCheckResult) {
-          Runtime.trap("Incorrect PIN");
+          Runtime.trap("PIN verification failed. Please check your PIN and try again. If this is your first time here, you must set a PIN to manage vehicle ownership and only the original vehicle owner is eligible to revoke!");
         };
 
         vehicleState.remove(vehicleId);
@@ -817,3 +817,4 @@ actor {
     };
   };
 };
+

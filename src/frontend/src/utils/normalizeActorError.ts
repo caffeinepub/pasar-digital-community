@@ -34,17 +34,26 @@ export function normalizeActorError(error: unknown, context?: string): Normalize
     else if (context === 'vehicle-registration' && errorMsg.includes('blocked')) {
       message = 'Vehicle registration requires activation. Please activate your account first.';
     }
-    // Revoke ownership errors
+    // Revoke ownership errors - improved detection
     else if (context === 'revoke-ownership') {
       if (errorMsg.includes('vehicle not found')) {
-        message = 'Vehicle not found. It may have already been removed.';
+        message = 'Vehicle not found. Please check the vehicle ID and try again.';
       } else if (errorMsg.includes('unauthorized') || errorMsg.includes('only the owner')) {
-        message = 'You are not authorized to revoke ownership of this vehicle.';
+        message = 'Unauthorized: Only the owner can revoke their vehicle ownership. Please ensure you are the registered owner of this vehicle.';
       } else if (errorMsg.includes('no pin set') || errorMsg.includes('please set up a pin')) {
-        message = 'No PIN set. Please set up a PIN in Security Settings before revoking ownership.';
-      } else if (errorMsg.includes('incorrect pin')) {
-        message = 'Incorrect PIN. Please try again.';
+        message = 'No PIN set. Please set up a PIN to revoke vehicle ownership. If you have already set up a PIN, please ensure you are using the correct one.';
+      } else if (errorMsg.includes('pin verification failed') || errorMsg.includes('incorrect') || errorMsg.includes('check your pin')) {
+        message = 'PIN verification failed. Please check your PIN and try again. If this is your first time here, you must set a PIN to manage vehicle ownership and only the original vehicle owner is eligible to revoke!';
+      } else if (errorMsg.includes('trap') || errorMsg.includes('reject')) {
+        // Extract the actual trap message if available
+        const trapMatch = error.message.match(/trap[:\s]+(.+?)(?:\n|$)/i);
+        if (trapMatch && trapMatch[1]) {
+          message = trapMatch[1].trim();
+        } else {
+          message = 'Failed to revoke ownership. Please verify your PIN and try again.';
+        }
       } else {
+        // Use the original message if it's reasonably short and clear
         message = error.message.length < 200 ? error.message : 'Failed to revoke ownership. Please try again.';
       }
     }

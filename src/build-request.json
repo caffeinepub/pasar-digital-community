@@ -1,76 +1,95 @@
 {
   "kind": "build_request",
-  "title": "Fix missing user vehicle listing and revoke ownership errors",
+  "title": "Fix My Vehicles visibility and ownership revocation errors, then ship a new build",
   "projectName": "Pasar Digital",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the backend revoke/detach ownership flow so that when a user revokes ownership (\"lepas\" / \"hapus\" vehicle), the vehicle is consistently removed or detached in a way that allows the same engine+chassis to be registered again, and the operation no longer returns a generic error.",
-      "target": "backend",
+      "text": "Fix the “My Vehicles” list so that vehicles registered by the currently signed-in Internet Identity principal reliably appear in the “My Vehicles” page (and related pages that reuse the same query), without requiring a manual refresh.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "Tadinya saya coba hapus 1 unit motor dan terhapus, dan saya daftarkan ulang motor tersebut tapi tidak mau ke fitur kendaraan saya... Dan jika mau di lepas juga masih ada error. Muncul pesan ada kesalahan."
+          "ini kok masih belum ada kendaraan saya yang  sudah di daftar di fitur kendaraan saya? tapi di Check Vehicle Status ada  kendaraan saya"
         ]
       },
       "acceptanceCriteria": [
-        "Calling revokeVehicleOwnership no longer returns a generic error for a valid owner+PIN flow.",
-        "After a successful revoke, subsequent registerVehicle with the same engineNumber and chassisNumber succeeds (i.e., the previous record does not block re-registration).",
-        "After a successful revoke, checkVehicle for the engine number reflects the intended post-revoke behavior (either not found if deleted, or clearly not owned/active if retained), and this behavior is consistent with what the frontend shows.",
-        "The change does not require a state migration unless the persisted types change."
+        "After registering a vehicle and returning to “My Vehicles”, the newly registered vehicle is visible for the same signed-in principal.",
+        "“My Vehicles” does not show an empty list when the backend has vehicles whose `owner` matches the current caller principal.",
+        "Switching accounts (login/logout) shows the correct vehicle list for the active principal (no cross-account leakage from stale cache)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Fix the user vehicle listing inconsistency so that a vehicle that exists in the system (visible in admin totals and via Vehicle Check) reliably appears in the owning user’s “My Vehicles” list when the backend record owner matches the currently signed-in principal.",
-      "target": "both",
+      "text": "Ensure React Query cache invalidation/refetch behavior is correct for the vehicle workflows so UI state updates immediately after successful vehicle registration and after successful ownership revocation.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "saya sudah daftarkan 1 unit motor tapi di fitur kendaraan saya tidak muncul sedang kan di akun admin ada 1 unit motor terdaftar... tapi jika di cek di fitur Periksa Status Kendaraan ada."
+          "paksa React Query invalidasi cache setelah pendaftaran kendaraan"
         ]
       },
       "acceptanceCriteria": [
-        "If a vehicle’s owner principal equals the current signed-in principal, getUserVehicles returns it and the Vehicles page renders it.",
-        "Vehicles list data is scoped to the signed-in principal (no cross-account React Query cache bleed); switching accounts cannot show another account’s cached vehicle list.",
-        "After registering a vehicle successfully, navigating to “My Vehicles” shows the vehicle without requiring a hard refresh."
+        "After a successful `registerVehicle` mutation, the `getUserVehicles` query is invalidated/refetched such that “My Vehicles” reflects the new state without a hard reload.",
+        "After a successful `revokeVehicleOwnership` mutation, the revoked vehicle no longer appears in “My Vehicles”, “Vehicle Detail”, and “Revoke Ownership” listings for the same principal.",
+        "No unnecessary infinite refetch loops are introduced (queries settle after updates)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add safe, minimal frontend error handling for “My Vehicles” and “Revoke Ownership” flows so that backend/query errors are displayed clearly (in English) instead of silently showing empty lists or a generic “something went wrong”, without changing unrelated features or routes.",
-      "target": "frontend",
+      "text": "Fix the ownership revocation (“lepas” / revoke) flow so that it no longer fails due to mismatched identifiers or misleading generic errors; display clear English error messages when revocation fails.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "Coba anda perbaiki dan fokus ke apa yang saya minta saja. Jangan mengganggu fitur-fitur yang sudah berjalan NORMAL."
+          "Error saat melepaskan kepemilikan",
+          "fix error ketika melepaskan kepemilikan"
         ]
       },
       "acceptanceCriteria": [
-        "VehiclesPage shows a clear error state when getUserVehicles fails (instead of rendering as empty/undefined data).",
-        "RevokeOwnershipPage shows a clear error state when getUserVehicles fails and shows the backend error message (normalized) when revoke fails.",
-        "All new/updated user-facing strings for these new error states are in English.",
-        "No changes are made to immutable frontend paths listed in SYSTEM_CONTEXT."
+        "A user can revoke ownership of an ACTIVE vehicle they own by entering the correct PIN, and the operation succeeds end-to-end.",
+        "If revocation fails (e.g., incorrect PIN, unauthorized, vehicle not found), the UI surfaces a clear English error message (not a generic “something went wrong”).",
+        "The frontend uses the correct `vehicleId` when calling `revokeVehicleOwnership` and does not attempt to revoke ownership for vehicles not owned by the current principal.",
+        "Backend behavior remains consistent with removing the vehicle record on successful revocation (so it can be registered again)."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Produce and publish a new build after implementing the requested fixes, ensuring the app passes existing quality gates and does not modify unrelated working features.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "recent-messages"
+        ],
+        "quotes": [
+          "Anda kerjakan saja sampai build."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new build is generated with the fixes included.",
+        "Frontend quality gates (typecheck/lint/format as defined by the project) pass.",
+        "Manual verification confirms: register vehicle → appears in “My Vehicles”; revoke ownership → no errors and vehicle removed; “Check Vehicle Status” still works as before."
       ]
     }
   ],
   "constraints": [
-    "Keep changes tightly scoped to vehicle listing, vehicle re-registration after revoke/delete, and revoke/detach ownership errors.",
-    "Do not modify or regress features that are currently working normally.",
-    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui (compose instead).",
-    "Backend must remain a single Motoko actor (backend/main.mo)."
+    "Do not change or remove existing routes/paths defined in frontend/src/App.tsx (protected interface).",
+    "Do not edit files under frontend immutable paths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui); compose around them instead.",
+    "Keep backend architecture as a single Motoko actor in backend/main.mo; only introduce migration.mo if a state schema upgrade is truly required.",
+    "User-facing text introduced/modified as part of these fixes must be in English.",
+    "Limit changes to the vehicle listing and revoke-ownership workflows; avoid regressions in other features already working normally."
   ],
   "nonGoals": [
-    "Do not implement new authentication methods beyond Internet Identity.",
-    "Do not redesign the UI or navigation structure beyond minimal error-state rendering required for these fixes.",
-    "Do not add new backend services, databases, or external integrations."
+    "Removing or disabling StartupBootstrapError/ProfileBootstrapError screens.",
+    "Fixing the reported React DOM crash in the lost/stolen/pawned reporting flow (removeChild error).",
+    "Adding new features, new routes, or changing backend public API signatures beyond what is required to fix the listed issues."
   ],
   "imageRequirements": {
     "required": [],
